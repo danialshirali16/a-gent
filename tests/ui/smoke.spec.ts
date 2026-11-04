@@ -38,6 +38,11 @@ test('chat streams a reply through the fake Codex adapter', async ({ page }) => 
   await page.getByRole('textbox', { name: 'Message A Gent' }).fill('Hello from Playwright');
   await page.getByRole('button', { name: 'Send message' }).click();
   await expect(page.getByText('A Gent test response 1.')).toBeVisible({ timeout: 15000 });
+
+  await page.getByRole('button', { name: 'Open side panel' }).click();
+  await page.getByRole('tab', { name: 'Terminal' }).click();
+  const terminal = page.locator('.reason-terminal-panel');
+  await expect(terminal.getByText('Connecting to your model')).toBeVisible();
 });
 
 test('mobile drawer opens and closes', async ({ page }) => {
@@ -182,4 +187,17 @@ test('agent groups create, assign, rename, and delete from the sidebar', async (
   await page.getByRole('button', { name: 'Confirm delete' }).click();
   await expect(page.getByRole('button', { name: 'Options for Design' })).not.toBeVisible();
   await expect(page.getByRole('button', { name: 'Product Designer', exact: true })).toBeVisible();
+});
+
+
+test('side panel files browse the workspace read-only', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Open side panel' }).click();
+  await page.getByRole('tab', { name: 'Files' }).click();
+  const files = page.locator('.reason-files-panel');
+  await expect(files.getByText('README.md')).toBeVisible();
+  await files.getByRole('button', { name: 'src' }).click();
+  await expect(files.getByText('index.ts')).toBeVisible();
+  await files.getByRole('button', { name: 'Back to parent folder' }).click();
+  await expect(files.getByText('README.md')).toBeVisible();
 });

@@ -1,4 +1,4 @@
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -6,6 +6,9 @@ import { startServer } from '../dist-server/index.mjs';
 
 const fixture = fileURLToPath(new URL('../tests/server/fake-codex.mjs', import.meta.url));
 const directory = await mkdtemp(join(tmpdir(), 'a-gent-ui-'));
+await mkdir(join(directory, 'workspace', 'src'), { recursive: true });
+await writeFile(join(directory, 'workspace', 'README.md'), '# A Gent test workspace\n');
+await writeFile(join(directory, 'workspace', 'src', 'index.ts'), 'export const answer = 42;\n');
 const port = Number(process.argv[2] ?? process.env.AGENT_UI_PORT ?? 4410);
 process.env.AGENT_SKIP_PROVIDER_PROBE = '1';
 process.env.AGENT_CODEX_COMMAND = process.execPath;

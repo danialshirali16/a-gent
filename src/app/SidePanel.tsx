@@ -1,11 +1,15 @@
 import { AlertCircle, Check, FolderPlus, LoaderCircle, MessageSquare, Plus, PanelRightClose, Settings2 } from 'lucide-react';
 import type { Activity as ActivityItem, Agent, Conversation, Group, Run } from '../../shared/types';
 import { AgentGlyph, IconButton, formatDate } from '../components';
+import type { Api } from '../dialogs';
+import { FilesPanel } from './FilesPanel';
+import { TerminalPanel } from './TerminalPanel';
 
-export type SidePanelTab = 'session' | 'sessions' | 'activity' | 'approvals';
+export type SidePanelTab = 'session' | 'sessions' | 'files' | 'terminal' | 'activity' | 'approvals';
 
 export interface SidePanelProps {
   tab: SidePanelTab;
+  api: Api;
   onTab: (tab: SidePanelTab) => void;
   onClose: () => void;
   agent?: Agent;
@@ -47,6 +51,8 @@ export function SidePanel(props: SidePanelProps) {
       <div className="reason-sidepanel-tabs" role="tablist" aria-label="Session panel">
         <button role="tab" aria-selected={props.tab === 'session'} className={props.tab === 'session' ? 'is-active' : ''} onClick={() => props.onTab('session')}>Session</button>
         <button role="tab" aria-selected={props.tab === 'sessions'} className={props.tab === 'sessions' ? 'is-active' : ''} onClick={() => props.onTab('sessions')}>Sessions</button>
+        <button role="tab" aria-selected={props.tab === 'files'} className={props.tab === 'files' ? 'is-active' : ''} onClick={() => props.onTab('files')}>Files</button>
+        <button role="tab" aria-selected={props.tab === 'terminal'} className={props.tab === 'terminal' ? 'is-active' : ''} onClick={() => props.onTab('terminal')}>Terminal</button>
         <button role="tab" aria-selected={props.tab === 'activity'} className={props.tab === 'activity' ? 'is-active' : ''} onClick={() => props.onTab('activity')}>Activity</button>
         <button role="tab" aria-selected={props.tab === 'approvals'} className={props.tab === 'approvals' ? 'is-active' : ''} onClick={() => props.onTab('approvals')}>Approvals{pendingApprovals.length > 0 && <span className="reason-tab-count">{pendingApprovals.length}</span>}</button>
       </div>
@@ -98,6 +104,10 @@ export function SidePanel(props: SidePanelProps) {
           {!props.conversations.length && <div className="reason-sidepanel-empty">No conversations yet.</div>}
         </div>
       </>}
+
+      {props.tab === 'files' && <FilesPanel api={props.api} conversationId={props.conversation?.id} agentId={props.agent?.id} />}
+
+      {props.tab === 'terminal' && <TerminalPanel activities={activities} workspace={workspace} />}
 
       {props.tab === 'activity' && <>
         {activities.length ? <div className="reason-activity-list">{activities.map(item => <ActivityRow key={item.id} item={item} />)}</div> : <div className="reason-sidepanel-empty">No activity in this session yet.</div>}

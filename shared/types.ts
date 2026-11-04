@@ -57,6 +57,17 @@ export interface DeviceInfo {
   revokedAt?: string;
   current?: boolean;
 }
+export interface WorkspaceFileEntry {
+  name: string;
+  type: 'file' | 'directory' | 'symlink';
+  size?: number;
+}
+export interface WorkspaceFiles {
+  root: string;
+  path: string;
+  entries: WorkspaceFileEntry[];
+  truncated: boolean;
+}
 export interface Schedule {
   id: string;
   agentId: string;

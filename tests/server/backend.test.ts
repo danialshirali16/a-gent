@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
 import { dirname, join, win32 } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createServer, request as httpRequest } from 'node:http';
@@ -95,6 +95,47 @@ test('agent groups support create, assignment, rename, delete, and legacy import
     const legacy = validateImport({ ...state.body.state, agentGroups: undefined, agents: state.body.state.agents.map((item: any) => item.id === agent.body.id ? { ...item, agentGroupId: 'missing-group' } : item) });
     assert.deepEqual(legacy.agentGroups, []);
     assert.equal(legacy.agents.find(item => item.id === agent.body.id)?.agentGroupId, null);
+  } finally {
+    await handle.close(); await rm(directory, { recursive: true, force: true });
+    if (previousProbe === undefined) delete process.env.AGENT_SKIP_PROVIDER_PROBE; else process.env.AGENT_SKIP_PROVIDER_PROBE = previousProbe;
+  }
+});
+
+test('workspace files are read-only and cannot escape the selected workspace', async () => {
+  const directory = await mkdtemp(join(scratch, 'agent-files-test-'));
+  const staticDir = join(directory, 'static'); await mkdir(staticDir); await writeFile(join(staticDir, 'index.html'), '<!doctype html><html><head></head><body>A Gent</body></html>');
+  const workspace = join(directory, 'workspace'); await mkdir(join(workspace, 'src'), { recursive: true });
+  await writeFile(join(workspace, 'README.md'), '# Fixture\n');
+  await writeFile(join(workspace, 'src', 'index.ts'), 'export const answer = 42;\n');
+  await mkdir(join(workspace, 'node_modules')); await writeFile(join(workspace, 'node_modules', 'hidden.js'), 'hidden\n');
+  const outside = join(directory, 'outside.txt'); await writeFile(outside, 'outside\n');
+  await symlink(outside, join(workspace, 'escape.txt'));
+  const previousProbe = process.env.AGENT_SKIP_PROVIDER_PROBE;
+  process.env.AGENT_SKIP_PROVIDER_PROBE = '1';
+  const handle = await startServer({ port: 0, dataDir: directory, staticDir, dev: false });
+  const get = async (path: string) => {
+    const response = await fetch(`${handle.url}/api/workspace/files?${path}`, { headers: { Authorization: `Bearer ${handle.token}` } });
+    return { status: response.status, body: await response.json() as any };
+  };
+  try {
+    const root = await get('agentId=primary');
+    assert.equal(root.status, 200);
+    assert.equal(root.body.path, '');
+    assert.ok(root.body.root.endsWith('/workspace'));
+    assert.deepEqual(root.body.entries.map((entry: any) => entry.name).sort(), ['README.md', 'escape.txt', 'src'].sort());
+    assert.equal(root.body.entries.find((entry: any) => entry.name === 'README.md').type, 'file');
+    assert.equal(root.body.entries.find((entry: any) => entry.name === 'src').type, 'directory');
+    assert.equal(root.body.entries.find((entry: any) => entry.name === 'escape.txt').type, 'symlink');
+    assert.ok(!root.body.entries.some((entry: any) => entry.name === 'node_modules'));
+
+    const nested = await get('agentId=primary&path=src');
+    assert.equal(nested.status, 200);
+    assert.equal(nested.body.path, 'src');
+    assert.deepEqual(nested.body.entries.map((entry: any) => entry.name), ['index.ts']);
+    assert.equal((await get('agentId=primary&path=..')).status, 400);
+    assert.equal((await get('agentId=primary&path=escape.txt')).status, 403);
+    assert.equal((await get('agentId=primary&path=missing')).status, 404);
+    assert.equal((await get('path=src')).status, 400);
   } finally {
     await handle.close(); await rm(directory, { recursive: true, force: true });
     if (previousProbe === undefined) delete process.env.AGENT_SKIP_PROVIDER_PROBE; else process.env.AGENT_SKIP_PROVIDER_PROBE = previousProbe;

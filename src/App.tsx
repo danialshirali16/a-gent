@@ -262,6 +262,7 @@ export default function App() {
     </main>
     {sidePanelOpen && <SidePanel
       tab={sidePanelTab}
+      api={api}
       onTab={setSidePanelTab}
       onClose={() => setSidePanelOpen(false)}
       agent={agent}

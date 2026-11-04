@@ -29,7 +29,7 @@ Implemented in the first pass:
 - Centered model-change and reasoning-effort events in conversations.
 - Tool stream setting: Compact / Verbose / Hidden.
 
-Still pending from the roadmap: Files/Terminal tabs, full keyboard navigation, formal accessibility audit, and the full E2E matrix.
+Still pending from the roadmap: full keyboard navigation, formal accessibility audit, and the full E2E matrix.
 
 ## 1. Goal
 
@@ -327,8 +327,8 @@ src/
 - [x] Add approvals to the side panel.
 - [x] Open from top pill and toolbar.
 - [x] Add mobile overlay sheet.
-- [ ] v1.1: Files tab with read-only project tree.
-- [ ] v1.1: Terminal/activity detail.
+- [x] Files tab with read-only project tree.
+- [x] Terminal/activity detail.
 
 ### Phase 8 — Responsive and platform chrome
 
@@ -398,7 +398,7 @@ src/
 - [ ] Chat uses bubbles, date separators, centered system events, hover actions.
 - [ ] Composer is one row at rest with plus menu and combined model/effort pill.
 - [x] Settings and Connections open as modals.
-- [ ] Side panel provides Session, Sessions, Activity; Files/Terminal in v1.1.
+- [x] Side panel provides Session, Sessions, Files, Terminal, Activity, and Approvals.
 - [x] Dark/light themes use extracted tokens.
 - [ ] No cloud/billing/hosted connector UI.
 - [ ] Existing flows still work.

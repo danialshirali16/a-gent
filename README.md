@@ -2,7 +2,7 @@
 
 A personal workspace for AI agents, built independently from the visible workflows of the installed Reason app. A Gent has its own code, branding, data store, and model connections.
 
-The app includes persistent conversations, custom agents, agent groups, conversation groups, search, streamed model replies, project folders, visible tool activity, action approvals, interruption, one-time scheduled tasks, and workspace import/export. Codex provides local agent execution. Ollama and OpenAI-compatible endpoints provide additional chat models.
+The app includes persistent conversations, custom agents, agent groups, conversation groups, search, streamed model replies, project folders, visible tool activity, read-only workspace file browsing, terminal activity, action approvals, interruption, one-time scheduled tasks, and workspace import/export. Codex provides local agent execution. Ollama and OpenAI-compatible endpoints provide additional chat models.
 
 ## Run on this Mac
 

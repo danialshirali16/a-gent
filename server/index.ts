@@ -1,11 +1,11 @@
 import express, { type ErrorRequestHandler, type Response } from 'express';
 import { createServer } from 'node:http';
 import { randomBytes, timingSafeEqual } from 'node:crypto';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readdir, readFile, realpath, stat, writeFile } from 'node:fs/promises';
 import { hostname, networkInterfaces } from 'node:os';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, join, resolve, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import type { Agent, Attachment, DeviceInfo, Schedule, SendMessageInput, ServerEvent, ServerHandle, ServerOptions } from '../shared/types.js';
+import type { Agent, Attachment, DeviceInfo, Schedule, SendMessageInput, ServerEvent, ServerHandle, ServerOptions, WorkspaceFileEntry } from '../shared/types.js';
 import { DeviceStore } from './devices.js';
 import { agentPatch, conversationPatch, id, InputError, now, object, schedulePatch, settingsPatch, StateStore, string } from './store.js';
 import { ProviderManager } from './providers.js';
@@ -152,6 +152,15 @@ export async function startServer(options: ServerOptions = {}): Promise<ServerHa
   };
   const checkGroup = (groupId?: string | null) => { if (groupId && !store.state.groups.some(group => group.id === groupId)) throw new InputError('Group not found.', 404); };
   const checkAgentGroup = (groupId?: string | null) => { if (groupId && !store.state.agentGroups.some(group => group.id === groupId)) throw new InputError('Agent group not found.', 404); };
+  const workspaceFor = (conversationId?: string, agentId?: string): string => {
+    if (conversationId) {
+      const conversation = store.getConversation(conversationId);
+      const agent = store.getAgent(conversation.agentId);
+      return conversation.workspacePath || agent.workspacePath || join(store.directory, 'workspace');
+    }
+    if (agentId) return store.getAgent(agentId).workspacePath || join(store.directory, 'workspace');
+    throw new InputError('Choose an agent or conversation before browsing files.');
+  };
 
   app.get('/api/health', (_req, res) => { res.json({ ok: true, name: 'A Gent', version: '0.1.0' }); });
   app.get('/api/bootstrap', (_req, res) => { res.json({ state: store.state, providers: providers.providers, runs: [...runs.runs.values()] }); });
@@ -289,6 +298,34 @@ export async function startServer(options: ServerOptions = {}): Promise<ServerHa
     const revoked = await devices.revoke(id);
     if (!auth.admin) res.setHeader('Set-Cookie', clearDeviceCookie(req));
     res.json(revoked);
+  });
+  app.get('/api/workspace/files', async (req, res) => {
+    const conversationId = typeof req.query.conversationId === 'string' ? req.query.conversationId : undefined;
+    const agentId = typeof req.query.agentId === 'string' ? req.query.agentId : undefined;
+    const workspace = workspaceFor(conversationId, agentId);
+    let root: string;
+    try { root = await realpath(workspace); }
+    catch { throw new InputError('The workspace folder does not exist or cannot be opened.', 404); }
+    const requested = typeof req.query.path === 'string' ? req.query.path : '';
+    if (requested.includes('\0') || requested.startsWith('/') || requested.split(/[\\/]/).some(part => part === '..')) throw new InputError('Choose a folder inside the workspace.');
+    const candidate = resolve(root, requested);
+    if (candidate !== root && !candidate.startsWith(root + sep)) throw new InputError('Choose a folder inside the workspace.', 403);
+    let folder: string;
+    try { folder = await realpath(candidate); }
+    catch { throw new InputError('Folder not found.', 404); }
+    if (folder !== root && !folder.startsWith(root + sep)) throw new InputError('Choose a folder inside the workspace.', 403);
+    if (!(await stat(folder)).isDirectory()) throw new InputError('This path is not a folder.');
+    const ignored = new Set(['.git', 'node_modules', '.DS_Store']);
+    const all = (await readdir(folder, { withFileTypes: true })).filter(entry => !ignored.has(entry.name));
+    all.sort((left, right) => Number(right.isDirectory()) - Number(left.isDirectory()) || left.name.localeCompare(right.name));
+    const entries: WorkspaceFileEntry[] = [];
+    for (const entry of all.slice(0, 500)) {
+      const type = entry.isDirectory() ? 'directory' : entry.isSymbolicLink() ? 'symlink' : 'file';
+      let size: number | undefined;
+      if (type === 'file') { try { size = (await stat(join(folder, entry.name))).size; } catch { /* raced with a file change */ } }
+      entries.push({ name: entry.name, type, ...(size === undefined ? {} : { size }) });
+    }
+    res.json({ root, path: requested.split(/[\\/]/).filter(Boolean).join('/'), entries, truncated: all.length > 500 });
   });
   app.get('/api/providers', (_req, res) => { res.json(providers.providers); });
   app.get('/api/apps', async (_req, res) => { res.json(await providers.apps()); });
