@@ -1,0 +1,100 @@
+{
+  "name": "a-gent",
+  "productName": "A Gent",
+  "version": "0.1.0",
+  "description": "Your personal workspace for connected AI agents.",
+  "author": "Danial",
+  "private": true,
+  "type": "module",
+  "main": "electron/main.cjs",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "tsx watch server/index.ts --dev",
+    "typecheck": "tsc --noEmit",
+    "build": "node scripts/build.mjs",
+    "icons": "node scripts/icons.mjs",
+    "start": "node dist-server/index.mjs",
+    "desktop:dev": "node scripts/desktop-dev.mjs",
+    "desktop:runtime": "node node_modules/electron/install.js",
+    "desktop:pack": "npm run build && electron-builder --dir",
+    "desktop:mac": "npm run build && electron-builder --mac --arm64",
+    "desktop:win": "npm run build && electron-builder --win --x64",
+    "android:sync": "npm run build && node scripts/android.mjs sync",
+    "android:apk": "npm run build && node scripts/android.mjs apk",
+    "test": "tsx --test tests/server/*.test.ts"
+  },
+  "dependencies": {
+    "@capacitor/android": "8.6.0",
+    "@capacitor/core": "8.6.0",
+    "@fontsource-variable/geist": "5.3.0",
+    "express": "5.3.0",
+    "lucide-react": "1.68.0",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "react-markdown": "10.1.0",
+    "remark-gfm": "4.0.1"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.6.0",
+    "@resvg/resvg-js": "2.6.2",
+    "@types/express": "5.0.6",
+    "@types/node": "26.6.6",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.2.1",
+    "electron": "45.2.2",
+    "electron-builder": "26.18.0",
+    "esbuild": "0.28.2",
+    "tsx": "4.23.15",
+    "typescript": "7.0.2",
+    "vite": "8.3.5"
+  },
+  "build": {
+    "appId": "com.agent.desktop",
+    "productName": "A Gent",
+    "artifactName": "A-Gent-${version}-${os}-${arch}.${ext}",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-server/**/*",
+      "electron/**/*",
+      "README.md",
+      "docs/**/*.md",
+      "package.json"
+    ],
+    "asar": true,
+    "icon": "electron/assets/icon.png",
+    "npmRebuild": false,
+    "mac": {
+      "category": "public.app-category.productivity",
+      "icon": "electron/assets/icon.icns",
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "identity": null
+    },
+    "win": {
+      "icon": "electron/assets/icon.ico",
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "artifactName": "A-Gent-Setup-${version}-${arch}.${ext}",
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "A Gent"
+    },
+    "portable": {
+      "artifactName": "A-Gent-Portable-${version}-${arch}.${ext}"
+    }
+  }
+}
