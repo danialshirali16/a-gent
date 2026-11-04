@@ -148,3 +148,38 @@ test('side panel approvals can complete a waiting run', async ({ page }) => {
   await expect(page.getByText('Approved task completed.')).toBeVisible({ timeout: 15000 });
   await expect(page.getByText('No approvals are waiting.')).toBeVisible();
 });
+
+
+test('agent groups create, assign, rename, and delete from the sidebar', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Create an agent group' }).click();
+  await expect(page.getByRole('heading', { name: 'New agent group' })).toBeVisible();
+  await page.getByLabel('Group name').fill('Product');
+  await page.getByRole('button', { name: 'Create group' }).click();
+  await expect(page.getByRole('button', { name: 'Options for Product' })).toBeVisible();
+
+  await page.getByRole('button', { name: 'More workspace options' }).click();
+  await page.getByRole('menuitem', { name: 'All agents' }).click();
+  await page.getByRole('button', { name: 'Customize Product Designer' }).click();
+  await page.getByRole('combobox', { name: 'Agent group', exact: true }).selectOption({ label: 'Product' });
+  await page.getByRole('button', { name: 'Save agent' }).click();
+
+  const productGroup = page.locator('.reason-agent-group').filter({ hasText: 'Product' }).first();
+  await expect(productGroup.getByRole('button', { name: 'Product Designer' })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Options for Product' }).click();
+  await page.getByRole('menuitem', { name: 'Rename group' }).click();
+  await expect(page.getByRole('heading', { name: 'Agent group' })).toBeVisible();
+  await page.getByLabel('Group name').fill('Design');
+  await page.getByRole('button', { name: 'Save group' }).click();
+  await expect(page.getByRole('button', { name: 'Options for Design' })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Options for Design' }).click();
+  await page.getByRole('menuitem', { name: 'Delete group' }).click();
+  await expect(page.getByRole('heading', { name: 'Agent group' })).toBeVisible();
+  await page.getByRole('button', { name: 'Delete group' }).click();
+  await expect(page.getByText('Agents in this group move to Unassigned.')).toBeVisible();
+  await page.getByRole('button', { name: 'Confirm delete' }).click();
+  await expect(page.getByRole('button', { name: 'Options for Design' })).not.toBeVisible();
+  await expect(page.getByRole('button', { name: 'Product Designer', exact: true })).toBeVisible();
+});

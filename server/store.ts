@@ -40,6 +40,7 @@ export function agentPatch(value: unknown): Partial<Agent> {
     if (!['spark', 'code', 'design', 'search', 'custom'].includes(String(data.icon))) throw new InputError('Choose a supported agent icon.');
     out.icon = data.icon;
   }
+  if ('agentGroupId' in data) out.agentGroupId = data.agentGroupId === null ? null : string(data.agentGroupId, 'Agent group ID', 100);
   if ('archived' in data) out.archived = bool(data.archived, 'archived');
   return out as Partial<Agent>;
 }
@@ -89,7 +90,7 @@ export function initialState(): WorkspaceState {
       { ...shared, id: 'engineer', name: 'Software Engineer', description: 'Build, debug, and understand your code.', instructions: 'You are a careful software engineer. Inspect relevant code, implement complete changes, and verify important behavior. Respect the selected workspace and user approvals.', icon: 'code', color: '#5ab9a0' },
       { ...shared, id: 'researcher', name: 'Research Partner', description: 'Turn questions into supported answers.', instructions: 'You are a research partner. Separate observations, inferences, and uncertainty. Cite sources when available. Never invent a source or pretend an unperformed action succeeded.', icon: 'search', color: '#d5a35f' },
     ],
-    conversations: [], groups: [], schedules: [],
+    conversations: [], groups: [], agentGroups: [], schedules: [],
     settings: { theme: 'dark', defaultProviderId: 'codex', defaultModelId: '', showActivity: true, toolStreamView: 'compact' },
   };
 }
@@ -101,10 +102,16 @@ function list(value: unknown, label: string, max: number): unknown[] {
 export function validateImport(value: unknown): WorkspaceState {
   const data = object(value);
   if (data.version !== 1) throw new InputError('This workspace export version is not supported.');
+  const agentGroups = data.agentGroups === undefined ? [] : list(data.agentGroups, 'Agent groups', 1000).map((value) => {
+    const g = object(value);
+    return { id: string(g.id, 'Agent group ID', 100), name: string(g.name, 'Agent group name', 100), createdAt: typeof g.createdAt === 'string' ? g.createdAt : now() } as Group;
+  });
+  const agentGroupIds = new Set(agentGroups.map(g => g.id));
   const agents = list(data.agents, 'Agents', 500).map((value) => {
     const a = object(value), patch = agentPatch(a);
     return { ...initialState().agents[0], ...patch, id: string(a.id, 'Agent ID', 100), createdAt: typeof a.createdAt === 'string' ? a.createdAt : now() } as Agent;
   });
+  for (const agent of agents) if (agent.agentGroupId && !agentGroupIds.has(agent.agentGroupId)) agent.agentGroupId = null;
   const agentIds = new Set(agents.map(a => a.id));
   const groups = list(data.groups, 'Groups', 1000).map((value) => {
     const g = object(value);
@@ -139,10 +146,10 @@ export function validateImport(value: unknown): WorkspaceState {
     if (!patch.agentId || !agentIds.has(patch.agentId) || !patch.title || !patch.prompt || !patch.runAt) throw new InputError('An imported task is incomplete or references an unknown agent.');
     return { ...patch, id: string(s.id, 'Task ID', 100), enabled: false } as Schedule;
   });
-  for (const [name, values] of [['agents', agents], ['groups', groups], ['chats', conversations], ['tasks', schedules]] as const) {
+  for (const [name, values] of [['agents', agents], ['groups', groups], ['agentGroups', agentGroups], ['chats', conversations], ['tasks', schedules]] as const) {
     if (new Set(values.map(v => v.id)).size !== values.length) throw new InputError(`Duplicate IDs in imported ${name}.`);
   }
-  return { version: 1, agents, conversations, groups, schedules, settings: { ...initialState().settings, ...settingsPatch(data.settings) } };
+  return { version: 1, agents, conversations, groups, agentGroups, schedules, settings: { ...initialState().settings, ...settingsPatch(data.settings) } };
 }
 
 export class StateStore {
@@ -212,7 +219,7 @@ export class StateStore {
   }
   async merge(value: unknown): Promise<WorkspaceState> {
     const imported = validateImport(value);
-    for (const key of ['agents', 'groups', 'conversations', 'schedules'] as const) {
+    for (const key of ['agents', 'groups', 'agentGroups', 'conversations', 'schedules'] as const) {
       const existing = new Set(this.state[key].map(item => item.id));
       (this.state[key] as Array<Agent | Group | Conversation | Schedule>).push(...imported[key].filter(item => !existing.has(item.id)));
     }

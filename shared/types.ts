@@ -13,6 +13,7 @@ export interface Agent {
   modelId: string;
   reasoningEffort: string;
   workspacePath?: string;
+  agentGroupId?: string | null;
   archived?: boolean;
   createdAt: string;
 }
@@ -79,6 +80,7 @@ export interface WorkspaceState {
   agents: Agent[];
   conversations: Conversation[];
   groups: Group[];
+  agentGroups: Group[];
   schedules: Schedule[];
   settings: Settings;
 }

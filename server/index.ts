@@ -151,6 +151,7 @@ export async function startServer(options: ServerOptions = {}): Promise<ServerHa
     if (!auth.admin) throw new InputError('Only the host administrator token can manage devices.', 403);
   };
   const checkGroup = (groupId?: string | null) => { if (groupId && !store.state.groups.some(group => group.id === groupId)) throw new InputError('Group not found.', 404); };
+  const checkAgentGroup = (groupId?: string | null) => { if (groupId && !store.state.agentGroups.some(group => group.id === groupId)) throw new InputError('Agent group not found.', 404); };
 
   app.get('/api/health', (_req, res) => { res.json({ ok: true, name: 'A Gent', version: '0.1.0' }); });
   app.get('/api/bootstrap', (_req, res) => { res.json({ state: store.state, providers: providers.providers, runs: [...runs.runs.values()] }); });
@@ -169,6 +170,7 @@ export async function startServer(options: ServerOptions = {}): Promise<ServerHa
     const patch = agentPatch(req.body);
     if (!patch.name) throw new InputError('Give your agent a name.');
     if (patch.providerId) providers.get(patch.providerId);
+    checkAgentGroup(patch.agentGroupId);
     const agent: Agent = { id: id(), name: patch.name, description: '', instructions: 'You are a helpful assistant.', color: '#f39161', icon: 'custom', providerId: store.state.settings.defaultProviderId, modelId: store.state.settings.defaultModelId, reasoningEffort: '', createdAt: now(), ...patch };
     store.state.agents.push(agent); await publish(); res.status(201).json(agent);
   });
@@ -177,6 +179,7 @@ export async function startServer(options: ServerOptions = {}): Promise<ServerHa
     if (!agent) throw new InputError('Agent not found.', 404);
     const patch = agentPatch(req.body);
     if (patch.providerId) providers.get(patch.providerId);
+    checkAgentGroup(patch.agentGroupId);
     if (agent.id === 'primary' && patch.archived) throw new InputError('Your primary A Gent stays in this workspace.');
     Object.assign(agent, patch); await publish(); res.json(agent);
   });
@@ -218,6 +221,21 @@ export async function startServer(options: ServerOptions = {}): Promise<ServerHa
   app.delete('/api/groups/:id', async (req, res) => {
     const index = store.state.groups.findIndex(group => group.id === req.params.id); if (index < 0) throw new InputError('Group not found.', 404);
     store.state.groups.splice(index, 1); for (const conversation of store.state.conversations) if (conversation.groupId === req.params.id) conversation.groupId = null;
+    await publish(); res.json({ ok: true });
+  });
+  app.post('/api/agent-groups', async (req, res) => {
+    const data = object(req.body), group = { id: id(), name: string(data.name, 'Agent group name', 100), createdAt: now() };
+    if (store.state.agentGroups.length >= 1000) throw new InputError('This workspace has reached its 1,000 agent group limit.');
+    store.state.agentGroups.push(group); await publish(); res.status(201).json(group);
+  });
+  app.patch('/api/agent-groups/:id', async (req, res) => {
+    const group = store.state.agentGroups.find(group => group.id === req.params.id); if (!group) throw new InputError('Agent group not found.', 404);
+    group.name = string(object(req.body).name, 'Agent group name', 100); await publish(); res.json(group);
+  });
+  app.delete('/api/agent-groups/:id', async (req, res) => {
+    const index = store.state.agentGroups.findIndex(group => group.id === req.params.id); if (index < 0) throw new InputError('Agent group not found.', 404);
+    store.state.agentGroups.splice(index, 1);
+    for (const agent of store.state.agents) if (agent.agentGroupId === req.params.id) agent.agentGroupId = null;
     await publish(); res.json({ ok: true });
   });
   app.post('/api/schedules', async (req, res) => {

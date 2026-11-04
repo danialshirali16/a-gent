@@ -63,7 +63,6 @@ Implemented on `ui/reason-style`:
 
 Not finished:
 
-- Agent groups in the sidebar.
 - Files and Terminal tabs.
 - Retry/more message actions.
 - Full keyboard menu navigation.
@@ -125,9 +124,9 @@ These are engineering estimates, not precise metrics.
 | macOS delivery | 90% | 10% | Artifact built and app verified; signing/notarization/Intel missing |
 | Windows delivery | 60% | 40% | Artifacts built; no runtime test, no icon metadata, unsigned |
 | Android delivery | 40% | 60% | Debug APK built; companion-only, no device test, no release signing |
-| Reason-like UI | 78% | 22% | Major surfaces and Devices settings done; smaller interactions pending |
+| Reason-like UI | 80% | 20% | Major surfaces, Devices settings, and agent groups done; smaller interactions pending |
 | Security and reliability | 82% | 18% | Hashed per-device tokens, cookie migration, Settings device management, data lock, recovery, CSP, and approval diffs; limits still need work |
-| Tests and QA | 82% | 18% | 9 backend tests, 7 smoke tests, and 10 visual baselines pass; full E2E and accessibility pending |
+| Tests and QA | 84% | 16% | 10 backend tests, 8 smoke tests, and 10 visual baselines pass; full E2E and accessibility pending |
 | Docs and release | 50% | 50% | README/roadmap exist; validation doc and release truth missing |
 | Full Reason parity | 35% | 65% | Cloud/billing intentionally excluded; native/browser/voice/connectors missing |
 
@@ -204,7 +203,7 @@ These are engineering estimates, not precise metrics.
 ### F. UI completion and testing
 
 - Merge or finish the paused UI branch.
-- Add agent groups to the sidebar.
+- Agent groups are available in the sidebar with create, assign, rename, and delete.
 - Add Files and Terminal to the side panel; approvals are now available there.
 - Add retry/more message actions.
 - Add full keyboard navigation for menus.
@@ -337,7 +336,7 @@ Out of scope unless explicitly added:
 
 **Goal:** Finish the Reason-like UI and protect it with tests.
 
-- [ ] Agent groups in sidebar.
+- [x] Agent groups in sidebar.
 - [x] Approvals in side panel.
 - [ ] Files/Terminal tabs.
 - [ ] Retry/more message actions.

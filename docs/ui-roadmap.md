@@ -29,7 +29,7 @@ Implemented in the first pass:
 - Centered model-change and reasoning-effort events in conversations.
 - Tool stream setting: Compact / Verbose / Hidden.
 
-Still pending from the roadmap: agent groups, Files/Terminal tabs, full keyboard navigation, formal accessibility audit, and the full E2E matrix.
+Still pending from the roadmap: Files/Terminal tabs, full keyboard navigation, formal accessibility audit, and the full E2E matrix.
 
 ## 1. Goal
 
@@ -168,24 +168,22 @@ interface AgentGroup {
 
 interface Agent {
   // existing fields
-  groupId?: string | null;
+  agentGroupId?: string | null;
 }
 
 interface WorkspaceState {
   // existing
-  agentGroups?: AgentGroup[];
+  agentGroups: AgentGroup[];
 }
 ```
 
-Migration:
+Implemented migration:
 
-- Bump workspace version to `2`.
-- v1 → v2: add `agentGroups: []`, set `agent.groupId = null`.
-- `validateImport` accepts v1 and v2; exports v2.
-- Add agent-group API endpoints.
-- Add migration/import/export tests.
-
-If this is too much for v1, show “Agents” and “Ungrouped” only, then add agent groups in v1.1.
+- Workspace version stays `1`; `agentGroups` is optional on import and defaults to `[]`.
+- Unknown `agentGroupId` references become `null`.
+- `validateImport` accepts old workspaces and exports `agentGroups`.
+- Agent-group API endpoints cover create, rename, delete, and assignment.
+- Backend and UI tests cover the flow.
 
 ## 4. Target architecture
 
@@ -274,7 +272,7 @@ src/
 - [x] Remove large brand header.
 - [x] Add compact home row.
 - [x] Add agent rows with solid color icons.
-- [ ] Add agent groups or “Agents / Unassigned”.
+- [x] Add agent groups or “Agents / Unassigned”.
 - [x] Move conversations out of the sidebar.
 - [x] Add bottom account menu.
 - [x] Add “Connect apps” pill.

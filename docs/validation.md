@@ -11,8 +11,8 @@ Electron: 45.2.2
 | Check | Result |
 | --- | --- |
 | `npm run typecheck` | Pass |
-| `npm test` | 9/9 pass |
-| `npm run test:ui` | 7/7 Playwright smoke tests pass |
+| `npm test` | 10/10 pass |
+| `npm run test:ui` | 8/8 Playwright smoke tests pass |
 | `npm run test:visual` | 10/10 Playwright screenshot baselines pass |
 | `npm run build` | Pass |
 | `npm run desktop:mac` | Pass |
@@ -30,8 +30,8 @@ Windows and Android artifacts below are from the previous cross-platform build. 
 
 | Artifact | Size | SHA-256 |
 | --- | ---: | --- |
-| `A-Gent-0.1.0-mac-arm64.dmg` | 121 MB | `bf7f84373cfa6100d90aa1a75f20d72bad08cde09231dc3c135bb4c4565a6f75` |
-| `A-Gent-0.1.0-mac-arm64.zip` | 118 MB | `46eb08b2f7f3228ef2eb46428a830644851500b6a9e7157a3f1e4e85ee302c66` |
+| `A-Gent-0.1.0-mac-arm64.dmg` | 121 MB | `2f48f2d6ae688dcb07e9876b1d94df4915b8c8588c07a92e54f9d95db7d34748` |
+| `A-Gent-0.1.0-mac-arm64.zip` | 118 MB | `736603a90d9fd23431ebc9b65515927c7369d19f4027c8a107b34c6134d106af` |
 | `A-Gent-Setup-0.1.0-x64.exe` | 120 MB | `4ef4c19e8b9437c246b42a436ab95ad73a65105c432105ead2241f750914df92` |
 | `A-Gent-Portable-0.1.0-x64.exe` | 108 MB | `f65ba83b3719106ac8984ddb4bef1c3b6ad4c8806534d63ca3c566477e8f8ba7` |
 | `A-Gent-0.1.0-android-debug.apk` | 4.3 MB | `e3d476344f8ba3492657bec03b0626dce11aee4c5a24d99047fad45e240cac2c` |
@@ -83,7 +83,7 @@ Windows and Android artifacts below are from the previous cross-platform build. 
 - Real Codex discovery returns the signed-in account and models.
 - Reason-style shell, chat bubbles, composer, settings/connections modals, side panel, and compact rail render correctly in smoke checks.
 - Android back handler: the `agent:back` event closes an open settings dialog in the browser harness. Device behavior is still unverified.
-- Playwright smoke tests cover the shell, compact rail, settings modal, connections modal, fake-Codex chat streaming, mobile drawer, administrator device-token creation/rotation, current-device self-rotation, and side-panel approval completion.
+- Playwright smoke tests cover the shell, compact rail, settings modal, connections modal, fake-Codex chat streaming, mobile drawer, administrator device-token creation/rotation, current-device self-rotation, side-panel approval completion, and the agent-group create/assign/rename/delete flow.
 - Visual baselines cover the home screen at 1440×900, 1280×800, 1024×768, 768×1024, and 390×844 in light and dark themes.
 - Baselines were generated on macOS arm64 with Chrome. The `visual` CI job runs on `macos-latest`.
 - Workspace data lock rejects a second host using the same data directory.
@@ -93,6 +93,8 @@ Windows and Android artifacts below are from the previous cross-platform build. 
 - Settings → Devices creates tokens for an administrator session and rotates or revokes the current device.
 - Packaged macOS app verified with Computer Use: the current device rotated its token, revoked it, and returned to the connection screen.
 - Side panel Approvals tab completes a waiting run.
+- Agent groups support creation, assignment, rename, delete, and legacy workspaces without groups.
+- Packaged macOS app verified with Computer Use: created a `Product` agent group and assigned Product Designer; the sidebar nested the agent under the group.
 - Packaged macOS app migrated its legacy cookie to a device token; after that device was revoked, the next launch created a fresh device and loaded the workspace.
 - Local browser token injection is opt-in via `AGENT_ALLOW_LOCAL_TOKEN_INJECTION=1`.
 - Corrupt `state.json` recovers from `state.json.bak`.

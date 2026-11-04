@@ -3,7 +3,7 @@ import { AlertCircle, ArrowUpRight, Code2, Palette, Search, Sparkles, Telescope,
 import type { Agent, Attachment, Conversation, Run } from '../shared/types';
 import { initialConnection, request, type Connection } from './api';
 import { AgentGlyph, IconButton, Mark, Spinner } from './components';
-import { AgentDialog, GroupDialog, ConversationDialog, SearchDialog, ScheduleDialog, ConnectionDialog, type DialogKind } from './dialogs';
+import { AgentDialog, AgentGroupDialog, GroupDialog, ConversationDialog, SearchDialog, ScheduleDialog, ConnectionDialog, type DialogKind } from './dialogs';
 import { SettingsDialog } from './dialogs/SettingsDialog';
 import { ConnectionsDialog } from './dialogs/ConnectionsDialog';
 import { AgentsDialog } from './dialogs/AgentsDialog';
@@ -164,6 +164,7 @@ export default function App() {
     {sidebarOpen && <button className="reason-scrim" aria-label="Close sidebar" onClick={() => setSidebarOpen(false)} />}
     {sidebarOpen ? <Sidebar
       agents={agents}
+      agentGroups={state?.agentGroups || []}
       activeAgentId={agent?.id}
       runs={data?.runs || []}
       providers={data?.providers || []}
@@ -173,6 +174,8 @@ export default function App() {
       onSelectAgent={selectAgent}
       onSearch={() => setDialog({ kind: 'search' })}
       onCreateAgent={() => setDialog({ kind: 'agent' })}
+      onCreateAgentGroup={() => setDialog({ kind: 'agent-group' })}
+      onEditAgentGroup={group => setDialog({ kind: 'agent-group', group })}
       onOpenAgents={() => setDialog({ kind: 'agents' })}
       onOpenScheduled={() => setDialog({ kind: 'schedules' })}
       onOpenConnections={() => setDialog({ kind: 'connections' })}
@@ -278,8 +281,9 @@ export default function App() {
     {data && dialog?.kind === 'connections' && <ConnectionsDialog providers={data.providers} api={api} onRefresh={refresh} connection={connection} onHost={() => setDialog({ kind: 'connection' })} onClose={() => setDialog(null)} />}
     {data && dialog?.kind === 'agents' && <AgentsDialog agents={agents} onCreate={() => setDialog({ kind: 'agent' })} onEdit={value => setDialog({ kind: 'agent', agent: value })} onChat={value => { newChat(value); setDialog(null); }} onClose={() => setDialog(null)} />}
     {data && dialog?.kind === 'schedules' && <SchedulesDialog state={data.state} api={api} onCreate={() => setDialog({ kind: 'schedule' })} onOpen={id => { const chat = state?.conversations.find(item => item.id === id); if (chat) selectChat(chat); setDialog(null); }} onError={setError} onClose={() => setDialog(null)} />}
-    {data && dialog?.kind === 'agent' && <AgentDialog agent={dialog.agent} providers={data.providers} api={api} onClose={() => setDialog(null)} onSaved={value => { setActiveAgentId(value.id); setActiveConversationId(null); }} />}
+    {data && dialog?.kind === 'agent' && <AgentDialog agent={dialog.agent} agentGroups={data.state.agentGroups} providers={data.providers} api={api} onClose={() => setDialog(null)} onSaved={value => { setActiveAgentId(value.id); setActiveConversationId(null); }} />}
     {data && dialog?.kind === 'group' && <GroupDialog api={api} onClose={() => setDialog(null)} />}
+    {data && dialog?.kind === 'agent-group' && <AgentGroupDialog group={dialog.group} api={api} onClose={() => setDialog(null)} />}
     {data && dialog?.kind === 'conversation' && <ConversationDialog conversation={dialog.conversation} state={data.state} api={api} onClose={() => setDialog(null)} onArchived={() => { if (activeConversationId === dialog.conversation.id) newChat(); }} />}
     {data && dialog?.kind === 'search' && <SearchDialog state={data.state} onSelect={selectChat} onClose={() => setDialog(null)} />}
     {data && dialog?.kind === 'schedule' && <ScheduleDialog state={data.state} activeAgentId={agent?.id || 'primary'} api={api} onClose={() => setDialog(null)} />}

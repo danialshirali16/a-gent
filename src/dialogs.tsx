@@ -1,13 +1,13 @@
 import { useState, type FormEvent } from 'react';
-import { Plus, Search, Archive, Folder, Check, Monitor, ArrowUpRight } from 'lucide-react';
-import type { Agent, Conversation, ProviderInfo, WorkspaceState } from '../shared/types';
+import { Plus, Search, Archive, Folder, Check, Monitor, ArrowUpRight, Trash2 } from 'lucide-react';
+import type { Agent, Conversation, Group, ProviderInfo, WorkspaceState } from '../shared/types';
 import type { Connection } from './api';
 import { Avatar, Modal, Spinner, formatDate } from './components';
 
 export type Api = <T>(path: string, method?: string, body?: unknown) => Promise<T>;
-export type DialogKind = { kind: 'agent'; agent?: Agent } | { kind: 'group' } | { kind: 'schedule' } | { kind: 'search' } | { kind: 'connection' } | { kind: 'conversation'; conversation: Conversation } | { kind: 'settings' } | { kind: 'connections' } | { kind: 'agents' } | { kind: 'schedules' };
+export type DialogKind = { kind: 'agent'; agent?: Agent } | { kind: 'agent-group'; group?: Group } | { kind: 'group' } | { kind: 'schedule' } | { kind: 'search' } | { kind: 'connection' } | { kind: 'conversation'; conversation: Conversation } | { kind: 'settings' } | { kind: 'connections' } | { kind: 'agents' } | { kind: 'schedules' };
 
-export function AgentDialog({ agent, providers, api, onClose, onSaved }: { agent?: Agent; providers: ProviderInfo[]; api: Api; onClose: () => void; onSaved: (agent: Agent) => void }) {
+export function AgentDialog({ agent, agentGroups, providers, api, onClose, onSaved }: { agent?: Agent; agentGroups: Group[]; providers: ProviderInfo[]; api: Api; onClose: () => void; onSaved: (agent: Agent) => void }) {
   const [name, setName] = useState(agent?.name || '');
   const [description, setDescription] = useState(agent?.description || '');
   const [instructions, setInstructions] = useState(agent?.instructions || '');
@@ -15,13 +15,14 @@ export function AgentDialog({ agent, providers, api, onClose, onSaved }: { agent
   const [icon, setIcon] = useState<Agent['icon']>(agent?.icon || 'custom');
   const [providerId, setProviderId] = useState(agent?.providerId || 'codex');
   const [modelId, setModelId] = useState(agent?.modelId || '');
+  const [agentGroupId, setAgentGroupId] = useState(agent?.agentGroupId || '');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const colors = ['#f39161', '#9393ed', '#5ab9a0', '#d5a35f', '#d980a8', '#70aee0'];
   async function save(event: FormEvent) {
     event.preventDefault(); setBusy(true); setError('');
     try {
-      const value = await api<Agent>(agent ? `/api/agents/${agent.id}` : '/api/agents', agent ? 'PATCH' : 'POST', { name: name.trim(), description: description.trim(), instructions, color, icon, providerId, modelId, reasoningEffort: agent?.reasoningEffort || 'medium' });
+      const value = await api<Agent>(agent ? `/api/agents/${agent.id}` : '/api/agents', agent ? 'PATCH' : 'POST', { name: name.trim(), description: description.trim(), instructions, color, icon, providerId, modelId, agentGroupId: agentGroupId || null, reasoningEffort: agent?.reasoningEffort || 'medium' });
       onSaved(value); onClose();
     } catch (reason) { setError((reason as Error).message); } finally { setBusy(false); }
   }
@@ -30,6 +31,7 @@ export function AgentDialog({ agent, providers, api, onClose, onSaved }: { agent
     <label>Name<input value={name} onChange={event => setName(event.target.value)} placeholder="e.g. Design Partner" maxLength={80} required autoFocus /></label>
     <label>What does it help with?<input value={description} onChange={event => setDescription(event.target.value)} placeholder="A short description" maxLength={240} /></label>
     <label>Instructions<textarea value={instructions} onChange={event => setInstructions(event.target.value)} placeholder="Describe how this agent should work, what it knows, and what a good result looks like." rows={5} maxLength={16000} /></label>
+    <label>Agent group<select value={agentGroupId} onChange={event => setAgentGroupId(event.target.value)}><option value="">Unassigned</option>{agentGroups.map(group => <option value={group.id} key={group.id}>{group.name}</option>)}</select></label>
     <div className="form-columns"><label>Icon<select value={icon} onChange={event => setIcon(event.target.value as Agent['icon'])}><option value="custom">Assistant</option><option value="spark">General</option><option value="code">Engineering</option><option value="design">Design</option><option value="search">Research</option></select></label><div className="field"><span>Color</span><div className="color-options">{colors.map(value => <button type="button" className={color === value ? 'selected' : ''} style={{ background: value }} key={value} aria-label={`Use ${value}`} aria-pressed={color === value} onClick={() => setColor(value)}>{color === value && <Check size={13} />}</button>)}</div></div></div>
     <div className="form-columns"><label>Connection<select value={providerId} onChange={event => { setProviderId(event.target.value); setModelId(''); }}>{providers.map(provider => <option value={provider.id} key={provider.id}>{provider.name}</option>)}</select></label><label>Model<select value={modelId} onChange={event => setModelId(event.target.value)}><option value="">Provider default</option>{providers.find(provider => provider.id === providerId)?.models.map(model => <option value={model.id} key={model.id}>{model.name}</option>)}</select></label></div>
     {error && <p className="form-error" role="alert">{error}</p>}<div className="modal-footer"><button type="button" className="button quiet" onClick={onClose}>Cancel</button><button className="button primary" disabled={busy || !name.trim()}>{busy ? <Spinner /> : <Plus size={16} />}{agent ? 'Save agent' : 'Create agent'}</button></div>
@@ -39,6 +41,36 @@ export function AgentDialog({ agent, providers, api, onClose, onSaved }: { agent
 export function GroupDialog({ api, onClose }: { api: Api; onClose: () => void }) {
   const [name, setName] = useState(''); const [busy, setBusy] = useState(false); const [error, setError] = useState('');
   return <Modal title="New group" onClose={onClose}><form className="form-stack" onSubmit={async event => { event.preventDefault(); setBusy(true); try { await api('/api/groups', 'POST', { name: name.trim() }); onClose(); } catch (reason) { setError((reason as Error).message); } finally { setBusy(false); } }}><p className="muted">Keep related conversations together.</p><label>Group name<input autoFocus value={name} onChange={event => setName(event.target.value)} placeholder="e.g. A Gent launch" maxLength={80} required /></label>{error && <p className="form-error" role="alert">{error}</p>}<div className="modal-footer"><button type="button" className="button quiet" onClick={onClose}>Cancel</button><button className="button primary" disabled={busy || !name.trim()}>{busy ? <Spinner /> : <Folder size={16} />}Create group</button></div></form></Modal>;
+}
+
+export function AgentGroupDialog({ group, api, onClose }: { group?: Group; api: Api; onClose: () => void }) {
+  const [name, setName] = useState(group?.name || '');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  async function save(event: FormEvent) {
+    event.preventDefault(); setBusy(true); setError('');
+    try {
+      await api(group ? `/api/agent-groups/${group.id}` : '/api/agent-groups', group ? 'PATCH' : 'POST', { name: name.trim() });
+      onClose();
+    } catch (reason) { setError((reason as Error).message); } finally { setBusy(false); }
+  }
+  async function remove() {
+    if (!group) return;
+    setBusy(true); setError('');
+    try { await api(`/api/agent-groups/${group.id}`, 'DELETE'); onClose(); }
+    catch (reason) { setError((reason as Error).message); } finally { setBusy(false); }
+  }
+  return <Modal title={group ? 'Agent group' : 'New agent group'} onClose={onClose}><form className="form-stack" onSubmit={save}>
+    <p className="muted">Keep related agents together in the sidebar.</p>
+    <label>Group name<input autoFocus value={name} onChange={event => setName(event.target.value)} placeholder="e.g. Product" maxLength={80} required /></label>
+    {confirmDelete && <p className="field-help">Agents in this group move to Unassigned.</p>}
+    {error && <p className="form-error" role="alert">{error}</p>}
+    <div className="modal-footer spread">
+      {group ? <button type="button" className={confirmDelete ? 'button danger' : 'button quiet'} disabled={busy} onClick={() => confirmDelete ? void remove() : setConfirmDelete(true)}><Trash2 size={14} />{confirmDelete ? 'Confirm delete' : 'Delete group'}</button> : <span />}
+      <div className="modal-footer-actions"><button type="button" className="button quiet" onClick={onClose}>Cancel</button><button className="button primary" disabled={busy || !name.trim()}>{busy && <Spinner />}{group ? 'Save group' : 'Create group'}</button></div>
+    </div>
+  </form></Modal>;
 }
 
 export function ConversationDialog({ conversation, state, api, onClose, onArchived }: { conversation: Conversation; state: WorkspaceState; api: Api; onClose: () => void; onArchived: () => void }) {

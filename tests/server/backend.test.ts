@@ -56,6 +56,51 @@ test('data lock prevents two hosts from using the same workspace', async () => {
   } finally { await rm(directory, { recursive: true, force: true }); }
 });
 
+test('agent groups support create, assignment, rename, delete, and legacy imports', async () => {
+  const directory = await mkdtemp(join(scratch, 'agent-group-test-'));
+  const staticDir = join(directory, 'static'); await mkdir(staticDir); await writeFile(join(staticDir, 'index.html'), '<!doctype html><html><head></head><body>A Gent</body></html>');
+  const previousProbe = process.env.AGENT_SKIP_PROVIDER_PROBE;
+  process.env.AGENT_SKIP_PROVIDER_PROBE = '1';
+  const handle = await startServer({ port: 0, dataDir: directory, staticDir, dev: false });
+  const call = async (path: string, body?: unknown, method = body === undefined ? 'GET' : 'POST') => {
+    const response = await fetch(`${handle.url}/api${path}`, { method, headers: { Authorization: `Bearer ${handle.token}`, 'Content-Type': 'application/json' }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
+    return { status: response.status, body: await response.json() as any };
+  };
+  try {
+    const group = await call('/agent-groups', { name: 'Design' }, 'POST');
+    assert.equal(group.status, 201);
+    assert.equal(group.body.name, 'Design');
+    const agent = await call('/agents', { name: 'Grouped Agent', agentGroupId: group.body.id }, 'POST');
+    assert.equal(agent.status, 201);
+    assert.equal(agent.body.agentGroupId, group.body.id);
+    assert.equal((await call('/agents', { name: 'Bad Group', agentGroupId: 'missing' }, 'POST')).status, 404);
+
+    const exported = await call('/export');
+    assert.equal(exported.body.agentGroups.length, 1);
+    assert.equal(exported.body.agents.find((item: any) => item.id === agent.body.id).agentGroupId, group.body.id);
+
+    const renamed = await call(`/agent-groups/${group.body.id}`, { name: 'Product' }, 'PATCH');
+    assert.equal(renamed.status, 200);
+    assert.equal(renamed.body.name, 'Product');
+    let state = await call('/bootstrap');
+    assert.equal(state.body.state.agentGroups[0].name, 'Product');
+    assert.equal(state.body.state.agents.find((item: any) => item.id === agent.body.id).agentGroupId, group.body.id);
+
+    const deleted = await call(`/agent-groups/${group.body.id}`, undefined, 'DELETE');
+    assert.equal(deleted.status, 200);
+    state = await call('/bootstrap');
+    assert.equal(state.body.state.agentGroups.length, 0);
+    assert.equal(state.body.state.agents.find((item: any) => item.id === agent.body.id).agentGroupId, null);
+
+    const legacy = validateImport({ ...state.body.state, agentGroups: undefined, agents: state.body.state.agents.map((item: any) => item.id === agent.body.id ? { ...item, agentGroupId: 'missing-group' } : item) });
+    assert.deepEqual(legacy.agentGroups, []);
+    assert.equal(legacy.agents.find(item => item.id === agent.body.id)?.agentGroupId, null);
+  } finally {
+    await handle.close(); await rm(directory, { recursive: true, force: true });
+    if (previousProbe === undefined) delete process.env.AGENT_SKIP_PROVIDER_PROBE; else process.env.AGENT_SKIP_PROVIDER_PROBE = previousProbe;
+  }
+});
+
 test('desktop pairing cookie migrates to a revocable device token', async () => {
   const directory = await mkdtemp(join(scratch, 'agent-cookie-test-'));
   const staticDir = join(directory, 'static'); await mkdir(staticDir); await writeFile(join(staticDir, 'index.html'), '<!doctype html><html><head></head><body>A Gent</body></html>');
