@@ -56,6 +56,29 @@ test('data lock prevents two hosts from using the same workspace', async () => {
   } finally { await rm(directory, { recursive: true, force: true }); }
 });
 
+test('desktop pairing cookie gates token injection', async () => {
+  const directory = await mkdtemp(join(scratch, 'agent-cookie-test-'));
+  const staticDir = join(directory, 'static'); await mkdir(staticDir); await writeFile(join(staticDir, 'index.html'), '<!doctype html><html><head></head><body>A Gent</body></html>');
+  const previousProbe = process.env.AGENT_SKIP_PROVIDER_PROBE;
+  process.env.AGENT_SKIP_PROVIDER_PROBE = '1';
+  const handle = await startServer({ port: 0, dataDir: directory, staticDir, dev: false });
+  const readPage = (headers: Record<string, string>) => new Promise<string>((resolve, reject) => {
+    const request = httpRequest(handle.url, { headers, agent: false }, response => {
+      let body = ''; response.setEncoding('utf8');
+      response.on('data', chunk => { body += chunk; });
+      response.on('end', () => resolve(body));
+    });
+    request.on('error', reject); request.end();
+  });
+  try {
+    assert.ok(!(await readPage({})).includes(handle.token));
+    assert.ok((await readPage({ Cookie: `agent_desktop_token=${handle.token}` })).includes(handle.token));
+  } finally {
+    await handle.close(); await rm(directory, { recursive: true, force: true });
+    if (previousProbe === undefined) delete process.env.AGENT_SKIP_PROVIDER_PROBE; else process.env.AGENT_SKIP_PROVIDER_PROBE = previousProbe;
+  }
+});
+
 test('authenticated API persists CRUD, streams real adapter lifecycle, approves, interrupts, and schedules exactly once', async () => {
   const directory = await mkdtemp(join(scratch, 'agent-api-test-'));
   const saved = { command: process.env.AGENT_CODEX_COMMAND, args: process.env.AGENT_CODEX_ARGS, probe: process.env.AGENT_SKIP_PROVIDER_PROBE, trace: process.env.AGENT_TEST_CODEX_TRACE };
@@ -64,7 +87,7 @@ test('authenticated API persists CRUD, streams real adapter lifecycle, approves,
   process.env.AGENT_SKIP_PROVIDER_PROBE = '1';
   const trace = join(directory, 'codex-trace.jsonl'); process.env.AGENT_TEST_CODEX_TRACE = trace;
   const staticDir = join(directory, 'static'); await mkdir(staticDir); await writeFile(join(staticDir, 'index.html'), '<!doctype html><html><head></head><body>A Gent fixture</body></html>');
-  const handle = await startServer({ port: 0, dataDir: directory, staticDir, dev: false });
+  const handle = await startServer({ port: 0, dataDir: directory, staticDir, dev: false, allowLocalTokenInjection: true });
   const api = async (path: string, body?: unknown, method = body === undefined ? 'GET' : 'POST') => {
     const response = await fetch(`${handle.url}/api${path}`, { method, headers: { Authorization: `Bearer ${handle.token}`, 'Content-Type': 'application/json' }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
     return { status: response.status, body: await response.json() as any };

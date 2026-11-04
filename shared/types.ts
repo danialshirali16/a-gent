@@ -131,5 +131,6 @@ export interface ServerOptions {
   staticDir?: string;
   dev?: boolean;
   token?: string;
+  allowLocalTokenInjection?: boolean;
 }
 export interface ServerHandle { url: string; token: string; close: () => Promise<void>; }

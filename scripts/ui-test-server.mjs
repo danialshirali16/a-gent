@@ -9,7 +9,7 @@ const directory = await mkdtemp(join(tmpdir(), 'a-gent-ui-'));
 process.env.AGENT_SKIP_PROVIDER_PROBE = '1';
 process.env.AGENT_CODEX_COMMAND = process.execPath;
 process.env.AGENT_CODEX_ARGS = JSON.stringify([fixture]);
-const handle = await startServer({ port: 4410, host: '127.0.0.1', dataDir: directory, staticDir: join(process.cwd(), 'dist'), dev: false });
+const handle = await startServer({ port: 4410, host: '127.0.0.1', dataDir: directory, staticDir: join(process.cwd(), 'dist'), dev: false, allowLocalTokenInjection: true });
 console.log(`A Gent UI test host at ${handle.url}`);
 
 let stopping = false;

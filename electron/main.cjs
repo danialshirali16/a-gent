@@ -70,6 +70,9 @@ async function createWindow() {
     } catch {
       try { fs.unlinkSync(temporaryPortFile); } catch {}
     }
+    try {
+      await session.defaultSession.cookies.set({ url: backend.url, name: 'agent_desktop_token', value: backend.token, httpOnly: true, sameSite: 'strict' });
+    } catch { /* the desktop page will fall back to manual pairing */ }
     url = backend.url;
   }
   trustedOrigin = new URL(url).origin;

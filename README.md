@@ -16,7 +16,7 @@ npm run build
 npm start
 ```
 
-Open `http://127.0.0.1:4317`. For development, use `npm run dev`. On this device, a compatible existing runtime is `/opt/homebrew/opt/node@24/bin/node`; place its directory first on PATH when using npm.
+Open `http://127.0.0.1:4317` and pair with the token from `.data/.token`, or set `AGENT_ALLOW_LOCAL_TOKEN_INJECTION=1` for local browser convenience. The packaged desktop app pairs automatically through its own cookie. For development, use `npm run dev`. On this device, a compatible existing runtime is `/opt/homebrew/opt/node@24/bin/node`; place its directory first on PATH when using npm.
 
 To launch the desktop shell from source:
 
@@ -64,6 +64,7 @@ The host defaults to loopback. No public service or tunnel is created by the bui
 | `AGENT_TOKEN` | Optional existing pairing token, at least 24 characters. Otherwise generated in the data directory’s `.token` file. |
 | `AGENT_ALLOWED_HOSTS` | Extra accepted hostnames, comma separated. |
 | `AGENT_ALLOWED_ORIGINS` | Extra accepted browser origins, comma separated. Capacitor’s local origin is already accepted. |
+| `AGENT_ALLOW_LOCAL_TOKEN_INJECTION` | Set to `1` to embed the pairing token in local browser HTML. Off by default; the desktop app uses a pairing cookie instead. |
 
 An HTTPS reverse proxy should preserve the backend authority in its upstream Host header, such as `127.0.0.1:4317`, forward the client identity, disable response buffering for `/api/events`, and allow streaming connections. Add the external browser origin to `AGENT_ALLOWED_ORIGINS` when accessing through a web browser. Remote requests receive no embedded pairing token and require manual pairing.
 

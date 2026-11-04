@@ -11,7 +11,7 @@ Electron: 45.2.2
 | Check | Result |
 | --- | --- |
 | `npm run typecheck` | Pass |
-| `npm test` | 7/7 pass |
+| `npm test` | 8/8 pass |
 | `npm run test:ui` | 3/3 Playwright smoke tests pass |
 | `npm run build` | Pass |
 | `npm run desktop:mac` | Pass |
@@ -27,10 +27,10 @@ Electron: 45.2.2
 
 | Artifact | Size | SHA-256 |
 | --- | ---: | --- |
-| `A-Gent-0.1.0-mac-arm64.dmg` | 121 MB | `6d009d1ca167111dfa74c1c84e1c15c9c991e04d4c0f47db6c1ccc9ddef3367b` |
-| `A-Gent-0.1.0-mac-arm64.zip` | 118 MB | `9e85e46532b207e75f309ca307c723b5abb26609be591c1fe3b4b084c40462ea` |
-| `A-Gent-Setup-0.1.0-x64.exe` | 120 MB | `10104e9afccfb501d2997ff221b53c20b9672990781b2f21bd9ca4a9f2ec2637` |
-| `A-Gent-Portable-0.1.0-x64.exe` | 108 MB | `3748fcde6f00907237a0fa6787b24f6d14da824229cece1b023f6809154d47a0` |
+| `A-Gent-0.1.0-mac-arm64.dmg` | 121 MB | `0f43ef754a20a7a4ae6bb0fd8a1f12a2da69095c4c911770125114098cee8bcd` |
+| `A-Gent-0.1.0-mac-arm64.zip` | 118 MB | `e0ac2dfaca8eacb556849a372ee40143821f9c0cc9491bd9097ad437a648e98f` |
+| `A-Gent-Setup-0.1.0-x64.exe` | 120 MB | `aec990568e4b2343a681bea41665bfbc6241fc084a89a5f94c2578a8b40dbf93` |
+| `A-Gent-Portable-0.1.0-x64.exe` | 108 MB | `bbfdb2b6e77a3997c12d8e35228964f82b46eb908f3bef95bea5e6b6a1592735` |
 | `A-Gent-0.1.0-android-debug.apk` | 4.3 MB | `ad871757273e6847a26e4111b726ed4427f2fe09116a5174e8b1816e9345a908` |
 
 ## Platform details
@@ -82,6 +82,8 @@ Electron: 45.2.2
 - Android back handler: the `agent:back` event closes an open settings dialog in the browser harness. Device behavior is still unverified.
 - Playwright smoke tests cover the shell, compact rail, settings modal, connections modal, fake-Codex chat streaming, and mobile drawer.
 - Workspace data lock rejects a second host using the same data directory.
+- Desktop pairing cookie gates token injection; the packaged macOS app loads the workspace through that cookie.
+- Local browser token injection is opt-in via `AGENT_ALLOW_LOCAL_TOKEN_INJECTION=1`.
 - Corrupt `state.json` recovers from `state.json.bak`.
 - CSP now sets `default-src 'self'` and blocks remote images.
 - File-change approvals include the available patch/diff text.
@@ -104,7 +106,7 @@ Electron: 45.2.2
 - macOS app is ad-hoc signed and not notarized.
 - Windows artifacts are unsigned.
 - Android APK is debug-signed and companion-only.
-- Remote pairing token injection is sensitive to reverse-proxy header configuration.
+- Local browser token injection remains opt-in; use HTTPS and manual pairing for remote access.
 - Very large exports can still exceed the 32 MB import limit.
 - Remote Markdown images are blocked by CSP until an image policy is chosen.
 - No screenshot visual-regression baseline yet.

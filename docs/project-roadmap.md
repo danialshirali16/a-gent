@@ -35,7 +35,7 @@ Working:
 - Codex local execution through the app-server interface.
 - Ollama and OpenAI-compatible chat providers.
 - Local token auth, host/origin allowlists, Electron sandboxing.
-- 7 backend integration tests.
+- 8 backend integration tests.
 - Typecheck and production build pass.
 
 ### Reason-like UI
@@ -127,8 +127,8 @@ These are engineering estimates, not precise metrics.
 | Windows delivery | 60% | 40% | Artifacts built; no runtime test, no icon metadata, unsigned |
 | Android delivery | 40% | 60% | Debug APK built; companion-only, no device test, no release signing |
 | Reason-like UI | 75% | 25% | Major surfaces done; tests and smaller interactions pending |
-| Security and reliability | 65% | 35% | Data lock, recovery, CSP, and approval diffs added; token pairing and limits still need work |
-| Tests and QA | 60% | 40% | Backend tests and Playwright smoke tests pass; device and visual-regression tests pending |
+| Security and reliability | 70% | 30% | Desktop pairing cookie, data lock, recovery, CSP, and approval diffs added; per-device tokens and limits still need work |
+| Tests and QA | 65% | 35% | 8 backend tests and 3 Playwright smoke tests pass; device and visual-regression tests pending |
 | Docs and release | 50% | 50% | README/roadmap exist; validation doc and release truth missing |
 | Full Reason parity | 35% | 65% | Cloud/billing intentionally excluded; native/browser/voice/connectors missing |
 
@@ -189,7 +189,7 @@ These are engineering estimates, not precise metrics.
 
 ### E. Security and reliability
 
-- Redesign remote pairing so the token is not injected into HTML based on proxy-sensitive network heuristics.
+- Desktop pairing cookie now gates token injection; local browser injection is opt-in. Per-device tokens remain pending.
 - Add per-device tokens and token rotation/revocation.
 - Add a data-directory lock to prevent two hosts clobbering state.
 - Add rolling backups and recovery for corrupt `state.json`.
@@ -318,7 +318,7 @@ Out of scope unless explicitly added:
 
 **Goal:** Safe for daily local use and remote pairing.
 
-- [ ] Replace proxy-sensitive token injection.
+- [x] Replace proxy-sensitive token injection with a desktop pairing cookie.
 - [ ] Add per-device tokens and rotation.
 - [x] Add data-directory lock.
 - [x] Add rolling backups and corrupt-state recovery.

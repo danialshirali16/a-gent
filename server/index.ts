@@ -66,7 +66,13 @@ export async function startServer(options: ServerOptions = {}): Promise<ServerHa
   const runs = new RunManager(store, providers, emit);
   const server = createServer(app);
   let closed = false;
+  const allowLocalTokenInjection = options.allowLocalTokenInjection ?? process.env.AGENT_ALLOW_LOCAL_TOKEN_INJECTION === '1';
   const browserToken = (request: express.Request) => {
+    const cookie = request.headers.cookie?.split(';').map(part => part.trim()).find(part => part.startsWith('agent_desktop_token='))?.slice('agent_desktop_token='.length);
+    if (cookie) {
+      try { if (textTokenMatches(decodeURIComponent(cookie), token)) return token; } catch { /* malformed cookie */ }
+    }
+    if (!allowLocalTokenInjection) return '';
     const address = request.socket.remoteAddress;
     let requestHost = '';
     try { requestHost = new URL(`http://${request.headers.host}`).hostname; } catch {}
@@ -262,7 +268,7 @@ if (direct) {
   const arg = (name: string) => { const index = process.argv.indexOf(name); return index >= 0 ? process.argv[index + 1] : undefined; };
   const host = arg('--host') ?? process.env.AGENT_HOST ?? '127.0.0.1';
   const portValue = arg('--port');
-  startServer({ dev: process.argv.includes('--dev'), host, ...(portValue ? { port: Number(portValue) } : {}), ...(arg('--data-dir') ? { dataDir: arg('--data-dir') } : {}) }).then(handle => {
+  startServer({ dev: process.argv.includes('--dev'), host, allowLocalTokenInjection: process.argv.includes('--dev'), ...(portValue ? { port: Number(portValue) } : {}), ...(arg('--data-dir') ? { dataDir: arg('--data-dir') } : {}) }).then(handle => {
     console.log(`A Gent is ready at ${handle.url}`);
     if (!['127.0.0.1', 'localhost', '::1'].includes(host)) console.log(`Pairing token: ${handle.token}\nUse this computer’s private network address from your other device.`);
     const shutdown = () => { void handle.close().then(() => process.exit(0), error => { console.error((error as Error).message); process.exit(1); }); };
