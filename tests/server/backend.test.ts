@@ -13,6 +13,7 @@ import { locateCodex } from '../../server/codex-discovery.js';
 import type { ServerEvent } from '../../shared/types.js';
 
 const fixture = join(dirname(fileURLToPath(import.meta.url)), 'fake-codex.mjs');
+const opencodeFixture = join(dirname(fileURLToPath(import.meta.url)), 'fake-opencode.mjs');
 const scratch = process.env.AGENT_TEST_TMP_DIR ?? join(process.cwd(), 'work');
 await mkdir(scratch, { recursive: true });
 const pause = (milliseconds: number) => new Promise(resolve => setTimeout(resolve, milliseconds));
@@ -427,6 +428,39 @@ test('Codex shutdown observes child exit after escalating an ignored graceful st
   }
 });
 
+test('OpenCode provider discovers models and streams a continued CLI session', async () => {
+  const directory = await mkdtemp(join(scratch, 'agent-opencode-test-'));
+  const staticDir = join(directory, 'static'); await mkdir(staticDir); await writeFile(join(staticDir, 'index.html'), '<!doctype html><html><head></head><body>A Gent</body></html>');
+  const saved = { command: process.env.AGENT_OPENCODE_COMMAND, args: process.env.AGENT_OPENCODE_ARGS, probe: process.env.AGENT_SKIP_PROVIDER_PROBE };
+  process.env.AGENT_OPENCODE_COMMAND = process.execPath;
+  process.env.AGENT_OPENCODE_ARGS = JSON.stringify([opencodeFixture]);
+  process.env.AGENT_SKIP_PROVIDER_PROBE = '1';
+  const handle = await startServer({ port: 0, dataDir: directory, staticDir, dev: false });
+  const api = async (path: string, body?: unknown, method = body === undefined ? 'GET' : 'POST') => {
+    const response = await fetch(`${handle.url}/api${path}`, { method, headers: { Authorization: `Bearer ${handle.token}`, 'Content-Type': 'application/json' }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
+    return { status: response.status, body: await response.json() as any };
+  };
+  try {
+    const connected = await api('/providers/opencode/connect', {});
+    assert.equal(connected.body.status, 'connected');
+    assert.deepEqual(connected.body.models.map((model: any) => model.id), ['opencode/test-model', 'opencode/second-model']);
+    const agent = (await api('/agents', { name: 'OpenCode Agent', providerId: 'opencode', modelId: 'opencode/test-model' })).body;
+    const conversation = (await api('/conversations', { agentId: agent.id })).body;
+    const first = await api(`/conversations/${conversation.id}/messages`, { content: 'Hello OpenCode' });
+    assert.equal(first.status, 202);
+    const completed = await waitFor(async () => (await api('/bootstrap')).body, data => data.runs.some((run: any) => run.id === first.body.id && run.status === 'completed'));
+    assert.equal(completed.state.conversations.find((chat: any) => chat.id === conversation.id).messages.at(-1).content, 'OpenCode test response.');
+    assert.equal(completed.state.conversations.find((chat: any) => chat.id === conversation.id).providerThreadId, 'opencode-session-1');
+    const second = await api(`/conversations/${conversation.id}/messages`, { content: 'Continue OpenCode' });
+    assert.equal(second.status, 202);
+    const finalState = await waitFor(async () => (await api('/bootstrap')).body, data => data.runs.some((run: any) => run.id === second.body.id && run.status === 'completed'));
+    assert.equal(finalState.state.conversations.find((chat: any) => chat.id === conversation.id).messages.at(-1).content, 'OpenCode continued response.');
+  } finally {
+    await handle.close(); await rm(directory, { recursive: true, force: true });
+    for (const [key, value] of [['AGENT_OPENCODE_COMMAND', saved.command], ['AGENT_OPENCODE_ARGS', saved.args], ['AGENT_SKIP_PROVIDER_PROBE', saved.probe]] as const) { if (value === undefined) delete process.env[key]; else process.env[key] = value; }
+  }
+});
+
 test('HTTP model adapters stream endpoint text and never persist an API key', async () => {
   const directory = await mkdtemp(join(scratch, 'agent-provider-test-'));
   let authorization = '';
@@ -447,8 +481,17 @@ test('HTTP model adapters stream endpoint text and never persist an API key', as
     const store = new StateStore(directory); await store.load(); const conversation = store.createConversation('primary');
     conversation.messages.push({ id: 'user', role: 'user', content: 'Hello', createdAt: new Date().toISOString() });
     let text = '';
-    await manager.run('openai-compatible', { agent: store.state.agents[0], conversation, modelId: 'local-model', mode: 'chat', workspace: directory, signal: new AbortController().signal, callbacks: { delta: delta => { text += delta; }, activity() {}, approval() {}, thread() {} } });
+    const request = { agent: store.state.agents[0], conversation, modelId: 'local-model', mode: 'chat' as const, workspace: directory, signal: new AbortController().signal, callbacks: { delta: (delta: string) => { text += delta; }, activity() {}, approval() {}, thread() {} } };
+    await manager.run('openai-compatible', request);
     assert.equal(text, 'Streamed response.');
+    const cloud = await manager.connect('cloud', { baseUrl: `http://127.0.0.1:${address.port}/v1`, apiKey: 'cloud-key' });
+    assert.equal(cloud.status, 'connected');
+    const antigravity = await manager.connect('antigravity', { baseUrl: `http://127.0.0.1:${address.port}/v1`, apiKey: 'antigravity-key' });
+    assert.equal(antigravity.status, 'connected');
+    let cloudText = ''; await manager.run('cloud', { ...request, callbacks: { ...request.callbacks, delta: (delta: string) => { cloudText += delta; } } });
+    assert.equal(cloudText, 'Streamed response.');
+    let antigravityText = ''; await manager.run('antigravity', { ...request, callbacks: { ...request.callbacks, delta: (delta: string) => { antigravityText += delta; } } });
+    assert.equal(antigravityText, 'Streamed response.');
     await assert.rejects(() => manager.connect('ollama', { baseUrl: 'file:///etc/passwd' }), /http or https/);
   } finally { await manager.close(); await new Promise<void>(resolve => fake.close(() => resolve())); await rm(directory, { recursive: true, force: true }); }
 });

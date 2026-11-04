@@ -300,3 +300,17 @@ test('loads the Inter Latin variable font only', async ({ page }) => {
   expect(fonts[0].size).toBeGreaterThan(0);
   expect(fonts[0].size).toBeLessThan(60_000);
 });
+
+
+test('connections lists OpenCode, Cloud, and Antigravity providers', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Connect apps' }).click();
+  await expect(page.getByRole('heading', { name: 'Connections' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'OpenCode' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Cloud' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Antigravity' })).toBeVisible();
+  const opencode = page.locator('.provider-card', { hasText: 'OpenCode' });
+  await expect(opencode.getByRole('button', { name: 'Check connection' })).toBeVisible();
+  const cloud = page.locator('.provider-card', { hasText: 'Cloud' });
+  await expect(cloud.getByRole('button', { name: 'Connect provider' })).toBeVisible();
+});

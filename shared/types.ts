@@ -1,4 +1,4 @@
-export type ProviderKind = 'codex' | 'ollama' | 'openai-compatible';
+export type ProviderKind = 'codex' | 'opencode' | 'ollama' | 'openai-compatible';
 export type RunStatus = 'running' | 'waiting' | 'completed' | 'failed' | 'interrupted';
 export type IconName = 'spark' | 'code' | 'design' | 'search' | 'custom';
 

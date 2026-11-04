@@ -11,8 +11,8 @@ Electron: 45.2.2
 | Check | Result |
 | --- | --- |
 | `npm run typecheck` | Pass |
-| `npm test` | 11/11 pass |
-| `npm run test:ui` | 16/16 Playwright smoke tests pass |
+| `npm test` | 12/12 pass |
+| `npm run test:ui` | 17/17 Playwright smoke tests pass |
 | `npm run test:visual` | 10/10 Playwright screenshot baselines pass |
 | `npm run test:a11y` | 6/6 axe scans pass; 0 violations |
 | `npm run test:e2e` | 6/6 macOS E2E workflows pass |
@@ -32,8 +32,8 @@ Windows and Android artifacts below are from the previous cross-platform build. 
 
 | Artifact | Size | SHA-256 |
 | --- | ---: | --- |
-| `A-Gent-0.1.0-mac-arm64.dmg` | 121 MB | `eb00258a0d5f91f7f0649ee9a71936a0f96d956ec115e2ea049df240f1c47268` |
-| `A-Gent-0.1.0-mac-arm64.zip` | 118 MB | `d222f3961753c930122b3496c827630c8c60aaf4f7078af0b1ddc1a896ae6c94` |
+| `A-Gent-0.1.0-mac-arm64.dmg` | 121 MB | `f5b2f8479898798f3e31146ba200b0547d1fe357bae5452bf68584ac24aac3cb` |
+| `A-Gent-0.1.0-mac-arm64.zip` | 118 MB | `259092c74717c03296462950c152b422d6a54a8a2559fdb48da2e6fb9798492a` |
 | `A-Gent-Setup-0.1.0-x64.exe` | 120 MB | `4ef4c19e8b9437c246b42a436ab95ad73a65105c432105ead2241f750914df92` |
 | `A-Gent-Portable-0.1.0-x64.exe` | 108 MB | `f65ba83b3719106ac8984ddb4bef1c3b6ad4c8806534d63ca3c566477e8f8ba7` |
 | `A-Gent-0.1.0-android-debug.apk` | 4.3 MB | `e3d476344f8ba3492657bec03b0626dce11aee4c5a24d99047fad45e240cac2c` |
@@ -105,6 +105,7 @@ Windows and Android artifacts below are from the previous cross-platform build. 
 - The light-theme faint text token was darkened to meet WCAG AA contrast.
 - UI text now uses Inter Variable. Only the Latin variable subset is bundled (48 KB instead of ~218 KB for all Inter subsets), and visual baselines were regenerated.
 - A smoke test asserts exactly one Inter Latin WOFF2 resource loads and that it is under 60 KB.
+- Provider catalog includes OpenCode, Cloud, and Antigravity. OpenCode uses the local CLI and its sign-in; Cloud and Antigravity use OpenAI-compatible endpoints.
 - `⌘ \` toggles the side panel; dialog focus returns to the opening control after Escape.
 - Packaged macOS app verified with Computer Use: Escape closed Settings and restored focus, Right Arrow moved the side-panel tab from Session to Sessions, and Down Arrow moved workspace-menu focus from All agents to Scheduled.
 - Packaged macOS app verified with Computer Use: created a `Product` agent group and assigned Product Designer; the sidebar nested the agent under the group.

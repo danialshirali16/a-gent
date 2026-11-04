@@ -2,6 +2,7 @@ import { readFile, writeFile, rename } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { AppConnection, ModelOption, ProviderInfo } from '../shared/types.js';
 import { CodexBridge, type ProviderRequest } from './codex.js';
+import { OpenCodeBridge } from './opencode.js';
 import { id, InputError, object, string } from './store.js';
 
 interface HttpConnection { baseUrl: string; modelId?: string; }
@@ -14,22 +15,30 @@ function baseUrl(value: unknown): string {
 }
 export class ProviderManager {
   readonly codex: CodexBridge;
+  readonly opencode: OpenCodeBridge;
   private connections: Record<string, HttpConnection> = {
     ollama: { baseUrl: process.env.AGENT_OLLAMA_URL ?? 'http://127.0.0.1:11434' },
     'openai-compatible': { baseUrl: process.env.AGENT_OPENAI_BASE_URL ?? 'https://api.openai.com/v1' },
+    cloud: { baseUrl: process.env.AGENT_CLOUD_BASE_URL ?? '' },
+    antigravity: { baseUrl: process.env.AGENT_ANTIGRAVITY_BASE_URL ?? 'https://generativelanguage.googleapis.com/v1beta/openai' },
   };
   private keys = new Map<string, string>();
   providers: ProviderInfo[] = [
     { id: 'codex', kind: 'codex', name: 'Codex', status: 'available', detail: 'Checking the Codex CLI on this computer…', models: [] },
+    { id: 'opencode', kind: 'opencode', name: 'OpenCode', status: 'available', detail: 'Use the OpenCode CLI and its local sign-in.', models: [] },
+    { id: 'antigravity', kind: 'openai-compatible', name: 'Antigravity', status: 'available', detail: 'Google Gemini / Antigravity endpoint. Add an API key.', models: [], baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai' },
+    { id: 'cloud', kind: 'openai-compatible', name: 'Cloud', status: 'available', detail: 'Connect a hosted OpenAI-compatible cloud endpoint.', models: [], baseUrl: '' },
     { id: 'ollama', kind: 'ollama', name: 'Ollama', status: 'available', detail: 'Connect to local models running on your computer.', models: [], baseUrl: 'http://127.0.0.1:11434' },
     { id: 'openai-compatible', kind: 'openai-compatible', name: 'OpenAI compatible', status: 'available', detail: 'Connect your own model endpoint and API key.', models: [], baseUrl: 'https://api.openai.com/v1' },
   ];
-  constructor(private directory: string, private onChange: (providers: ProviderInfo[]) => void, codex?: CodexBridge) { this.codex = codex ?? new CodexBridge(); }
+  constructor(private directory: string, private onChange: (providers: ProviderInfo[]) => void, codex?: CodexBridge, opencode?: OpenCodeBridge) { this.codex = codex ?? new CodexBridge(); this.opencode = opencode ?? new OpenCodeBridge(); }
   async load(): Promise<void> {
     if (process.env.AGENT_OPENAI_API_KEY) this.keys.set('openai-compatible', process.env.AGENT_OPENAI_API_KEY);
+    if (process.env.AGENT_CLOUD_API_KEY) this.keys.set('cloud', process.env.AGENT_CLOUD_API_KEY);
+    if (process.env.AGENT_ANTIGRAVITY_API_KEY) this.keys.set('antigravity', process.env.AGENT_ANTIGRAVITY_API_KEY);
     try {
       const saved = object(JSON.parse(await readFile(join(this.directory, 'connections.json'), 'utf8')));
-      for (const providerId of ['ollama', 'openai-compatible']) {
+      for (const providerId of Object.keys(this.connections)) {
         if (!saved[providerId]) continue;
         const data = object(saved[providerId]);
         this.connections[providerId] = { baseUrl: baseUrl(data.baseUrl), ...(typeof data.modelId === 'string' ? { modelId: data.modelId.slice(0, 200) } : {}) };
@@ -57,8 +66,19 @@ export class ProviderManager {
     this.onChange(this.providers);
     return provider;
   }
+  async probeOpenCode(): Promise<ProviderInfo> {
+    const provider = this.get('opencode');
+    try {
+      provider.models = await this.opencode.models();
+      provider.status = provider.models.length ? 'connected' : 'available';
+      provider.detail = provider.models.length ? 'Using OpenCode and its local sign-in.' : 'OpenCode is installed. Sign in there, then reconnect.';
+    } catch (error) { provider.status = 'unavailable'; provider.detail = (error as Error).message; provider.models = []; }
+    this.onChange(this.providers);
+    return provider;
+  }
   async connect(providerId: string, input: unknown): Promise<ProviderInfo> {
     if (providerId === 'codex') return this.probeCodex();
+    if (providerId === 'opencode') return this.probeOpenCode();
     const provider = this.get(providerId), data = object(input);
     const connection = this.connections[providerId];
     if ('baseUrl' in data) connection.baseUrl = baseUrl(data.baseUrl);
@@ -93,6 +113,7 @@ export class ProviderManager {
   }
   async run(providerId: string, request: ProviderRequest): Promise<void> {
     if (providerId === 'codex') return this.codex.run(request);
+    if (providerId === 'opencode') return this.opencode.run(request);
     this.get(providerId);
     const connection = this.connections[providerId];
     const model = request.modelId || connection.modelId || this.get(providerId).models[0]?.id;
@@ -131,5 +152,5 @@ export class ProviderManager {
       if (!received) throw new Error('The model endpoint returned no text. Check its model ID and streaming compatibility.');
     } finally { reader.releaseLock(); }
   }
-  async close(): Promise<void> { await this.codex.close(); this.keys.clear(); }
+  async close(): Promise<void> { await this.codex.close(); await this.opencode.close(); this.keys.clear(); }
 }

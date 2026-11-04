@@ -33,9 +33,13 @@ In **Connections**, check the Codex connection. If Codex is not installed or sig
 
 The **Connected apps** section inventories the MCP connections already configured in Codex on the host. Their availability and authentication remain managed by Codex. A Gent does not register new connectors or reproduce Reason’s hosted OAuth service.
 
-Ollama uses an existing local server, normally `http://127.0.0.1:11434`. For another provider, enter its OpenAI-compatible base URL, optional API key, and model ID. API keys are kept in host memory or supplied through environment variables, and must be re-entered after a host restart. HTTP providers support chat; project tools use Codex.
+OpenCode uses the installed OpenCode CLI and the account already signed in there. Check the connection in **Connections**; if needed, run `opencode auth login` on the host.
 
-Select **Chat** for a read-only Codex session. Select **Work in project** and choose a host folder to allow workspace changes under Codex’s sandbox and approval rules. A Gent displays supported command, file, and access approval requests. Requests for richer MCP forms or interactive tool questions currently need completion in Codex itself.
+Antigravity uses Google's Gemini OpenAI-compatible endpoint. Add an API key and choose a model. **Cloud** accepts any hosted OpenAI-compatible endpoint; enter its base URL, API key, and model.
+
+Ollama uses an existing local server, normally `http://127.0.0.1:11434`. API keys are kept in host memory or supplied through environment variables, and must be re-entered after a host restart. HTTP providers support chat; project tools use Codex or OpenCode.
+
+Select **Chat** for a read-only Codex session. OpenCode runs through its CLI with `--auto`; configure OpenCode permissions if you need stricter tool limits. Select **Work in project** and choose a host folder to allow workspace changes under Codex’s sandbox and approval rules. A Gent displays supported command, file, and access approval requests. Requests for richer MCP forms or interactive tool questions currently need completion in Codex itself.
 
 Official integration references: [Codex app-server](https://learn.chatgpt.com/docs/app-server), [non-interactive Codex](https://learn.chatgpt.com/docs/non-interactive-mode).
 
