@@ -73,6 +73,7 @@ An HTTPS reverse proxy should preserve the backend authority in its upstream Hos
 ```sh
 npm run typecheck
 npm test
+npm run test:ui
 npm run desktop:mac
 npm run desktop:win
 npm run android:apk
