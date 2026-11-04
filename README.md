@@ -2,11 +2,13 @@
 
 A personal workspace for AI agents, built independently from the visible workflows of the installed Reason app. A Gent has its own code, branding, data store, and model connections.
 
-The app includes persistent conversations, custom agents, agent groups, conversation groups, search, streamed model replies, project folders, visible tool activity, read-only workspace file browsing, terminal activity, action approvals, interruption, one-time scheduled tasks, and workspace import/export. Codex provides local agent execution. Ollama and OpenAI-compatible endpoints provide additional chat models.
+> Current development scope: **macOS**. Windows and Android sections describe the earlier cross-platform build; those artifacts were not rebuilt or tested in the current macOS-only pass.
+
+The app includes persistent conversations, custom agents, agent groups, conversation groups, search, streamed model replies, project folders, visible tool activity, read-only workspace file browsing, terminal activity, action approvals, interruption, one-time scheduled tasks, and workspace import/export. Codex and OpenCode provide local agent execution. Antigravity, Cloud, Ollama, and OpenAI-compatible endpoints provide additional chat models.
 
 ## Run on this Mac
 
-Open the packaged **A Gent.app** from the macOS build. It starts its own local host and stores its workspace in Electron’s application data directory. The app detects the existing Codex installation and sign-in. No Reason account or credentials are imported.
+Open the packaged **A Gent.app** from the macOS build. It starts its own local host and stores its workspace in Electron’s application data directory. The app detects existing Codex and OpenCode installations and sign-ins. No Reason account or credentials are imported.
 
 For the source project, use Node 24.22.2 or another runtime accepted by the installed dependencies:
 
@@ -35,21 +37,21 @@ The **Connected apps** section inventories the MCP connections already configure
 
 OpenCode uses the installed OpenCode CLI and the account already signed in there. Check the connection in **Connections**; if needed, run `opencode auth login` on the host.
 
-Antigravity uses Google's Gemini OpenAI-compatible endpoint. Add an API key and choose a model. **Cloud** accepts any hosted OpenAI-compatible endpoint; enter its base URL, API key, and model.
+Antigravity uses Google's Gemini OpenAI-compatible endpoint. Add an API key and choose a model. **Cloud** accepts any hosted OpenAI-compatible endpoint; enter its base URL, API key, and model. It is a user-supplied endpoint, not Reason’s hosted cloud.
 
 Ollama uses an existing local server, normally `http://127.0.0.1:11434`. API keys are kept in host memory or supplied through environment variables, and must be re-entered after a host restart. HTTP providers support chat; project tools use Codex or OpenCode.
 
 Select **Chat** for a read-only Codex session. OpenCode runs through its CLI with `--auto`; configure OpenCode permissions if you need stricter tool limits. Select **Work in project** and choose a host folder to allow workspace changes under Codex’s sandbox and approval rules. A Gent displays supported command, file, and access approval requests. Requests for richer MCP forms or interactive tool questions currently need completion in Codex itself.
 
-Official integration references: [Codex app-server](https://learn.chatgpt.com/docs/app-server), [non-interactive Codex](https://learn.chatgpt.com/docs/non-interactive-mode).
+Official integration references: [Codex app-server](https://learn.chatgpt.com/docs/app-server), [non-interactive Codex](https://learn.chatgpt.com/docs/non-interactive-mode), [OpenCode CLI](https://opencode.ai/docs/cli).
 
 ## Windows
 
-The Windows build targets x64. The installer and portable executable include the UI and local host. Install/sign into Codex on that computer, or connect a model endpoint in Connections. Windows packages are cross-built from macOS and require a Windows runtime check before distribution.
+Windows work is paused under the current macOS-only scope. The previous build targets x64; the installer and portable executable include the UI and local host. Install/sign into Codex on that computer, or connect a model endpoint in Connections. Windows packages are cross-built from macOS and require a Windows runtime check before distribution.
 
 ## Android and a shared workspace
 
-The Android APK is a companion client. It connects to an A Gent host running on a Mac, Windows, or other supported Node computer. It does not run desktop Codex processes on the phone.
+Android work is paused under the current macOS-only scope. The APK is a companion client. It connects to an A Gent host running on a Mac, Windows, or other supported Node computer. It does not run desktop Codex processes on the phone.
 
 1. Run one persistent host for the workspace you want to share.
 2. Make that host reachable through a private HTTPS connection or an HTTPS reverse proxy you control.
@@ -118,9 +120,11 @@ npm run test:visual
 npm run test:a11y
 npm run test:e2e
 npm run desktop:mac
-npm run desktop:win
-npm run android:apk
 ```
+
+Windows and Android build commands remain available in `package.json` for the paused cross-platform work, but were not run in the current macOS-only pass.
+
+Current macOS validation: 12/12 backend tests, 17/17 smoke tests, 10/10 visual baselines, 6/6 axe scans, and 6/6 E2E workflows pass.
 
 Visual baselines live in `tests/ui/visual.spec.ts-snapshots/` and are generated on macOS arm64 with Chrome. Refresh them with `npm run test:visual:update` after an intentional UI change.
 
@@ -128,10 +132,10 @@ Android builds require JDK 21, the Android SDK and its accepted licenses. The pr
 
 ## What this version covers
 
-This is a functional independent implementation of the core personal-agent workspace. It uses the local Codex tool ecosystem and model endpoints. Reason’s private cloud service, billing, proprietary agent network, native computer-control system, browser extension, voice calls, and signed automatic updates are not reproduced. Schedules run once while the host is open; there is no hosted scheduler.
+This is a functional independent implementation of the core personal-agent workspace. It uses the local Codex and OpenCode tool ecosystems and model endpoints. Reason’s private cloud service, billing, proprietary agent network, native computer-control system, browser extension, voice calls, and signed automatic updates are not reproduced. Schedules run once while the host is open; there is no hosted scheduler.
 
 See [the reverse-engineering findings](docs/reverse-engineering.md) for the inspected artifact identity, evidence references, and limits, and [validation](docs/validation.md) for the checks performed on this build.
 
 ## Source layout
 
-`src/` contains the shared React interface, `server/` the local host and agent adapters, `shared/` the API types, `electron/` the desktop shell, and `android/` the Capacitor project. Workspace data and provider secrets are excluded from the source archive and packaged builds.
+`src/` contains the shared React interface, `server/` the local host and Codex/OpenCode agent adapters, `shared/` the API types, `electron/` the desktop shell, and `android/` the paused Capacitor project. Workspace data and provider secrets are excluded from the source archive and packaged builds.

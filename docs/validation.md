@@ -106,6 +106,7 @@ Windows and Android artifacts below are from the previous cross-platform build. 
 - UI text now uses Inter Variable. Only the Latin variable subset is bundled (48 KB instead of ~218 KB for all Inter subsets), and visual baselines were regenerated.
 - A smoke test asserts exactly one Inter Latin WOFF2 resource loads and that it is under 60 KB.
 - Provider catalog includes OpenCode, Cloud, and Antigravity. OpenCode uses the local CLI and its sign-in; Cloud and Antigravity use OpenAI-compatible endpoints.
+- Packaged macOS app verified with Computer Use: OpenCode connected through the installed CLI and reported 31 models.
 - `⌘ \` toggles the side panel; dialog focus returns to the opening control after Escape.
 - Packaged macOS app verified with Computer Use: Escape closed Settings and restored focus, Right Arrow moved the side-panel tab from Session to Sessions, and Down Arrow moved workspace-menu focus from All agents to Scheduled.
 - Packaged macOS app verified with Computer Use: created a `Product` agent group and assigned Product Designer; the sidebar nested the agent under the group.
@@ -125,6 +126,9 @@ Windows and Android artifacts below are from the previous cross-platform build. 
 - macOS notarization.
 - Windows code signing.
 - Android release signing.
+- Manual VoiceOver and reduced-motion audit.
+- Universal/Intel macOS build.
+- Large-workspace/SSE performance check.
 - CI execution (the workflow has not run on GitHub yet).
 
 ## Known issues

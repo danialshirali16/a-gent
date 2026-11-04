@@ -7,7 +7,7 @@ Active scope: **macOS only**. Windows and Android work is paused; do not rebuild
 
 ## 0. Current scope
 
-The active objective is to complete and improve A Gent on macOS. macOS builds, macOS runtime checks, backend tests, and macOS UI tests are in scope. Windows and Android builds/tests are explicitly out of scope for this pass.
+The active objective is to complete and improve A Gent on macOS. macOS builds, macOS runtime checks, backend tests, macOS UI tests, accessibility audits, and macOS E2E workflows are in scope. Windows and Android builds/tests are explicitly out of scope for this pass.
 
 ## 1. Original target
 
@@ -26,45 +26,64 @@ Scope clarifications from the project owner:
 Working:
 
 - Persistent conversations and messages.
-- Custom agents with instructions, icon, color, provider, model, and reasoning effort.
-- Groups and search.
+- Custom agents with instructions, icon, color, provider, model, reasoning effort, and agent group.
+- Agent groups and conversation groups.
+- Conversation search.
 - Streamed replies.
 - Project folders.
 - Visible tool activity.
-- Command/file/permission approvals.
+- Command, file, and permission approvals.
 - Run interruption.
 - One-time scheduled tasks.
 - Workspace import/export.
-- Codex local execution through the app-server interface.
-- Ollama and OpenAI-compatible chat providers.
+- Read-only Files side panel with workspace browsing.
+- Terminal/activity side panel.
+- Per-device pairing tokens with create, rotate, revoke, and legacy cookie migration.
 - Local token auth, host/origin allowlists, Electron sandboxing.
-- 9 backend integration tests.
-- Typecheck and production build pass.
+- Data-directory lock, rolling `state.json.bak` recovery, CSP, and approval diffs.
+
+### Providers
+
+- **Codex** — local app-server integration and sign-in.
+- **OpenCode** — local CLI integration, model discovery, session continuity, streamed JSON events.
+- **Antigravity** — Google Gemini OpenAI-compatible endpoint with API key.
+- **Cloud** — configurable hosted OpenAI-compatible endpoint.
+- **Ollama** — local OpenAI-compatible chat.
+- **OpenAI compatible** — custom endpoint, API key, and model ID.
+
+OpenCode runs through its CLI with `--auto`; stricter permissions belong in OpenCode’s own configuration. Cloud and Antigravity use the HTTP streaming adapter.
 
 ### Reason-like UI
 
-Implemented on `ui/reason-style`:
+Implemented:
 
 - Reason-derived light/dark design tokens.
+- Inter Variable UI text, Latin subset only (48 KB).
 - 280px sidebar, inset chat surface, centered agent pill.
-- Agent rows with solid color icons.
+- Agent rows with solid color icons and collapsible agent groups.
 - Compact 64px sidebar rail.
 - Chat bubbles, date separators, hover actions.
 - Tool stream with Compact / Verbose / Hidden setting.
 - One-line composer with plus menu and combined model/effort pill.
-- Settings modal with left navigation and search.
-- Connections modal with models, local MCP apps, and host pairing.
+- Settings modal with left navigation and search, including Devices.
+- Connections modal with models, providers, local MCP apps, and host pairing.
 - Agents and Scheduled modals.
-- 480px side panel with Session, Sessions, Activity, and Approvals tabs.
+- 480px side panel with Session, Sessions, Files, Terminal, Activity, and Approvals tabs.
 - Code-block copy buttons.
 - Centered model/effort change events.
 - Electron hidden title bar, traffic-light padding, Windows title-bar overlay.
-- Accessibility improvements: `aria-live`, `aria-current`, visible run errors, improved contrast.
+- Full keyboard navigation for menus, dialogs, model picker, and side-panel tabs.
+- `⌘ \` side-panel shortcut.
+- Automated axe accessibility audit.
+- macOS E2E matrix for core workflows.
 
 Not finished:
 
 - Retry/more message actions.
-- Physical Android and Windows runtime checks.
+- Manual screen-reader and reduced-motion audit.
+- Removal of unused page views from `views.tsx`.
+- Image/PDF/binary attachments.
+- Recurring schedules and conversation retry/branching.
 
 ### Built artifacts
 
@@ -72,45 +91,51 @@ Not finished:
 | --- | --- | ---: | --- |
 | macOS arm64 | `release/A-Gent-0.1.0-mac-arm64.dmg` | 121 MB | Built; ad-hoc signed; not notarized |
 | macOS arm64 | `release/A-Gent-0.1.0-mac-arm64.zip` | 118 MB | Built; ad-hoc signed; not notarized |
-| Windows x64 | `release/A-Gent-Setup-0.1.0-x64.exe` | 120 MB | Built; unsigned; icon/metadata skipped |
-| Windows x64 | `release/A-Gent-Portable-0.1.0-x64.exe` | 108 MB | Built; unsigned; icon/metadata skipped |
-| Android | `release/A-Gent-0.1.0-android-debug.apk` | 4.1 MB | Built; debug-signed; companion client |
+| Windows x64 | `release/A-Gent-Setup-0.1.0-x64.exe` | 120 MB | Previous cross-platform build; unsigned; not rebuilt in this macOS pass |
+| Windows x64 | `release/A-Gent-Portable-0.1.0-x64.exe` | 108 MB | Previous cross-platform build; unsigned; not rebuilt in this macOS pass |
+| Android | `release/A-Gent-0.1.0-android-debug.apk` | 4.3 MB | Previous cross-platform build; debug-signed; companion client |
 
 ### Artifact hashes
 
 ```text
-61434e53107a5f853087a85fcef75369b8d64f448e4b9725344de70a13796a1c  A-Gent-0.1.0-mac-arm64.dmg
-05fbfb9f94ffec892913580186f65b02bc3cb7e303fb93c1954d793e379e1b19  A-Gent-0.1.0-mac-arm64.zip
-4fdc030b006fe37a33acb3d53593446d458d0c3c59ba518cdb29d8eee1f54fb1  A-Gent-Setup-0.1.0-x64.exe
-b1982c0612e4bcfcbfee361f4da34cb170f4be2d186e1855eb537d2eaa0cedb8  A-Gent-Portable-0.1.0-x64.exe
-4fb2f074302af379eec6905306c8c07f46812a2d21041a7fab4d557cf39cb56f  A-Gent-0.1.0-android-debug.apk
+f5b2f8479898798f3e31146ba200b0547d1fe357bae5452bf68584ac24aac3cb  A-Gent-0.1.0-mac-arm64.dmg
+259092c74717c03296462950c152b422d6a54a8a2559fdb48da2e6fb9798492a  A-Gent-0.1.0-mac-arm64.zip
+4ef4c19e8b9437c246b42a436ab95ad73a65105c432105ead2241f750914df92  A-Gent-Setup-0.1.0-x64.exe
+f65ba83b3719106ac8984ddb4bef1c3b6ad4c8806534d63ca3c566477e8f8ba7  A-Gent-Portable-0.1.0-x64.exe
+e3d476344f8ba3492657bec03b0626dce11aee4c5a24d99047fad45e240cac2c  A-Gent-0.1.0-android-debug.apk
 ```
 
 ### Verified on this machine
 
 - `npm run typecheck` — passes.
-- `npm test` — 9/9 backend tests pass.
+- `npm test` — 12/12 backend tests pass.
+- `npm run test:ui` — 17/17 Playwright smoke tests pass.
+- `npm run test:visual` — 10/10 visual baselines pass.
+- `npm run test:a11y` — 6/6 axe scans pass with 0 violations.
+- `npm run test:e2e` — 6/6 macOS E2E workflows pass.
 - `npm run build` — passes.
 - `npm run desktop:mac` — builds DMG and ZIP.
-- `npm run desktop:win` — cross-builds NSIS installer and portable EXE.
-- `npm run android:apk` — builds debug APK.
 - Packaged macOS app launches and serves the UI.
-- Real Codex 0.166.0 discovery works: account detected, models listed.
+- Real Codex discovery works: account detected, models listed.
+- OpenCode connects through the installed CLI and reports 31 models.
 - Packaged macOS app visually verified with Computer Use: hidden title bar, traffic lights, sidebar, compact rail.
-- Android APK metadata: package `com.agent.mobile`, minSdk 24, targetSdk 36, INTERNET permission.
-- Android APK signature: Android Debug certificate.
+- Packaged macOS app verified for devices, agent groups, Files/Terminal, keyboard flows, light theme, and provider cards.
+- Inter Latin WOFF2 is the only bundled font resource (48 KB).
 
 ### Not verified
 
-- Windows installer/portable runtime on real Windows.
-- Windows icon rendering on a Windows desktop.
-- Android APK on a physical device or emulator.
-- Android HTTPS host pairing, back button, safe areas, token persistence.
+- Windows installer/portable runtime on real Windows (paused).
+- Windows icon rendering on a Windows desktop (paused).
+- Android APK on a physical device or emulator (paused).
+- Android HTTPS host pairing, back button, safe areas, token persistence (paused).
 - macOS Gatekeeper on a clean Mac.
 - macOS notarization.
 - Windows code signing.
 - Android release signing.
-- CI execution (workflow has not run on GitHub yet).
+- Manual VoiceOver and reduced-motion audit.
+- Universal/Intel macOS build.
+- CI execution on GitHub.
+- Performance check under large workspaces/SSE load.
 
 ## 3. Completion assessment
 
@@ -118,169 +143,86 @@ These are engineering estimates, not precise metrics.
 
 | Workstream | Done | Remaining | Notes |
 | --- | ---: | ---: | --- |
-| Core local workspace | 80% | 20% | Core chat/agents/schedules/approvals work; feature parity gaps remain |
-| macOS delivery | 90% | 10% | Artifact built and app verified; signing/notarization/Intel missing |
-| Windows delivery | 60% | 40% | Artifacts built; no runtime test, no icon metadata, unsigned |
-| Android delivery | 40% | 60% | Debug APK built; companion-only, no device test, no release signing |
-| Reason-like UI | 88% | 12% | Major surfaces, Devices settings, agent groups, Files, Terminal, and keyboard navigation done; smaller interactions pending |
-| Security and reliability | 82% | 18% | Hashed per-device tokens, cookie migration, Settings device management, data lock, recovery, CSP, and approval diffs; limits still need work |
-| Tests and QA | 97% | 3% | 12 backend tests, 17 smoke tests, 10 visual baselines, 6 axe scans, and 6 E2E workflows pass; manual screen-reader audit pending |
-| Docs and release | 50% | 50% | README/roadmap exist; validation doc and release truth missing |
+| Core local workspace | 85% | 15% | Core chat/agents/schedules/approvals work; local parity gaps remain |
+| macOS delivery | 92% | 8% | Artifact built and packaged app verified; signing/notarization/Intel missing |
+| Windows delivery | 60% | 40% | Paused; previous artifacts built, no runtime test, unsigned |
+| Android delivery | 40% | 60% | Paused; debug APK, companion-only, no device test |
+| Reason-like UI | 92% | 8% | Major surfaces, providers, groups, Files/Terminal, keyboard, and accessibility done; retry actions and manual audit remain |
+| Security and reliability | 85% | 15% | Device tokens, cookie migration, data lock, recovery, CSP, and approval diffs; SSRF/timeouts/streaming remain |
+| Tests and QA | 97% | 3% | 12 backend, 17 smoke, 10 visual, 6 axe, and 6 E2E pass; manual screen-reader audit pending |
+| Docs and release | 85% | 15% | README, roadmap, UI roadmap, validation, and research notes updated; tag, notices, signing remain |
 | Full Reason parity | 35% | 65% | Cloud/billing intentionally excluded; native/browser/voice/connectors missing |
 
-**Against the original local-first Mac + Windows + Android goal: roughly 60–65% complete.**  
-**Against full Reason parity: roughly 30–35% complete**, but cloud and billing are intentionally out of scope.
+**Against the current macOS objective: roughly 90–92% complete.**
+**Against the original local-first Mac + Windows + Android goal: roughly 65–70% complete.**
+**Against full Reason parity: roughly 35% complete**, with cloud and billing intentionally out of scope.
 
 ## 4. What is left
 
-### A. Release truth and hygiene
+### A. macOS release hardening
 
-- Update `README.md` so it matches the artifacts that now exist.
-- Add `docs/validation.md` with commands, results, artifact hashes, and unverified areas.
-- Decide whether to merge `ui/reason-style` into `main` or continue on the branch.
-- Add a release checklist and artifact naming/version policy.
-- Add a license and privacy/terms notes if distributing.
+- Developer ID signing.
+- Notarization and stapling.
+- Clean-Mac Gatekeeper test.
+- Universal/Intel packaging decision.
+- Signing steps in CI/release docs.
+- Auto-update only after signing is stable.
 
-### B. Windows delivery
+### B. Manual accessibility audit
 
-- Fix `win.signAndEditExecutable: false`: electron-builder reports that this skips icon and version metadata. Use `signExecutable: false` to skip only signing, or apply rcedit manually.
-- Rebuild installer and portable with the icon/version metadata applied.
-- Test on Windows 11 x64:
-  - installer and portable launch
-  - local host starts
-  - Codex CLI discovery and sign-in
-  - Ollama/OpenAI-compatible providers
-  - project folder picker
-  - approvals, interruption, schedules
-  - title-bar overlay and drag regions
-- Decide on code signing / SmartScreen guidance.
-- Document Windows prerequisites.
+- VoiceOver traversal of home, sidebar, composer, Settings, Connections, side panel, and Files/Terminal.
+- Reduced-motion audit of the packaged app.
+- Fix any findings and record them in `docs/validation.md`.
 
-### C. Android delivery
+### C. Local feature parity
 
-- Test the APK on a physical Android device or emulator.
-- Decide: companion client vs standalone.
-  - Companion is the current design and is realistic for v1.
-  - Standalone would require a local model/runtime strategy; not recommended for v1.
-- Improve pairing:
-  - HTTPS host setup guidance
-  - QR code or short pairing code
-  - persistent secure token storage instead of re-entry every session
-- Add Android back-button handling:
-  - close modal
-  - close side panel
-  - close drawer
-  - then exit
-- Audit safe areas, keyboard behavior, touch targets, and file import/export in WebView.
-- Add release signing and document sideload/store steps.
-- Test against a host over HTTPS with a valid certificate.
-
-### D. macOS delivery
-
-- Replace ad-hoc signing with Developer ID signing.
-- Notarize and staple the DMG/ZIP.
-- Test on a clean Mac with Gatekeeper enabled.
-- Decide whether to ship arm64 only or a universal build.
-- Consider auto-update only after signing is stable.
-
-### E. Security and reliability
-
-- Desktop pairing cookies upgrade to hashed per-device tokens; local browser injection is opt-in.
-- Settings device management is available for administrator and current-device sessions.
-- Add a data-directory lock to prevent two hosts clobbering state.
-- Add rolling backups and recovery for corrupt `state.json`.
-- Fix export/import size mismatch: export can exceed the 8 MB import limit.
-- Fix attachment total-size validation (8 × 1 MB exceeds the JSON body limit).
-- Add CSP `default-src`/`script-src`/`img-src`; decide whether remote Markdown images are allowed.
-- Review provider URL SSRF exposure.
-- Show file diffs in file-change approvals.
-- Add “Allow for this session” and “Cancel turn” approval options.
-- Add turn/approval timeouts.
-- Test large workspaces and reduce full-state SSE payloads if needed.
-
-### F. UI completion and testing
-
-- Merge or finish the paused UI branch.
-- Agent groups are available in the sidebar with create, assign, rename, and delete.
-- Files and Terminal side-panel tabs are available with read-only workspace browsing and activity detail.
-- Add retry/more message actions.
-- Full keyboard navigation is available for sidebar menus, the composer menu, model picker, dialogs, and side-panel tabs.
-- Screenshot visual coverage and a core-workflow E2E matrix are in place; manual screen-reader audit remains.
-- Audit contrast, focus, target sizes, and screen-reader behavior.
-- Remove the unused page views from `views.tsx` by extracting `ProviderCard`.
-
-### G. Local feature parity
-
-Decide which are in scope:
-
+- Retry/regenerate and more message actions.
 - Image/PDF/binary attachments.
 - Project file browser and diff review.
 - Recurring schedules.
 - Conversation retry/branching.
 - Notifications for scheduled tasks and approvals.
 - Token/cost/rate-limit display.
-- Multi-agent teams.
+- Multi-agent teams if still in scope.
 - Local MCP app authentication flow.
-- Voice input/chat.
-- Native computer control and browser extension.
+- Voice input/chat, native computer control, and browser extension only after separate approval.
 
-Out of scope unless explicitly added:
+### D. Paused platforms
 
-- Reason cloud computer.
-- Reason hosted connectors/OAuth catalog.
-- Billing, usage, members, company.
-- Trial/ad banner.
-- Reason account/login.
-- Signed automatic updates before signing is solved.
+- Windows runtime test and signing.
+- Android device test, persistent secure token storage, QR pairing, safe areas, release signing.
+- Cross-platform CI and smoke tests.
 
-## 5. Scope decisions needed
+### E. Release
 
-| ID | Decision | Recommendation |
-| --- | --- | --- |
-| S1 | Android companion vs standalone | Companion for v1; standalone is a separate product |
-| S2 | Full Reason parity vs core local workspace | Core local workspace plus selected local parity features |
-| S3 | Mac arm64-only vs universal | Universal if Intel users matter; otherwise arm64 |
-| S4 | Windows code signing | Sign before public distribution; unsigned for internal testing |
-| S5 | Remote access model | Per-device tokens + HTTPS reverse proxy; no public tunnel by default |
-| S6 | Native computer control / browser extension / voice | Separate subsystem, not part of v1 |
+- License, privacy, and third-party notices.
+- Release notes and artifact naming.
+- Tag a release candidate.
+- Final README and validation truth.
 
-## 6. Roadmap
+## 5. Phase plan
 
 ### Phase 0 — Release truth and UI merge
 
-**Goal:** Make the repository and artifacts describe reality.
-
-- [ ] Update README artifact table and platform status.
-- [x] Add `docs/validation.md` with current build/test evidence.
+- [x] Update README artifact/status text.
+- [x] Add `docs/validation.md` with current evidence.
 - [x] Merge `ui/reason-style` into `main`.
-- [ ] Tag a build (`v0.1.0-ui` or similar).
 - [x] Record artifact hashes and sizes.
-- [ ] Add release checklist.
+- [x] Add release checklist.
+- [ ] Tag a build (`v0.1.0-ui` or similar).
 
-**Exit:** main/branch is green; docs match artifacts; no false delivery claims.
-
-**Effort:** 1–2 days.
-
-### Phase 1 — Windows delivery
-
-**Goal:** A Windows user can install, launch, and use A Gent.
+### Phase 1 — Windows delivery (paused)
 
 - [x] Fix Windows icon/version metadata (`signExecutable: false`).
 - [x] Rebuild setup and portable artifacts.
 - [ ] Test on Windows 11 x64.
-- [ ] Verify Codex discovery/sign-in and HTTP providers.
+- [ ] Verify Codex/OpenCode discovery and HTTP providers.
 - [ ] Verify project folder picker, approvals, interruption, schedules.
 - [ ] Verify title-bar overlay and drag regions.
 - [ ] Document Windows prerequisites and SmartScreen behavior.
 - [ ] Decide signing plan.
 
-**Exit:** installer and portable both pass a Windows smoke test.
-
-**Effort:** 3–5 days, dominated by Windows runtime access.
-
-### Phase 2 — Android delivery
-
-**Goal:** A phone can install the APK, pair with a host, and use the workspace.
+### Phase 2 — Android delivery (paused)
 
 - [ ] Test APK on a physical device/emulator.
 - [x] Add Android back-button handling.
@@ -292,13 +234,7 @@ Out of scope unless explicitly added:
 - [ ] Add release signing.
 - [ ] Document companion setup and limitations.
 
-**Exit:** a real Android device completes pairing, chat, approval, and scheduled-task flows.
-
-**Effort:** 5–8 days.
-
 ### Phase 3 — macOS release hardening
-
-**Goal:** A clean Mac can open the app without security workarounds.
 
 - [ ] Developer ID signing.
 - [ ] Notarization and stapling.
@@ -306,13 +242,7 @@ Out of scope unless explicitly added:
 - [ ] Decide universal vs arm64.
 - [ ] Add signing steps to CI/release docs.
 
-**Exit:** DMG opens on a clean Mac with Gatekeeper enabled.
-
-**Effort:** 2–3 days, plus certificate/provisioning lead time.
-
 ### Phase 4 — Security and reliability
-
-**Goal:** Safe for daily local use and remote pairing.
 
 - [x] Replace proxy-sensitive token injection with a desktop pairing cookie.
 - [x] Add per-device tokens with rotation/revocation and legacy cookie migration.
@@ -326,13 +256,7 @@ Out of scope unless explicitly added:
 - [ ] Add approval/turn timeouts.
 - [ ] Add large-workspace/SSE performance checks.
 
-**Exit:** security/reliability checklist passes; no known high-severity pairing or data-loss issue.
-
-**Effort:** 4–6 days.
-
 ### Phase 5 — UI completion and test suite
-
-**Goal:** Finish the Reason-like UI and protect it with tests.
 
 - [x] Agent groups in sidebar.
 - [x] Approvals in side panel.
@@ -342,18 +266,11 @@ Out of scope unless explicitly added:
 - [x] Playwright smoke tests.
 - [x] Playwright screenshot visual baselines (5 viewports × 2 themes).
 - [x] Automated axe accessibility audit.
+- [x] macOS E2E workflow matrix.
 - [ ] Manual screen-reader and reduced-motion audit.
 - [ ] Remove unused page views.
 
-**Exit:** UI E2E and visual snapshots pass; accessibility has no serious issues.
-
-**Effort:** 4–6 days.
-
 ### Phase 6 — Local feature parity
-
-**Goal:** Close the most valuable local gaps.
-
-Prioritize:
 
 - [ ] Image/PDF/binary attachments.
 - [ ] Project file browser and diff review.
@@ -364,76 +281,89 @@ Prioritize:
 - [ ] Multi-agent teams if still in scope.
 - [ ] Voice/native/browser features only after separate approval.
 
-**Exit:** agreed parity checklist is complete or explicitly deferred.
-
-**Effort:** 5–10 days depending on scope.
-
 ### Phase 7 — Release
-
-**Goal:** Ship a coherent multi-platform release.
 
 - [ ] CI builds and tests on macOS, Windows, Android.
 - [ ] Artifact checksums and release notes.
-- [ ] License/privacy/terms.
-- [ ] Final README and validation docs.
+- [ ] License/privacy/terms and third-party notices.
+- [x] Final README and validation docs.
 - [ ] Tag release.
 - [ ] Smoke-test every artifact.
 
-**Exit:** all three platforms have tested artifacts and accurate documentation.
+## 6. Milestones
 
-**Effort:** 2–3 days.
+| Milestone | Definition | Status |
+| --- | --- | --- |
+| M0 | UI branch merged; docs and artifacts truthful | Done |
+| M1 | Windows installer/portable pass a Windows smoke test | Paused |
+| M2 | Android APK pairs with a host and passes device smoke test | Paused |
+| M3 | macOS DMG is signed, notarized, and opens on a clean Mac | Pending |
+| M4 | Security/reliability checklist passes | Mostly done |
+| M5 | UI E2E/visual/accessibility pass | E2E, visual, and axe pass; manual audit pending |
+| M6 | Agreed local parity checklist complete | Pending |
+| M7 | v0.1.0 multi-platform release published | Pending |
 
-## 7. Milestones
-
-| Milestone | Definition |
-| --- | --- |
-| M0 | UI branch merged or explicitly paused; docs and artifacts truthful |
-| M1 | Windows installer/portable pass a Windows smoke test |
-| M2 | Android APK pairs with a host and passes device smoke test |
-| M3 | macOS DMG is signed, notarized, and opens on a clean Mac |
-| M4 | Security/reliability checklist passes |
-| M5 | UI E2E/visual/accessibility pass |
-| M6 | Agreed local parity checklist complete |
-| M7 | v0.1.0 multi-platform release published |
-
-## 8. Risks
+## 7. Risks
 
 | Risk | Impact | Mitigation |
 | --- | --- | --- |
-| No Windows runtime available here | Windows artifacts unverified | Use a Windows VM/device or GitHub Actions Windows runner |
-| No Android device/emulator available here | APK unverified | Use a physical device or set up an emulator |
+| No Windows runtime available here | Windows artifacts unverified | Paused until a Windows VM/device is available |
+| No Android device/emulator available here | APK unverified | Paused until a device/emulator is available |
 | macOS ad-hoc signature | Gatekeeper blocks other Macs | Developer ID + notarization |
-| Windows runtime unverified | Installer/portable may fail on real Windows | Test on a Windows VM/device or GitHub Actions Windows runner |
-| Android companion only | User expects standalone | Decide S1 explicitly |
-| No device-management UI | Tokens must be managed through the API | Add a Settings device list |
+| No signing credentials | Cannot ship a trusted release | Obtain Apple, Windows, and Android signing credentials |
+| OpenCode CLI permissions | `--auto` can run tools without A Gent approval | Configure OpenCode permissions; keep provider opt-in |
+| Cloud endpoint trust | User-supplied endpoint can be malicious | Keep SSRF review and explicit endpoint configuration |
+| Manual accessibility gaps | Automated axe does not catch screen-reader issues | Run VoiceOver/reduced-motion audit |
 | State corruption | Data loss | Backups, lock, recovery |
 | Scope creep | Delays | Keep cloud/billing/native/voice out of v1 |
 | Full Reason parity expectation | Unbounded scope | Define “core local workspace + selected parity” |
 
-## 9. Definition of done
+## 8. Definition of done
 
-The main target is done when:
+### Current macOS objective
 
-- [ ] A clean Mac can install/open the signed/notarized app.
-- [ ] A clean Windows machine can install/run the app and discover Codex.
+- [x] App builds and launches on macOS.
+- [x] Core local workspace flows work.
+- [x] Reason-like UI surfaces implemented.
+- [x] Files/Terminal, agent groups, devices, and keyboard navigation implemented.
+- [x] Automated axe audit passes with zero violations.
+- [x] macOS E2E matrix passes.
+- [ ] Manual VoiceOver and reduced-motion audit passes.
+- [ ] Signed and notarized DMG opens on a clean Mac.
+- [ ] Universal/Intel decision recorded.
+
+### Original multi-platform target
+
+- [ ] A clean Windows machine can install/run the app and discover providers.
 - [ ] A real Android device can install the APK, pair over HTTPS, and use chat, approvals, and schedules.
 - [ ] All three platforms use the Reason-like UI.
-- [ ] No Reason cloud service, billing, or account is required.
 - [ ] Core local workspace flows work on all platforms.
-- [ ] Security/reliability checklist passes.
-- [ ] Typecheck, backend tests, UI E2E/visual tests, and cross-platform smoke tests pass.
+- [ ] Cross-platform smoke tests pass.
 - [ ] README and validation docs match the shipped artifacts.
+
+## 9. Release checklist
+
+- [ ] Typecheck, backend tests, smoke tests, visual baselines, axe scans, and E2E matrix pass.
+- [ ] macOS app builds and launches from the packaged artifact.
+- [ ] Manual VoiceOver and reduced-motion audit passes.
+- [ ] DMG is signed, notarized, and stapled.
+- [ ] Clean-Mac Gatekeeper check passes.
+- [ ] Artifact hashes and sizes match `docs/validation.md`.
+- [ ] README, roadmap, UI roadmap, validation, and research notes are current.
+- [ ] Third-party notices, license, and privacy notes are included.
+- [ ] Release tag and notes are created.
 
 ## 10. Immediate next actions
 
-1. Test the Windows artifacts on a real Windows runtime.
-2. Test the Android APK on a device/emulator.
-3. Update README artifact/status text.
-4. Start the security/reliability pass.
-5. Add Playwright screenshot baselines.
-6. Tag a release candidate after runtime checks.
+1. Run the manual VoiceOver and reduced-motion audit on the packaged macOS app.
+2. Decide universal vs arm64.
+3. Obtain signing credentials and complete Developer ID/notarization.
+4. Add retry/more message actions and image/PDF attachments.
+5. Tag a macOS release candidate after the manual audit.
 
 Current environment limitations:
 
-- No Wine, Windows VM, Android device, or emulator is available here.
-- Windows and Android artifacts can be built but not runtime-verified on this machine.
+- No signing credentials are available.
+- No clean Mac is available for Gatekeeper verification.
+- No Windows VM/device, Android device, or emulator is available.
+- Windows and Android work remains paused by the current scope.

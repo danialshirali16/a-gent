@@ -1,35 +1,43 @@
 # A Gent → Reason-style UI Roadmap
 
-Status: in progress  
-Branch: `ui/reason-style`  
-Baseline commit: `chore: baseline before Reason-style UI`
+Status: active
+Branch: `main`
+Active scope: macOS only
 
 ## Current implementation status
 
-Implemented in the first pass:
+Implemented:
 
 - `src/styles/tokens.css` — Reason-derived light/dark tokens.
 - `src/styles/reason.css` — shell, sidebar, chat, composer, side panel, responsive rules.
-- `src/app/Sidebar.tsx` — Reason-style sidebar with agent rows and account/connect-apps bottom area.
+- `src/app/Sidebar.tsx` — Reason-style sidebar with collapsible agent groups, group actions, and account/connect-apps bottom area.
 - `src/app/TopBar.tsx` — centered agent/session pill and side-panel toggle.
-- `src/app/SidePanel.tsx` — Session, Sessions, and Activity tabs.
+- `src/app/SidePanel.tsx` — Session, Sessions, Files, Terminal, Activity, and Approvals tabs.
+- `src/app/FilesPanel.tsx` — read-only workspace file browser.
+- `src/app/TerminalPanel.tsx` — read-only terminal/activity detail.
 - `src/chat/MessageList.tsx` — bubbles, date separators, hover actions, approvals.
 - `src/chat/ToolStream.tsx` — compact tool activity stream.
 - `src/composer/Composer.tsx` — one-line composer, plus menu, combined model/effort pill.
 - `src/App.tsx` — new shell composition; conversations moved out of the sidebar.
 - `src/components.tsx` — `AgentGlyph` for solid-color agent icons.
-- `src/dialogs/SettingsDialog.tsx` — Reason-style settings modal with left navigation and search.
-- `src/dialogs/ConnectionsDialog.tsx` — Reason-style connections catalog with search, category tabs, provider cards, local apps, and host pairing.
+- `src/dialogs/ConnectionsDialog.tsx` — Reason-style connections catalog with Codex, OpenCode, Antigravity, Cloud, Ollama, OpenAI-compatible, local apps, and host pairing.
+- `src/dialogs/SettingsDialog.tsx` — Reason-style settings modal with Appearance, Models, Devices, Data, Shortcuts, and About.
 - `src/dialogs/AgentsDialog.tsx` — agents grid modal.
 - `src/dialogs/SchedulesDialog.tsx` — scheduled tasks modal.
 - `src/app/SidebarRail.tsx` — compact icon rail when the sidebar is collapsed.
+- `src/keyboard.ts` — shared arrow/Home/End focus navigation for menus and popovers.
 - Electron custom window chrome: macOS `hiddenInset`, Windows `titleBarOverlay`, drag/no-drag regions.
 - Accessibility improvements: `aria-live` streaming replies, `aria-current` navigation, visible run errors, improved muted-text contrast through Reason tokens.
 - Code-block copy buttons in Markdown replies.
 - Centered model-change and reasoning-effort events in conversations.
 - Tool stream setting: Compact / Verbose / Hidden.
+- Inter Variable UI text with a Latin-only 48 KB font subset.
+- Full keyboard navigation for menus, dialogs, model picker, and side-panel tabs.
+- Automated axe accessibility audit with zero violations.
+- Playwright smoke, visual, accessibility, and E2E coverage.
+- Device pairing tokens with rotation/revocation in Settings → Devices.
 
-Still pending from the roadmap: manual screen-reader audit.
+Still pending from the roadmap: manual screen-reader/reduced-motion audit, retry/more message actions, unused page-view cleanup, and a large-workspace performance check.
 
 ## 1. Goal
 
@@ -264,9 +272,9 @@ src/
 - [x] Add `TopBar` with centered agent/session pill.
 - [x] Remove topbar context title and project button.
 - [x] Add sidebar top action row: collapse, search, new.
-- [ ] Add compact rail state for collapsed sidebar.
-- [ ] Add Electron custom chrome: macOS `hiddenInset`, Windows `titleBarOverlay`.
-- [ ] Add drag/no-drag regions.
+- [x] Add compact rail state for collapsed sidebar.
+- [x] Add Electron custom chrome: macOS `hiddenInset`, Windows `titleBarOverlay`.
+- [x] Add drag/no-drag regions.
 
 ### Phase 3 — Sidebar information architecture
 
@@ -324,7 +332,7 @@ src/
 ### Phase 7 — Side panel
 
 - [x] Add `SidePanel` at `480px`.
-- [x] Add Session, Sessions, Activity tabs.
+- [x] Add Session, Sessions, Files, Terminal, Activity, and Approvals tabs.
 - [x] Add approvals to the side panel.
 - [x] Open from top pill and toolbar.
 - [x] Add mobile overlay sheet.
@@ -366,18 +374,19 @@ src/
 - [x] Full Playwright E2E matrix.
 - [x] Automated axe accessibility audit.
 - [ ] Manual screen-reader and reduced-motion audit.
-- [ ] Performance check.
-- [ ] macOS, Windows, Android smoke tests.
-- [ ] Update README and validation docs.
+- [ ] Large-workspace performance check.
+- [x] macOS packaged-app smoke checks.
+- [ ] Windows and Android runtime smoke tests (paused).
+- [x] Update README and validation docs.
 - [ ] Update third-party notices.
 - [ ] Tag release.
 
 ## 6. Testing strategy
 
 - Visual: 1440×900, 1280×800, 1024×768, 768×1024, 390×844; dark/light.
-- Functional: send, stream, stop, approvals, attachments, project, agents, groups, schedules, import/export, host pairing, offline.
-- Accessibility: axe, keyboard-only, screen reader, reduced motion, contrast.
-- Cross-platform: macOS packaged app, Windows installer, Android APK.
+- Functional: send, stream, stop, approvals, attachments, project, agents, agent groups, schedules, import/export, host pairing, offline, device tokens, Files/Terminal, keyboard flows.
+- Accessibility: axe (6 scans, 0 violations), keyboard-only, screen reader, reduced motion, contrast.
+- Current scope: macOS packaged app. Windows installer and Android APK are paused.
 
 ## 7. Risks
 
@@ -394,14 +403,15 @@ src/
 
 ## 8. Definition of done
 
-- [ ] At 1280×800, the app reads as Reason-like: 280px sidebar, centered pill, inset chat panel, bubbles, one-line composer.
-- [ ] No brand header in sidebar; no topbar context title/project button.
-- [ ] Sidebar is agent/group-centric; conversations in side panel and plus menu.
-- [ ] Chat uses bubbles, date separators, centered system events, hover actions.
-- [ ] Composer is one row at rest with plus menu and combined model/effort pill.
+- [x] At 1280×800, the app reads as Reason-like: 280px sidebar, centered pill, inset chat panel, bubbles, one-line composer.
+- [x] No brand header in sidebar; no topbar context title/project button.
+- [x] Sidebar is agent/group-centric; conversations in side panel and plus menu.
+- [x] Chat uses bubbles, date separators, centered system events, hover actions.
+- [x] Composer is one row at rest with plus menu and combined model/effort pill.
 - [x] Settings and Connections open as modals.
 - [x] Side panel provides Session, Sessions, Files, Terminal, Activity, and Approvals.
 - [x] Dark/light themes use extracted tokens.
-- [ ] No cloud/billing/hosted connector UI.
-- [ ] Existing flows still work.
-- [ ] Typecheck, tests, build, E2E, visual, accessibility, and cross-platform smoke tests pass.
+- [x] No cloud/billing/hosted connector UI.
+- [x] Existing flows still work.
+- [x] Typecheck, backend tests, build, E2E, visual, and accessibility checks pass on macOS.
+- [ ] Windows and Android smoke tests pass (paused).

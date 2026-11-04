@@ -1,5 +1,7 @@
 # Reason desktop reconstruction findings
 
+> **Implementation status (2026-11-04):** This is the original bounded reconstruction brief for Reason desktop 0.1.119. A Gent is now an independent local-first macOS app with its own Reason-like UI, local workspace, agents and agent groups, Codex/OpenCode/Cloud/Antigravity/Ollama/OpenAI-compatible providers, device pairing tokens, Files/Terminal panels, keyboard navigation, automated axe audits, and a macOS E2E matrix. Current build and test status lives in `docs/project-roadmap.md` and `docs/validation.md`. This document remains a research record, not a claim of full Reason parity.
+
 ## Scope and evidence
 
 Target: Reason Machines desktop 0.1.119, bundle ID `com.reasonmachines.desktop`, installed at `/Applications/Reason.app`.
