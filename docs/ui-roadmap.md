@@ -29,7 +29,7 @@ Implemented in the first pass:
 - Centered model-change and reasoning-effort events in conversations.
 - Tool stream setting: Compact / Verbose / Hidden.
 
-Still pending from the roadmap: agent groups, approvals in the side panel, Files/Terminal tabs, Android back handling, formal accessibility audit, visual/E2E tests.
+Still pending from the roadmap: agent groups, Files/Terminal tabs, full keyboard navigation, formal accessibility audit, and the full E2E matrix.
 
 ## 1. Goal
 
@@ -318,6 +318,7 @@ src/
 - [x] Add `AgentDialog`, `GroupDialog`, `ScheduleDialog`, `ConversationDialog`, `SearchDialog`.
 - [x] Add `AgentsDialog` and `SchedulesDialog` surfaces.
 - [x] Move Settings, Connections, Agents, and Scheduled out of full-page views.
+- [x] Add Devices settings section with token create/rotate/revoke.
 - [x] Add mobile modal behavior.
 - [ ] Move the remaining `ProviderCard` implementation out of `views.tsx` and delete the unused page views.
 
@@ -325,7 +326,7 @@ src/
 
 - [x] Add `SidePanel` at `480px`.
 - [x] Add Session, Sessions, Activity tabs.
-- [ ] Add approvals to the side panel.
+- [x] Add approvals to the side panel.
 - [x] Open from top pill and toolbar.
 - [x] Add mobile overlay sheet.
 - [ ] v1.1: Files tab with read-only project tree.
@@ -398,9 +399,9 @@ src/
 - [ ] Sidebar is agent/group-centric; conversations in side panel and plus menu.
 - [ ] Chat uses bubbles, date separators, centered system events, hover actions.
 - [ ] Composer is one row at rest with plus menu and combined model/effort pill.
-- [ ] Settings and Connections open as modals.
+- [x] Settings and Connections open as modals.
 - [ ] Side panel provides Session, Sessions, Activity; Files/Terminal in v1.1.
-- [ ] Dark/light themes use extracted tokens.
+- [x] Dark/light themes use extracted tokens.
 - [ ] No cloud/billing/hosted connector UI.
 - [ ] Existing flows still work.
 - [ ] Typecheck, tests, build, E2E, visual, accessibility, and cross-platform smoke tests pass.

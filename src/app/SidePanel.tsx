@@ -2,7 +2,7 @@ import { AlertCircle, Check, FolderPlus, LoaderCircle, MessageSquare, Plus, Pane
 import type { Activity as ActivityItem, Agent, Conversation, Group, Run } from '../../shared/types';
 import { AgentGlyph, IconButton, formatDate } from '../components';
 
-export type SidePanelTab = 'session' | 'sessions' | 'activity';
+export type SidePanelTab = 'session' | 'sessions' | 'activity' | 'approvals';
 
 export interface SidePanelProps {
   tab: SidePanelTab;
@@ -18,6 +18,7 @@ export interface SidePanelProps {
   onCreateGroup: () => void;
   onOpenConversationDetails: (conversation: Conversation) => void;
   onOpenAgent: () => void;
+  onApproval: (id: string, accept: boolean) => void;
 }
 
 const effortLabel: Record<string, string> = { low: 'Light', medium: 'Balanced', high: 'Deep' };
@@ -39,6 +40,7 @@ export function SidePanel(props: SidePanelProps) {
     || [];
   const workspace = props.conversation?.workspacePath || props.agent?.workspacePath || '';
   const status = props.currentRun ? (props.currentRun.status === 'waiting' ? 'Waiting for approval' : 'Working') : 'Ready';
+  const pendingApprovals = props.currentRun?.approvals.filter(approval => approval.status === 'pending') || [];
 
   return <aside className="reason-sidepanel" aria-label="Session details">
     <div className="reason-sidepanel-header">
@@ -46,6 +48,7 @@ export function SidePanel(props: SidePanelProps) {
         <button role="tab" aria-selected={props.tab === 'session'} className={props.tab === 'session' ? 'is-active' : ''} onClick={() => props.onTab('session')}>Session</button>
         <button role="tab" aria-selected={props.tab === 'sessions'} className={props.tab === 'sessions' ? 'is-active' : ''} onClick={() => props.onTab('sessions')}>Sessions</button>
         <button role="tab" aria-selected={props.tab === 'activity'} className={props.tab === 'activity' ? 'is-active' : ''} onClick={() => props.onTab('activity')}>Activity</button>
+        <button role="tab" aria-selected={props.tab === 'approvals'} className={props.tab === 'approvals' ? 'is-active' : ''} onClick={() => props.onTab('approvals')}>Approvals{pendingApprovals.length > 0 && <span className="reason-tab-count">{pendingApprovals.length}</span>}</button>
       </div>
       <IconButton label="Close side panel" onClick={props.onClose}><PanelRightClose size={18} /></IconButton>
     </div>
@@ -98,6 +101,18 @@ export function SidePanel(props: SidePanelProps) {
 
       {props.tab === 'activity' && <>
         {activities.length ? <div className="reason-activity-list">{activities.map(item => <ActivityRow key={item.id} item={item} />)}</div> : <div className="reason-sidepanel-empty">No activity in this session yet.</div>}
+      </>}
+
+      {props.tab === 'approvals' && <>
+        {pendingApprovals.length ? <div className="reason-sidepanel-approvals">{pendingApprovals.map(approval => <div className="reason-approval" key={approval.id}>
+          <div className="reason-approval-head"><AlertCircle size={15} /><h3>{approval.title}</h3></div>
+          <p>{approval.description}</p>
+          {approval.command && <pre>{approval.command}</pre>}
+          <div className="reason-approval-actions">
+            <button className="button quiet small" onClick={() => props.onApproval(approval.id, false)}>Decline</button>
+            <button className="button primary small" onClick={() => props.onApproval(approval.id, true)}>Allow this action</button>
+          </div>
+        </div>)}</div> : <div className="reason-sidepanel-empty">No approvals are waiting.</div>}
       </>}
     </div>
   </aside>;

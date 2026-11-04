@@ -12,6 +12,7 @@ import { ProviderManager } from './providers.js';
 import { RunManager } from './runs.js';
 
 const DEVICE_COOKIE = 'agent_desktop_token';
+type RequestAuth = { admin: boolean; device?: DeviceInfo };
 
 function textTokenMatches(received: string, expected: string): boolean {
   const left = Buffer.from(received), right = Buffer.from(expected);
@@ -30,6 +31,10 @@ function readCookie(request: express.Request, name: string): string {
 function deviceCookie(request: express.Request, token: string): string {
   const secure = request.secure || request.headers['x-forwarded-proto'] === 'https';
   return `${DEVICE_COOKIE}=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=Strict; Max-Age=31536000${secure ? '; Secure' : ''}`;
+}
+function clearDeviceCookie(request: express.Request): string {
+  const secure = request.secure || request.headers['x-forwarded-proto'] === 'https';
+  return `${DEVICE_COOKIE}=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0${secure ? '; Secure' : ''}`;
 }
 async function loadToken(directory: string, supplied?: string): Promise<string> {
   if (supplied) { if (supplied.length < 24) throw new Error('AGENT_TOKEN must contain at least 24 characters.'); return supplied; }
@@ -142,7 +147,7 @@ export async function startServer(options: ServerOptions = {}): Promise<ServerHa
   app.use(express.json({ limit: '32mb' }));
   const publish = async () => { await runs.publishState(); };
   const requireAdmin = (res: Response) => {
-    const auth = res.locals.auth as { admin?: boolean };
+    const auth = res.locals.auth as RequestAuth;
     if (!auth.admin) throw new InputError('Only the host administrator token can manage devices.', 403);
   };
   const checkGroup = (groupId?: string | null) => { if (groupId && !store.state.groups.some(group => group.id === groupId)) throw new InputError('Group not found.', 404); };
@@ -236,8 +241,12 @@ export async function startServer(options: ServerOptions = {}): Promise<ServerHa
     store.state.schedules.splice(index, 1); await publish(); res.json({ ok: true });
   });
   app.patch('/api/settings', async (req, res) => { const patch = settingsPatch(req.body); if (patch.defaultProviderId) providers.get(patch.defaultProviderId); Object.assign(store.state.settings, patch); await publish(); res.json(store.state.settings); });
+  app.get('/api/auth', (_req, res) => {
+    const auth = res.locals.auth as RequestAuth;
+    res.json({ admin: auth.admin, device: auth.device ?? null });
+  });
   app.get('/api/devices', (_req, res) => {
-    const auth = res.locals.auth as { admin: boolean; device?: DeviceInfo };
+    const auth = res.locals.auth as RequestAuth;
     const list = auth.admin ? devices.list() : auth.device ? [auth.device] : [];
     res.json(list.map(device => ({ ...device, current: auth.device?.id === device.id })));
   });
@@ -248,12 +257,20 @@ export async function startServer(options: ServerOptions = {}): Promise<ServerHa
     res.status(201).json(created);
   });
   app.post('/api/devices/:id/rotate', async (req, res) => {
-    requireAdmin(res);
-    res.json(await devices.rotate(String(req.params.id)));
+    const auth = res.locals.auth as RequestAuth;
+    const id = String(req.params.id);
+    if (!auth.admin && auth.device?.id !== id) throw new InputError('Only the host administrator can rotate another device.', 403);
+    const rotated = await devices.rotate(id);
+    if (!auth.admin) res.setHeader('Set-Cookie', deviceCookie(req, rotated.token));
+    res.json(rotated);
   });
   app.delete('/api/devices/:id', async (req, res) => {
-    requireAdmin(res);
-    res.json(await devices.revoke(String(req.params.id)));
+    const auth = res.locals.auth as RequestAuth;
+    const id = String(req.params.id);
+    if (!auth.admin && auth.device?.id !== id) throw new InputError('Only the host administrator can revoke another device.', 403);
+    const revoked = await devices.revoke(id);
+    if (!auth.admin) res.setHeader('Set-Cookie', clearDeviceCookie(req));
+    res.json(revoked);
   });
   app.get('/api/providers', (_req, res) => { res.json(providers.providers); });
   app.get('/api/apps', async (_req, res) => { res.json(await providers.apps()); });

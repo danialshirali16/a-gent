@@ -2,9 +2,12 @@
 
 Status: active  
 Date: 2026-11-04  
-Branch: `ui/reason-style`  
-Latest UI commit: `1fe01c4`  
-Baseline commit: `b0a18fe`
+Branch: `main`  
+Active scope: **macOS only**. Windows and Android work is paused; do not rebuild or test those artifacts until the scope changes.
+
+## 0. Current scope
+
+The active objective is to complete and improve A Gent on macOS. macOS builds, macOS runtime checks, backend tests, and macOS UI tests are in scope. Windows and Android builds/tests are explicitly out of scope for this pass.
 
 ## 1. Original target
 
@@ -52,7 +55,7 @@ Implemented on `ui/reason-style`:
 - Settings modal with left navigation and search.
 - Connections modal with models, local MCP apps, and host pairing.
 - Agents and Scheduled modals.
-- 480px side panel with Session, Sessions, and Activity tabs.
+- 480px side panel with Session, Sessions, Activity, and Approvals tabs.
 - Code-block copy buttons.
 - Centered model/effort change events.
 - Electron hidden title bar, traffic-light padding, Windows title-bar overlay.
@@ -61,7 +64,6 @@ Implemented on `ui/reason-style`:
 Not finished:
 
 - Agent groups in the sidebar.
-- Approvals inside the side panel.
 - Files and Terminal tabs.
 - Retry/more message actions.
 - Full keyboard menu navigation.
@@ -123,9 +125,9 @@ These are engineering estimates, not precise metrics.
 | macOS delivery | 90% | 10% | Artifact built and app verified; signing/notarization/Intel missing |
 | Windows delivery | 60% | 40% | Artifacts built; no runtime test, no icon metadata, unsigned |
 | Android delivery | 40% | 60% | Debug APK built; companion-only, no device test, no release signing |
-| Reason-like UI | 75% | 25% | Major surfaces done; tests and smaller interactions pending |
-| Security and reliability | 78% | 22% | Hashed per-device tokens with rotation/revocation, cookie migration, data lock, recovery, CSP, and approval diffs; device UI and limits still need work |
-| Tests and QA | 78% | 22% | 9 backend tests, 3 smoke tests, and 10 visual baselines pass; device and full E2E tests pending |
+| Reason-like UI | 78% | 22% | Major surfaces and Devices settings done; smaller interactions pending |
+| Security and reliability | 82% | 18% | Hashed per-device tokens, cookie migration, Settings device management, data lock, recovery, CSP, and approval diffs; limits still need work |
+| Tests and QA | 82% | 18% | 9 backend tests, 7 smoke tests, and 10 visual baselines pass; full E2E and accessibility pending |
 | Docs and release | 50% | 50% | README/roadmap exist; validation doc and release truth missing |
 | Full Reason parity | 35% | 65% | Cloud/billing intentionally excluded; native/browser/voice/connectors missing |
 
@@ -187,7 +189,7 @@ These are engineering estimates, not precise metrics.
 ### E. Security and reliability
 
 - Desktop pairing cookies upgrade to hashed per-device tokens; local browser injection is opt-in.
-- Add a Settings device list for creating, rotating, and revoking tokens.
+- Settings device management is available for administrator and current-device sessions.
 - Add a data-directory lock to prevent two hosts clobbering state.
 - Add rolling backups and recovery for corrupt `state.json`.
 - Fix export/import size mismatch: export can exceed the 8 MB import limit.
@@ -203,7 +205,7 @@ These are engineering estimates, not precise metrics.
 
 - Merge or finish the paused UI branch.
 - Add agent groups to the sidebar.
-- Add approvals, Files, and Terminal to the side panel.
+- Add Files and Terminal to the side panel; approvals are now available there.
 - Add retry/more message actions.
 - Add full keyboard navigation for menus.
 - Screenshot visual coverage is in place for 5 viewports and both themes; full E2E flows remain.
@@ -317,6 +319,7 @@ Out of scope unless explicitly added:
 
 - [x] Replace proxy-sensitive token injection with a desktop pairing cookie.
 - [x] Add per-device tokens with rotation/revocation and legacy cookie migration.
+- [x] Add Settings → Devices for token creation, rotation, and current-device revocation.
 - [x] Add data-directory lock.
 - [x] Add rolling backups and corrupt-state recovery.
 - [ ] Finish import/export streaming; body limit raised to 32 MB.
@@ -335,7 +338,7 @@ Out of scope unless explicitly added:
 **Goal:** Finish the Reason-like UI and protect it with tests.
 
 - [ ] Agent groups in sidebar.
-- [ ] Approvals in side panel.
+- [x] Approvals in side panel.
 - [ ] Files/Terminal tabs.
 - [ ] Retry/more message actions.
 - [ ] Full keyboard menu navigation.

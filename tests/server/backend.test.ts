@@ -104,7 +104,7 @@ test('desktop pairing cookie migrates to a revocable device token', async () => 
   }
 });
 
-test('device tokens can be created, rotated, revoked, and survive a host restart', async () => {
+test('device tokens can be created, self-managed, rotated, revoked, and survive a host restart', async () => {
   const directory = await mkdtemp(join(scratch, 'agent-device-test-'));
   const staticDir = join(directory, 'static'); await mkdir(staticDir); await writeFile(join(staticDir, 'index.html'), '<!doctype html><html><head></head><body>A Gent</body></html>');
   const previousProbe = process.env.AGENT_SKIP_PROVIDER_PROBE;
@@ -113,49 +113,74 @@ test('device tokens can be created, rotated, revoked, and survive a host restart
   let handle = await start();
   const call = async (token: string, path: string, body?: unknown, method = body === undefined ? 'GET' : 'POST') => {
     const response = await fetch(`${handle.url}/api${path}`, { method, headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
-    return { status: response.status, body: await response.json() as any };
+    return { status: response.status, body: await response.json() as any, headers: response.headers };
   };
   try {
-    const created = await call(handle.token, '/devices', { name: 'Pixel' }, 'POST');
-    assert.equal(created.status, 201);
-    assert.match(created.body.token, /^agt_/);
-    assert.equal(created.body.device.name, 'Pixel');
+    const pixel = await call(handle.token, '/devices', { name: 'Pixel' }, 'POST');
+    const tablet = await call(handle.token, '/devices', { name: 'Tablet' }, 'POST');
+    assert.equal(pixel.status, 201);
+    assert.equal(tablet.status, 201);
+    assert.match(pixel.body.token, /^agt_/);
+    assert.match(tablet.body.token, /^agt_/);
+    assert.equal(pixel.body.device.name, 'Pixel');
     const raw = await readFile(join(directory, 'devices.json'), 'utf8');
-    assert.ok(!raw.includes(created.body.token), 'only a token hash is stored');
-    assert.equal((await call(created.body.token, '/bootstrap')).status, 200);
+    assert.ok(!raw.includes(pixel.body.token), 'only a token hash is stored');
+    assert.ok(!raw.includes(tablet.body.token), 'only a token hash is stored');
+    assert.equal((await call(pixel.body.token, '/bootstrap')).status, 200);
+    const deviceAuth = await call(pixel.body.token, '/auth');
+    assert.equal(deviceAuth.body.admin, false);
+    assert.equal(deviceAuth.body.device.id, pixel.body.device.id);
+    const adminAuth = await call(handle.token, '/auth');
+    assert.equal(adminAuth.body.admin, true);
+    assert.equal(adminAuth.body.device, null);
 
-    const own = await call(created.body.token, '/devices');
+    const own = await call(pixel.body.token, '/devices');
     assert.equal(own.status, 200);
     assert.equal(own.body.length, 1);
-    assert.equal(own.body[0].id, created.body.device.id);
+    assert.equal(own.body[0].id, pixel.body.device.id);
     assert.equal(own.body[0].current, true);
-    assert.equal((await call(created.body.token, '/devices', { name: 'Other' }, 'POST')).status, 403, 'device tokens cannot create more devices');
-    assert.equal((await call(created.body.token, `/devices/${created.body.device.id}/rotate`, {}, 'POST')).status, 403, 'device tokens cannot rotate themselves without the administrator');
-    assert.equal((await call(created.body.token, `/devices/${created.body.device.id}`, undefined, 'DELETE')).status, 403, 'device tokens cannot revoke devices');
-    const adminList = await call(handle.token, '/devices');
-    assert.equal(adminList.body.length, 1);
-    assert.equal(adminList.body[0].name, 'Pixel');
+    assert.equal((await call(pixel.body.token, '/devices', { name: 'Other' }, 'POST')).status, 403, 'device tokens cannot create more devices');
+    assert.equal((await call(pixel.body.token, `/devices/${tablet.body.device.id}/rotate`, {}, 'POST')).status, 403, 'device tokens cannot rotate another device');
+    assert.equal((await call(pixel.body.token, `/devices/${tablet.body.device.id}`, undefined, 'DELETE')).status, 403, 'device tokens cannot revoke another device');
 
-    const rotated = await call(handle.token, `/devices/${created.body.device.id}/rotate`, {}, 'POST');
+    const selfRotated = await call(pixel.body.token, `/devices/${pixel.body.device.id}/rotate`, {}, 'POST');
+    assert.equal(selfRotated.status, 200);
+    assert.notEqual(selfRotated.body.token, pixel.body.token);
+    assert.match(selfRotated.headers.get('set-cookie') ?? '', /agent_desktop_token=agt_/);
+    assert.equal((await call(pixel.body.token, '/bootstrap')).status, 401, 'self-rotation invalidates the old token');
+    assert.equal((await call(selfRotated.body.token, '/bootstrap')).status, 200);
+
+    const adminList = await call(handle.token, '/devices');
+    assert.equal(adminList.body.length, 2);
+    assert.deepEqual(adminList.body.map((device: any) => device.name).sort(), ['Pixel', 'Tablet']);
+    const rotated = await call(handle.token, `/devices/${pixel.body.device.id}/rotate`, {}, 'POST');
     assert.equal(rotated.status, 200);
-    assert.notEqual(rotated.body.token, created.body.token);
-    assert.equal((await call(created.body.token, '/bootstrap')).status, 401, 'rotation invalidates the old token');
+    assert.notEqual(rotated.body.token, selfRotated.body.token);
+    assert.equal((await call(selfRotated.body.token, '/bootstrap')).status, 401, 'administrator rotation invalidates the previous token');
     assert.equal((await call(rotated.body.token, '/bootstrap')).status, 200);
 
     await handle.close();
     handle = await start();
     assert.equal((await call(rotated.body.token, '/bootstrap')).status, 200, 'rotated tokens survive a restart');
-    assert.equal((await call(created.body.token, '/bootstrap')).status, 401);
+    assert.equal((await call(pixel.body.token, '/bootstrap')).status, 401);
 
-    const revoked = await call(handle.token, `/devices/${created.body.device.id}`, undefined, 'DELETE');
+    const revoked = await call(handle.token, `/devices/${pixel.body.device.id}`, undefined, 'DELETE');
     assert.equal(revoked.status, 200);
     assert.ok(revoked.body.revokedAt);
     assert.equal((await call(rotated.body.token, '/bootstrap')).status, 401, 'revocation is immediate');
     assert.equal((await call(handle.token, '/bootstrap')).status, 200, 'the root administrator token remains valid');
 
+    const selfRevoked = await call(tablet.body.token, `/devices/${tablet.body.device.id}`, undefined, 'DELETE');
+    assert.equal(selfRevoked.status, 200);
+    assert.ok(selfRevoked.body.revokedAt);
+    assert.match(selfRevoked.headers.get('set-cookie') ?? '', /agent_desktop_token=;/);
+    assert.match(selfRevoked.headers.get('set-cookie') ?? '', /Max-Age=0/);
+    assert.equal((await call(tablet.body.token, '/bootstrap')).status, 401, 'self-revocation is immediate');
+
     await handle.close();
     handle = await start();
     assert.equal((await call(rotated.body.token, '/bootstrap')).status, 401, 'revocation survives a restart');
+    assert.equal((await call(tablet.body.token, '/bootstrap')).status, 401, 'self-revocation survives a restart');
   } finally {
     await handle.close(); await rm(directory, { recursive: true, force: true });
     if (previousProbe === undefined) delete process.env.AGENT_SKIP_PROVIDER_PROBE; else process.env.AGENT_SKIP_PROVIDER_PROBE = previousProbe;

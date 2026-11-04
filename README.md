@@ -58,6 +58,8 @@ The host address is remembered on the device. The device token remains in the cu
 
 The token in `.data/.token` (or `AGENT_TOKEN`) is the host administrator token. It can create, rotate, and revoke per-device tokens. Device tokens are stored as SHA-256 hashes in `devices.json`; the plaintext token is returned only when it is created or rotated.
 
+In the desktop app, open **Settings → Devices**. An administrator session can create tokens for other devices. A device session can rotate or revoke its own token.
+
 ```sh
 TOKEN=$(cat .data/.token)
 HOST=http://127.0.0.1:4317
@@ -78,7 +80,7 @@ curl -s -X POST "$HOST/api/devices/<device-id>/rotate" -H "Authorization: Bearer
 curl -s -X DELETE "$HOST/api/devices/<device-id>" -H "Authorization: Bearer $TOKEN"
 ```
 
-A device token can read its own device record but cannot manage other devices. If a desktop device token is revoked, its next launch falls back to the administrator cookie and creates a fresh device record. Use HTTPS for remote access and give each phone or computer its own token.
+A device token can read and rotate or revoke its own record but cannot manage other devices. If a desktop device token is revoked, its next launch falls back to the administrator cookie and creates a fresh device record. Use HTTPS for remote access and give each phone or computer its own token.
 
 The host defaults to loopback. No public service or tunnel is created by the build. Available host configuration:
 

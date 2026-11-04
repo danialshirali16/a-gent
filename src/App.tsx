@@ -146,6 +146,8 @@ export default function App() {
     } catch (reason) { setError((reason as Error).message); }
   }
   async function connect(next: Connection) { await request(next, '/api/bootstrap'); remember('aGent.host', next.url); try { sessionStorage.setItem('aGent.token', next.token); } catch { /* session-only fallback */ } setConnection(next); setActiveConversationId(null); setActiveAgentId('primary'); }
+  function updateDeviceToken(token: string) { setConnection(previous => ({ ...previous, token })); try { sessionStorage.setItem('aGent.token', token); } catch { /* session-only fallback */ } }
+  function handleDeviceRevoked() { try { sessionStorage.removeItem('aGent.token'); } catch { /* session-only fallback */ } window.location.reload(); }
   async function copyMessage(content: string, id: string) { try { await navigator.clipboard.writeText(content); setCopied(id); setTimeout(() => setCopied(''), 1500); } catch { setError('Clipboard access is unavailable on this device.'); } }
   async function handleApproval(id: string, accept: boolean) { try { await api(`/api/approvals/${id}`, 'POST', { decision: accept ? 'accept' : 'decline' }); } catch (reason) { setError((reason as Error).message); } }
   async function stopRun() { if (!currentRun) return; try { updateRun(await api<Run>(`/api/runs/${currentRun.id}/interrupt`, 'POST')); } catch (reason) { setError((reason as Error).message); } }
@@ -269,9 +271,10 @@ export default function App() {
       onCreateGroup={() => setDialog({ kind: 'group' })}
       onOpenConversationDetails={openConversationDetails}
       onOpenAgent={() => agent && setDialog({ kind: 'agent', agent })}
+      onApproval={handleApproval}
     />}
     {dialog?.kind === 'connection' && <ConnectionDialog connection={connection} onConnect={connect} onClose={() => setDialog(null)} />}
-    {data && dialog?.kind === 'settings' && <SettingsDialog state={data.state} api={api} onError={setError} onRefresh={refresh} onClose={() => setDialog(null)} onOpenConnections={() => setDialog({ kind: 'connections' })} />}
+    {data && dialog?.kind === 'settings' && <SettingsDialog state={data.state} api={api} connection={connection} onError={setError} onRefresh={refresh} onClose={() => setDialog(null)} onOpenConnections={() => setDialog({ kind: 'connections' })} onDeviceToken={updateDeviceToken} onDeviceRevoked={handleDeviceRevoked} />}
     {data && dialog?.kind === 'connections' && <ConnectionsDialog providers={data.providers} api={api} onRefresh={refresh} connection={connection} onHost={() => setDialog({ kind: 'connection' })} onClose={() => setDialog(null)} />}
     {data && dialog?.kind === 'agents' && <AgentsDialog agents={agents} onCreate={() => setDialog({ kind: 'agent' })} onEdit={value => setDialog({ kind: 'agent', agent: value })} onChat={value => { newChat(value); setDialog(null); }} onClose={() => setDialog(null)} />}
     {data && dialog?.kind === 'schedules' && <SchedulesDialog state={data.state} api={api} onCreate={() => setDialog({ kind: 'schedule' })} onOpen={id => { const chat = state?.conversations.find(item => item.id === id); if (chat) selectChat(chat); setDialog(null); }} onError={setError} onClose={() => setDialog(null)} />}

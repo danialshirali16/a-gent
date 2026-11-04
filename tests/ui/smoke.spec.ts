@@ -48,3 +48,103 @@ test('mobile drawer opens and closes', async ({ page }) => {
   await page.getByRole('button', { name: 'Collapse sidebar' }).click();
   await expect(page.getByRole('button', { name: 'Open sidebar' })).toBeVisible();
 });
+
+
+test('settings device tokens can be created and rotated', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: /Personal workspace/ }).click();
+  await page.getByRole('button', { name: 'Devices' }).click();
+  await expect(page.getByRole('heading', { name: 'Devices', exact: true })).toBeVisible();
+  await page.getByLabel('Device name').fill('Playwright Phone');
+  await page.getByRole('button', { name: 'Create', exact: true }).click();
+  await expect(page.getByText('New token for Playwright Phone')).toBeVisible();
+  const token = await page.locator('.device-token-value code').textContent();
+  expect(token).toMatch(/^agt_/);
+  await page.getByRole('button', { name: 'Done' }).click();
+  const row = page.locator('.device-row', { hasText: 'Playwright Phone' });
+  await expect(row).toBeVisible();
+  await row.getByRole('button', { name: 'Rotate' }).click();
+  await expect(page.getByText('New token for Playwright Phone')).toBeVisible();
+  const rotated = await page.locator('.device-token-value code').textContent();
+  expect(rotated).toMatch(/^agt_/);
+  expect(rotated).not.toBe(token);
+});
+
+
+test('a device token can rotate itself from Settings', async ({ page, context }) => {
+  await page.goto('/');
+  const admin = await page.evaluate(() => (window as any).__AGENT_CONFIG__?.token as string | undefined);
+  expect(admin).toBeTruthy();
+  const created = await page.request.post('/api/devices', {
+    headers: { Authorization: `Bearer ${admin}`, 'Content-Type': 'application/json' },
+    data: { name: 'Mac Test' },
+  });
+  expect(created.status()).toBe(201);
+  const { token } = await created.json() as { token: string };
+  const origin = new URL(page.url()).origin;
+  await context.addCookies([{ name: 'agent_desktop_token', value: token, url: origin, httpOnly: true, sameSite: 'Strict' }]);
+
+  await page.reload();
+  await expect(page.getByRole('textbox', { name: 'Message A Gent' })).toBeVisible();
+  await page.getByRole('button', { name: /Personal workspace/ }).click();
+  await page.getByRole('button', { name: 'Devices' }).click();
+  await expect(page.getByRole('heading', { name: 'This device', exact: true })).toBeVisible();
+  const row = page.locator('.device-row', { hasText: 'Mac Test' });
+  await expect(row.getByText('Current', { exact: true })).toBeVisible();
+  await row.getByRole('button', { name: 'Rotate' }).click();
+  await expect(page.getByText('New token for Mac Test')).toBeVisible();
+  const rotated = await page.locator('.device-token-value code').textContent();
+  expect(rotated).toMatch(/^agt_/);
+  expect(rotated).not.toBe(token);
+  await expect(row.getByText('Current', { exact: true })).toBeVisible();
+  await expect(row.getByRole('button', { name: 'Revoke' })).toBeVisible();
+  expect(await page.evaluate(() => sessionStorage.getItem('aGent.token'))).toBe(rotated);
+  const status = await page.evaluate(async next => (await fetch('/api/bootstrap', { headers: { Authorization: `Bearer ${next}` } })).status, rotated!);
+  expect(status).toBe(200);
+  const oldStatus = await page.request.get('/api/bootstrap', { headers: { Authorization: `Bearer ${token}` } });
+  expect(oldStatus.status()).toBe(401);
+});
+
+
+test('side panel exposes an approvals tab', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Open side panel' }).click();
+  await page.getByRole('tab', { name: 'Approvals' }).click();
+  await expect(page.getByText('No approvals are waiting.')).toBeVisible();
+});
+
+
+test('side panel approvals can complete a waiting run', async ({ page }) => {
+  await page.goto('/');
+  const token = await page.evaluate(() => (window as any).__AGENT_CONFIG__?.token as string | undefined);
+  expect(token).toBeTruthy();
+  const status = async () => page.evaluate(async next => {
+    const result = await fetch('/api/providers', { headers: { Authorization: `Bearer ${next}` } });
+    const providers = await result.json() as Array<{ id: string; status: string }>;
+    return providers.find(provider => provider.id === 'codex')?.status;
+  }, token!);
+  if (await status() !== 'connected') {
+    const response = await page.evaluate(async next => {
+      const result = await fetch('/api/providers/codex/connect', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${next}`, 'Content-Type': 'application/json' },
+        body: '{}',
+      });
+      return result.status;
+    }, token!);
+    expect(response).toBe(200);
+  }
+  await expect.poll(status, { timeout: 15000 }).toBe('connected');
+
+  await page.getByRole('textbox', { name: 'Message A Gent' }).fill('[approval]');
+  await page.getByRole('button', { name: 'Send message' }).click();
+  await expect(page.locator('.reason-approval').first()).toBeVisible({ timeout: 15000 });
+
+  await page.getByRole('button', { name: 'Open side panel' }).click();
+  await page.getByRole('tab', { name: 'Approvals' }).click();
+  const panelApproval = page.locator('.reason-sidepanel-approvals');
+  await expect(panelApproval).toBeVisible();
+  await panelApproval.getByRole('button', { name: 'Allow this action' }).click();
+  await expect(page.getByText('Approved task completed.')).toBeVisible({ timeout: 15000 });
+  await expect(page.getByText('No approvals are waiting.')).toBeVisible();
+});
