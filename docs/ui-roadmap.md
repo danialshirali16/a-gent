@@ -29,7 +29,7 @@ Implemented in the first pass:
 - Centered model-change and reasoning-effort events in conversations.
 - Tool stream setting: Compact / Verbose / Hidden.
 
-Still pending from the roadmap: formal accessibility audit and the full E2E matrix.
+Still pending from the roadmap: manual screen-reader audit and the full E2E matrix.
 
 ## 1. Goal
 
@@ -363,7 +363,8 @@ src/
 - [x] Playwright smoke flows.
 - [x] Playwright screenshot visual baselines.
 - [ ] Full Playwright E2E matrix.
-- [ ] Accessibility audit.
+- [x] Automated axe accessibility audit.
+- [ ] Manual screen-reader and reduced-motion audit.
 - [ ] Performance check.
 - [ ] macOS, Windows, Android smoke tests.
 - [ ] Update README and validation docs.

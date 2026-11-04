@@ -14,6 +14,7 @@ Electron: 45.2.2
 | `npm test` | 11/11 pass |
 | `npm run test:ui` | 15/15 Playwright smoke tests pass |
 | `npm run test:visual` | 10/10 Playwright screenshot baselines pass |
+| `npm run test:a11y` | 6/6 axe scans pass; 0 violations |
 | `npm run build` | Pass |
 | `npm run desktop:mac` | Pass |
 | `npm run desktop:win` | Not rerun; macOS-only scope |
@@ -30,8 +31,8 @@ Windows and Android artifacts below are from the previous cross-platform build. 
 
 | Artifact | Size | SHA-256 |
 | --- | ---: | --- |
-| `A-Gent-0.1.0-mac-arm64.dmg` | 121 MB | `0157fb0b5a4ea8013b99d6525d2f5782ea3dea8938946c042dc2097cfcdb2ac9` |
-| `A-Gent-0.1.0-mac-arm64.zip` | 118 MB | `1c42c8df9a94a6586a2f8d031c416e3987dfb0b031830ff2f1b9814aca945097` |
+| `A-Gent-0.1.0-mac-arm64.dmg` | 121 MB | `af4fbe894c91f013b330ab290584b585e8beabcb5404b6b8a01c565ae84bcf82` |
+| `A-Gent-0.1.0-mac-arm64.zip` | 118 MB | `b8e503686ee53f61a5203c540c7fcb1443987cad72d28fa040946013e73acaa1` |
 | `A-Gent-Setup-0.1.0-x64.exe` | 120 MB | `4ef4c19e8b9437c246b42a436ab95ad73a65105c432105ead2241f750914df92` |
 | `A-Gent-Portable-0.1.0-x64.exe` | 108 MB | `f65ba83b3719106ac8984ddb4bef1c3b6ad4c8806534d63ca3c566477e8f8ba7` |
 | `A-Gent-0.1.0-android-debug.apk` | 4.3 MB | `e3d476344f8ba3492657bec03b0626dce11aee4c5a24d99047fad45e240cac2c` |
@@ -98,6 +99,8 @@ Windows and Android artifacts below are from the previous cross-platform build. 
 - Terminal tab shows read-only activity detail from the current or latest run.
 - Packaged macOS app verified with Computer Use: Files tab browsed `README.md` and `src/index.ts`; Terminal tab showed its read-only empty state.
 - Keyboard navigation covers sidebar and group menus, the composer add menu, model picker, dialog Escape/focus trap, and side-panel tabs.
+- Axe scans cover home in light/dark, Settings, Connections, the side panel, and mobile home with 0 violations.
+- The light-theme faint text token was darkened to meet WCAG AA contrast.
 - `⌘ \` toggles the side panel; dialog focus returns to the opening control after Escape.
 - Packaged macOS app verified with Computer Use: Escape closed Settings and restored focus, Right Arrow moved the side-panel tab from Session to Sessions, and Down Arrow moved workspace-menu focus from All agents to Scheduled.
 - Packaged macOS app verified with Computer Use: created a `Product` agent group and assigned Product Designer; the sidebar nested the agent under the group.

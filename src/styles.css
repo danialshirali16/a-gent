@@ -12,7 +12,7 @@
 }
 :root[data-theme='light'] {
   --background: #faf9f7; --sidebar: #f1f0ed; --surface: #fff; --surface-hover: #eae8e4;
-  --surface-soft: #f5f3ef; --input: #f4f2ef; --text: #282727; --muted: #6e6a67; --faint: #827d78;
+  --surface-soft: #f5f3ef; --input: #f4f2ef; --text: #282727; --muted: #6e6a67; --faint: #6e6a67;
   --border: #dcd9d4; --border-soft: #e7e3dd; --accent: #bd643b; --accent-ink: #fff5eb;
   --positive: #347353; --error: #ad463d; --button: #292725; --button-text: #fff;
   --shadow: 0 18px 64px #4e3b2120; --code: #efede8; color-scheme: light;

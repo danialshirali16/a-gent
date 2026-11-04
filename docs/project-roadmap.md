@@ -124,7 +124,7 @@ These are engineering estimates, not precise metrics.
 | Android delivery | 40% | 60% | Debug APK built; companion-only, no device test, no release signing |
 | Reason-like UI | 88% | 12% | Major surfaces, Devices settings, agent groups, Files, Terminal, and keyboard navigation done; smaller interactions pending |
 | Security and reliability | 82% | 18% | Hashed per-device tokens, cookie migration, Settings device management, data lock, recovery, CSP, and approval diffs; limits still need work |
-| Tests and QA | 90% | 10% | 11 backend tests, 15 smoke tests, and 10 visual baselines pass; full E2E and accessibility pending |
+| Tests and QA | 92% | 8% | 11 backend tests, 15 smoke tests, 10 visual baselines, and 6 axe scans pass; manual screen-reader audit and full E2E pending |
 | Docs and release | 50% | 50% | README/roadmap exist; validation doc and release truth missing |
 | Full Reason parity | 35% | 65% | Cloud/billing intentionally excluded; native/browser/voice/connectors missing |
 
@@ -341,7 +341,8 @@ Out of scope unless explicitly added:
 - [x] Full keyboard menu navigation.
 - [x] Playwright smoke tests.
 - [x] Playwright screenshot visual baselines (5 viewports × 2 themes).
-- [ ] Accessibility audit.
+- [x] Automated axe accessibility audit.
+- [ ] Manual screen-reader and reduced-motion audit.
 - [ ] Remove unused page views.
 
 **Exit:** UI E2E and visual snapshots pass; accessibility has no serious issues.
