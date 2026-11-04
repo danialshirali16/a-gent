@@ -58,6 +58,10 @@ export function settingsPatch(value: unknown): Partial<Settings> {
   }
   for (const key of ['defaultProviderId', 'defaultModelId']) optionalString(data, key, 200, out);
   if ('showActivity' in data) out.showActivity = bool(data.showActivity, 'showActivity');
+  if ('toolStreamView' in data) {
+    if (!['verbose', 'compact', 'hidden'].includes(String(data.toolStreamView))) throw new InputError('Choose a tool stream view.');
+    out.toolStreamView = data.toolStreamView;
+  }
   return out as Partial<Settings>;
 }
 export function schedulePatch(value: unknown): Partial<Schedule> {
@@ -85,7 +89,7 @@ export function initialState(): WorkspaceState {
       { ...shared, id: 'researcher', name: 'Research Partner', description: 'Turn questions into supported answers.', instructions: 'You are a research partner. Separate observations, inferences, and uncertainty. Cite sources when available. Never invent a source or pretend an unperformed action succeeded.', icon: 'search', color: '#d5a35f' },
     ],
     conversations: [], groups: [], schedules: [],
-    settings: { theme: 'dark', defaultProviderId: 'codex', defaultModelId: '', showActivity: true },
+    settings: { theme: 'dark', defaultProviderId: 'codex', defaultModelId: '', showActivity: true, toolStreamView: 'compact' },
   };
 }
 

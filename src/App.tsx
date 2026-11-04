@@ -44,6 +44,7 @@ export default function App() {
   const currentRun = [...(data?.runs || [])].reverse().find(run => run.conversationId === conversation?.id && ['running', 'waiting'].includes(run.status));
   const lastRun = [...(data?.runs || [])].reverse().find(run => run.conversationId === conversation?.id);
   const runError = lastRun?.status === 'failed' ? lastRun.error : undefined;
+  const toolStreamView = state?.settings.toolStreamView ?? (state?.settings.showActivity === false ? 'hidden' : 'compact');
   const busy = !!currentRun || sending;
 
   useEffect(() => {
@@ -109,13 +110,30 @@ export default function App() {
       setAttachments(previous => [...previous, ...values]); composer.current?.focus();
     } catch (reason) { setError((reason as Error).message); }
   }
+  async function appendSystemEvent(content: string) {
+    if (!conversation) return;
+    try { await api(`/api/conversations/${conversation.id}/system`, 'POST', { content }); }
+    catch (reason) { setError((reason as Error).message); }
+  }
   async function chooseModel(nextProvider: string, nextModel: string) {
+    const changed = nextProvider !== providerId || nextModel !== modelId;
     setProviderId(nextProvider); setModelId(nextModel); setModelPicker(false); if (nextProvider !== 'codex') setMode('chat');
-    if (agent) try { await api(`/api/agents/${agent.id}`, 'PATCH', { providerId: nextProvider, modelId: nextModel }); } catch (reason) { setError((reason as Error).message); }
+    if (agent) try {
+      await api(`/api/agents/${agent.id}`, 'PATCH', { providerId: nextProvider, modelId: nextModel });
+      if (changed) {
+        const provider = data?.providers.find(item => item.id === nextProvider);
+        const model = provider?.models.find(item => item.id === nextModel);
+        await appendSystemEvent(`Model changed to ${provider?.name || nextProvider}${model?.name ? ` · ${model.name}` : ' · Provider default'}`);
+      }
+    } catch (reason) { setError((reason as Error).message); }
   }
   async function chooseEffort(next: string) {
+    const changed = next !== effort;
     setEffort(next);
-    if (agent) try { await api(`/api/agents/${agent.id}`, 'PATCH', { reasoningEffort: next }); } catch (reason) { setError((reason as Error).message); }
+    if (agent) try {
+      await api(`/api/agents/${agent.id}`, 'PATCH', { reasoningEffort: next });
+      if (changed) await appendSystemEvent(`Reasoning effort set to ${next === 'low' ? 'Light' : next === 'high' ? 'Deep' : 'Balanced'}`);
+    } catch (reason) { setError((reason as Error).message); }
   }
   async function connect(next: Connection) { await request(next, '/api/bootstrap'); remember('aGent.host', next.url); try { sessionStorage.setItem('aGent.token', next.token); } catch { /* session-only fallback */ } setConnection(next); setActiveConversationId(null); setActiveAgentId('primary'); }
   async function copyMessage(content: string, id: string) { try { await navigator.clipboard.writeText(content); setCopied(id); setTimeout(() => setCopied(''), 1500); } catch { setError('Clipboard access is unavailable on this device.'); } }
@@ -185,7 +203,7 @@ export default function App() {
             </div> : <MessageList
               messages={conversation.messages}
               currentRun={currentRun}
-              showActivity={state?.settings.showActivity ?? true}
+              toolStreamView={toolStreamView}
               copied={copied}
               runError={runError}
               onCopy={copyMessage}

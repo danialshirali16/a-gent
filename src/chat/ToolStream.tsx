@@ -1,11 +1,11 @@
 import { AlertCircle, Check, ChevronDown, LoaderCircle, Terminal, Wrench } from 'lucide-react';
 import type { Activity } from '../../shared/types';
 
-export function ToolStream({ activities }: { activities: Activity[] }) {
+export function ToolStream({ activities, forceOpen = false }: { activities: Activity[]; forceOpen?: boolean }) {
   if (!activities.length) return null;
   const last = activities.at(-1)!;
   const failed = last.status === 'failed' || activities.some(activity => activity.status === 'failed');
-  return <details className="reason-tool-stream" open={failed}>
+  return <details className="reason-tool-stream" open={failed || forceOpen}>
     <summary>
       {last.status === 'running' ? <LoaderCircle size={13} className="spin" /> : failed ? <AlertCircle size={13} /> : <Check size={13} />}
       <span>{last.status === 'running' ? last.title : `${activities.length} ${activities.length === 1 ? 'step' : 'steps'}`}</span>

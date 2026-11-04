@@ -27,6 +27,7 @@ export function SettingsDialog({ state, api, onError, onRefresh, onClose, onOpen
   const [busy, setBusy] = useState(false);
   const input = useRef<HTMLInputElement>(null);
   const archived = state.conversations.filter(chat => chat.archived);
+  const toolStreamView = state.settings.toolStreamView ?? (state.settings.showActivity === false ? 'hidden' : 'compact');
   const visible = sections.filter(item => !query || `${item.label} ${item.keywords}`.toLowerCase().includes(query.toLowerCase()));
 
   async function update(settings: Partial<Settings>) {
@@ -49,8 +50,9 @@ export function SettingsDialog({ state, api, onError, onRefresh, onClose, onOpen
             <div className="theme-options">{([{ id: 'dark', label: 'Dark', Icon: Moon }, { id: 'light', label: 'Light', Icon: Sun }, { id: 'system', label: 'System', Icon: Laptop }] as const).map(({ id, label, Icon }) => <button key={id} aria-pressed={state.settings.theme === id} className={state.settings.theme === id ? 'selected' : ''} onClick={() => void update({ theme: id })}><Icon size={18} /><span>{label}</span>{state.settings.theme === id && <Check size={13} />}</button>)}</div>
           </div>
           <div className="settings-group">
-            <h3>Conversation</h3>
-            <label className="toggle-row"><span><strong>Show agent activity</strong><small>See commands, file changes, and progress in conversations.</small></span><input type="checkbox" role="switch" checked={state.settings.showActivity} onChange={event => void update({ showActivity: event.target.checked })} /></label>
+            <h3>Tool stream</h3>
+            <div className="theme-options tool-stream-options">{(['compact', 'verbose', 'hidden'] as const).map(value => <button key={value} aria-pressed={toolStreamView === value} className={toolStreamView === value ? 'selected' : ''} onClick={() => void update({ toolStreamView: value })}><span>{value === 'compact' ? 'Compact' : value === 'verbose' ? 'Verbose' : 'Hidden'}</span>{toolStreamView === value && <Check size={13} />}</button>)}</div>
+            <p className="settings-hint">Compact shows a summary, verbose opens every step, and hidden removes tool activity from conversations.</p>
           </div>
         </>}
 

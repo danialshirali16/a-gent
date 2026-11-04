@@ -63,6 +63,7 @@ export interface Settings {
   defaultProviderId: string;
   defaultModelId: string;
   showActivity: boolean;
+  toolStreamView?: 'verbose' | 'compact' | 'hidden';
 }
 export interface WorkspaceState {
   version: 1;

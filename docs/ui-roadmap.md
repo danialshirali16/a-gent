@@ -25,8 +25,11 @@ Implemented in the first pass:
 - `src/app/SidebarRail.tsx` — compact icon rail when the sidebar is collapsed.
 - Electron custom window chrome: macOS `hiddenInset`, Windows `titleBarOverlay`, drag/no-drag regions.
 - Accessibility improvements: `aria-live` streaming replies, `aria-current` navigation, visible run errors, improved muted-text contrast through Reason tokens.
+- Code-block copy buttons in Markdown replies.
+- Centered model-change and reasoning-effort events in conversations.
+- Tool stream setting: Compact / Verbose / Hidden.
 
-Still pending from the roadmap: agent groups, code-block copy, system/model-change events, tool-stream setting, approvals in the side panel, Files/Terminal tabs, Android back handling, formal accessibility audit, visual/E2E tests.
+Still pending from the roadmap: agent groups, approvals in the side panel, Files/Terminal tabs, Android back handling, formal accessibility audit, visual/E2E tests.
 
 ## 1. Goal
 
@@ -286,14 +289,14 @@ src/
 - [x] Assistant bubble: left, `18px` radius, `7px 13px`, `#f5f5f50a`.
 - [x] Remove per-message avatar/name/time.
 - [x] Add date separators.
-- [ ] Add centered system events for model changes.
+- [x] Add centered system events for model and effort changes.
 - [x] Add hover message actions: copy.
 - [ ] Add retry/more message actions.
-- [ ] Add code block copy.
+- [x] Add code block copy.
 - [x] Style tables as cards.
 - [x] Add streaming caret/thinking indicator.
 - [x] Add empty state.
-- [ ] Add “Tool stream view” setting.
+- [x] Add “Tool stream view” setting.
 
 ### Phase 5 — Composer
 
@@ -352,7 +355,7 @@ src/
 - [x] Failed tool activity error icon.
 - [x] Empty/loading/error states for the main surfaces.
 - [x] Reduced motion.
-- [ ] Tool-stream view setting.
+- [x] Tool-stream view setting.
 - [ ] Full keyboard shortcut coverage.
 
 ### Phase 10 — QA, docs, release

@@ -1,4 +1,4 @@
-import { Fragment } from 'react';
+import { Fragment, useState, type ReactNode } from 'react';
 import { AlertCircle, Check, Copy, Paperclip, Terminal } from 'lucide-react';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -8,11 +8,27 @@ import { ToolStream } from './ToolStream';
 export interface MessageListProps {
   messages: Message[];
   currentRun?: Run;
-  showActivity: boolean;
+  toolStreamView: 'verbose' | 'compact' | 'hidden';
   copied: string;
   runError?: string;
   onCopy: (content: string, id: string) => void;
   onApproval: (id: string, accept: boolean) => void;
+}
+
+function nodeText(node: ReactNode): string {
+  if (typeof node === 'string' || typeof node === 'number') return String(node);
+  if (Array.isArray(node)) return node.map(nodeText).join('');
+  if (node && typeof node === 'object' && 'props' in node) return nodeText((node as { props?: { children?: ReactNode } }).props?.children);
+  return '';
+}
+
+function CodeBlock({ children }: { children?: ReactNode }) {
+  const [copied, setCopied] = useState(false);
+  const text = nodeText(children);
+  return <div className="reason-code-block">
+    <button title="Copy code" aria-label="Copy code" onClick={async () => { try { await navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch { /* clipboard optional */ } }}>{copied ? <Check size={13} /> : <Copy size={13} />}</button>
+    <pre>{children}</pre>
+  </div>;
 }
 
 function divider(value: string) {
@@ -28,7 +44,7 @@ function Attachments({ message }: { message: Message }) {
 
 function MessageBody({ message }: { message: Message }) {
   if (message.content) return <div className="markdown">
-    <Markdown remarkPlugins={[remarkGfm]} components={{ a: ({ children, href }) => <a href={href} target="_blank" rel="noopener noreferrer">{children}</a> }}>{message.content}</Markdown>
+    <Markdown remarkPlugins={[remarkGfm]} components={{ a: ({ children, href }) => <a href={href} target="_blank" rel="noopener noreferrer">{children}</a>, pre: ({ children }) => <CodeBlock>{children}</CodeBlock> }}>{message.content}</Markdown>
   </div>;
   if (message.status === 'streaming') return <div className="thinking"><span /><span /><span /><span className="sr-only">Agent is working</span></div>;
   return null;
@@ -52,7 +68,7 @@ export function MessageList(props: MessageListProps) {
         {message.role === 'system'
           ? <div className="reason-system-event">{message.content}</div>
           : <article className={`reason-message reason-message-${message.role}`}>
-            {message.role === 'assistant' && props.showActivity && <ToolStream activities={activities} />}
+            {message.role === 'assistant' && props.toolStreamView !== 'hidden' && <ToolStream activities={activities} forceOpen={props.toolStreamView === 'verbose'} />}
             <div className="reason-bubble" aria-live={message.status === 'streaming' ? 'polite' : undefined} aria-busy={message.status === 'streaming' || undefined}>
               <MessageBody message={message} />
               <Attachments message={message} />

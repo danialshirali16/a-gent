@@ -146,6 +146,15 @@ export async function startServer(options: ServerOptions = {}): Promise<ServerHa
     Object.assign(conversation, patch, { updatedAt: now() }); await publish(); res.json(conversation);
   });
   app.post('/api/conversations/:id/messages', async (req, res) => { res.status(202).json(await runs.send(String(req.params.id), messageInput(req.body))); });
+  app.post('/api/conversations/:id/system', async (req, res) => {
+    const conversation = store.getConversation(String(req.params.id));
+    const content = string(object(req.body).content, 'Event', 500);
+    const message = { id: id(), role: 'system' as const, content, createdAt: now() };
+    conversation.messages.push(message);
+    conversation.updatedAt = now();
+    await publish();
+    res.status(201).json(message);
+  });
   app.post('/api/runs/:id/interrupt', (req, res) => { res.json(runs.interrupt(String(req.params.id))); });
   app.post('/api/approvals/:id', (req, res) => {
     const data = object(req.body);

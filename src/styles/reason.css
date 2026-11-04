@@ -2345,3 +2345,46 @@
     display: none;
   }
 }
+
+.settings-hint {
+  margin-top: 8px;
+  color: var(--ui-text-3);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.tool-stream-options > button {
+  justify-content: center;
+}
+
+/* Code block copy */
+
+.reason-code-block {
+  position: relative;
+}
+
+.reason-code-block > button {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--ui-border);
+  border-radius: 6px;
+  background: var(--ui-raised);
+  color: var(--ui-text-2);
+  opacity: 0;
+  transition: opacity var(--ui-dur-fast) var(--ui-ease-out);
+}
+
+.reason-code-block:hover > button,
+.reason-code-block:focus-within > button {
+  opacity: 1;
+}
+
+.reason-code-block > button:hover {
+  color: var(--ui-ink);
+}
