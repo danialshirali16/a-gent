@@ -96,6 +96,14 @@ The host defaults to loopback. No public service or tunnel is created by the bui
 
 An HTTPS reverse proxy should preserve the backend authority in its upstream Host header, such as `127.0.0.1:4317`, forward the client identity, disable response buffering for `/api/events`, and allow streaming connections. Add the external browser origin to `AGENT_ALLOWED_ORIGINS` when accessing through a web browser. Remote requests receive no embedded pairing token and require manual pairing.
 
+## Keyboard
+
+- `⌘ K` search conversations.
+- `⌘ N` new conversation.
+- `⌘ \` toggle the side panel.
+- `Esc` closes menus, dialogs, and the side panel.
+- Arrow keys, Home, and End navigate menus, the model picker, and side-panel tabs.
+
 ## Builds and checks
 
 ```sh

@@ -12,7 +12,7 @@ Electron: 45.2.2
 | --- | --- |
 | `npm run typecheck` | Pass |
 | `npm test` | 11/11 pass |
-| `npm run test:ui` | 9/9 Playwright smoke tests pass |
+| `npm run test:ui` | 15/15 Playwright smoke tests pass |
 | `npm run test:visual` | 10/10 Playwright screenshot baselines pass |
 | `npm run build` | Pass |
 | `npm run desktop:mac` | Pass |
@@ -30,8 +30,8 @@ Windows and Android artifacts below are from the previous cross-platform build. 
 
 | Artifact | Size | SHA-256 |
 | --- | ---: | --- |
-| `A-Gent-0.1.0-mac-arm64.dmg` | 121 MB | `bfc5ef4caaee88f342fc15ee35c8c151703b0932e5a04ed8178c73eca30459b3` |
-| `A-Gent-0.1.0-mac-arm64.zip` | 118 MB | `061a8c679f8b90777da05cf7516d06ab8e4e7c47fb1e9789b2ff5f2035ff2cc1` |
+| `A-Gent-0.1.0-mac-arm64.dmg` | 121 MB | `0157fb0b5a4ea8013b99d6525d2f5782ea3dea8938946c042dc2097cfcdb2ac9` |
+| `A-Gent-0.1.0-mac-arm64.zip` | 118 MB | `1c42c8df9a94a6586a2f8d031c416e3987dfb0b031830ff2f1b9814aca945097` |
 | `A-Gent-Setup-0.1.0-x64.exe` | 120 MB | `4ef4c19e8b9437c246b42a436ab95ad73a65105c432105ead2241f750914df92` |
 | `A-Gent-Portable-0.1.0-x64.exe` | 108 MB | `f65ba83b3719106ac8984ddb4bef1c3b6ad4c8806534d63ca3c566477e8f8ba7` |
 | `A-Gent-0.1.0-android-debug.apk` | 4.3 MB | `e3d476344f8ba3492657bec03b0626dce11aee4c5a24d99047fad45e240cac2c` |
@@ -97,6 +97,9 @@ Windows and Android artifacts below are from the previous cross-platform build. 
 - Files tab provides a read-only workspace tree; path traversal and symlink escapes are rejected.
 - Terminal tab shows read-only activity detail from the current or latest run.
 - Packaged macOS app verified with Computer Use: Files tab browsed `README.md` and `src/index.ts`; Terminal tab showed its read-only empty state.
+- Keyboard navigation covers sidebar and group menus, the composer add menu, model picker, dialog Escape/focus trap, and side-panel tabs.
+- `⌘ \` toggles the side panel; dialog focus returns to the opening control after Escape.
+- Packaged macOS app verified with Computer Use: Escape closed Settings and restored focus, Right Arrow moved the side-panel tab from Session to Sessions, and Down Arrow moved workspace-menu focus from All agents to Scheduled.
 - Packaged macOS app verified with Computer Use: created a `Product` agent group and assigned Product Designer; the sidebar nested the agent under the group.
 - Packaged macOS app migrated its legacy cookie to a device token; after that device was revoked, the next launch created a fresh device and loaded the workspace.
 - Local browser token injection is opt-in via `AGENT_ALLOW_LOCAL_TOKEN_INJECTION=1`.

@@ -196,7 +196,7 @@ export function SettingsDialog({ state, api, connection, onError, onRefresh, onC
           <h2>Shortcuts</h2>
           <p className="settings-lead">Keyboard shortcuts available from anywhere in A Gent.</p>
           <div className="settings-group settings-shortcuts">
-            {[['Search conversations', '⌘ K'], ['New conversation', '⌘ N'], ['Send message', '↵'], ['New line', '⇧ ↵'], ['Close menu or panel', 'Esc']].map(([label, keys]) => <div className="settings-shortcut" key={label}><span>{label}</span><kbd>{keys}</kbd></div>)}
+            {[['Search conversations', '⌘ K'], ['New conversation', '⌘ N'], ['Toggle side panel', '⌘ \\'], ['Send message', '↵'], ['New line', '⇧ ↵'], ['Close menu or panel', 'Esc']].map(([label, keys]) => <div className="settings-shortcut" key={label}><span>{label}</span><kbd>{keys}</kbd></div>)}
           </div>
         </>}
 

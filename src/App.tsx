@@ -66,6 +66,7 @@ export default function App() {
     const handler = (event: globalThis.KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); setDialog({ kind: 'search' }); }
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'n') { event.preventDefault(); newChat(); }
+      if ((event.metaKey || event.ctrlKey) && event.key === '\\') { event.preventDefault(); setSidePanelOpen(value => !value); }
       if (event.key === 'Escape') { setModelPicker(false); if (!dialog) setSidePanelOpen(false); }
     };
     window.addEventListener('keydown', handler); return () => window.removeEventListener('keydown', handler);

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { CalendarClock, ChevronDown, FolderPlus, MoreHorizontal, PanelLeftClose, Pencil, Plug, Plus, Search, Settings2, Trash2, UsersRound } from 'lucide-react';
 import type { Agent, Group, ProviderInfo, Run } from '../../shared/types';
 import { AgentGlyph, IconButton, Mark } from '../components';
+import { moveFocus } from '../keyboard';
 
 export interface SidebarProps {
   agents: Agent[];
@@ -36,12 +37,14 @@ export function Sidebar(props: SidebarProps) {
 
   useEffect(() => {
     if (!moreOpen) return;
+    moreRef.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus();
     const close = (event: PointerEvent) => { if (!moreRef.current?.contains(event.target as Node)) setMoreOpen(false); };
     window.addEventListener('pointerdown', close);
     return () => window.removeEventListener('pointerdown', close);
   }, [moreOpen]);
   useEffect(() => {
     if (!groupMenu) return;
+    groupMenuRef.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus();
     const close = (event: PointerEvent) => { if (!groupMenuRef.current?.contains(event.target as Node)) setGroupMenu(null); };
     window.addEventListener('pointerdown', close);
     return () => window.removeEventListener('pointerdown', close);
@@ -86,7 +89,10 @@ export function Sidebar(props: SidebarProps) {
             </button>
             <div className="reason-group-menu-anchor" ref={groupMenu === group.id ? groupMenuRef : undefined}>
               <IconButton label={`Options for ${group.name}`} onClick={() => setGroupMenu(groupMenu === group.id ? null : group.id)}><MoreHorizontal size={14} /></IconButton>
-              {groupMenu === group.id && <div className="reason-group-menu" role="menu" aria-label={`${group.name} options`}>
+              {groupMenu === group.id && <div className="reason-group-menu" role="menu" aria-label={`${group.name} options`} onKeyDown={event => {
+                if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); setGroupMenu(null); groupMenuRef.current?.querySelector<HTMLButtonElement>('button')?.focus(); }
+                else moveFocus(event, '[role="menuitem"]:not([disabled])');
+              }}>
                 <button role="menuitem" onClick={() => { setGroupMenu(null); props.onEditAgentGroup(group); }}><Pencil size={13} />Rename group</button>
                 <button role="menuitem" onClick={() => { setGroupMenu(null); props.onEditAgentGroup(group); }}><Trash2 size={13} />Delete group</button>
               </div>}
@@ -110,7 +116,10 @@ export function Sidebar(props: SidebarProps) {
         </button>
         <div className="reason-more-anchor" ref={moreRef}>
           <IconButton label="More workspace options" onClick={() => setMoreOpen(value => !value)}><MoreHorizontal size={18} /></IconButton>
-          {moreOpen && <div className="reason-more-menu" role="menu" aria-label="Workspace options">
+          {moreOpen && <div className="reason-more-menu" role="menu" aria-label="Workspace options" onKeyDown={event => {
+            if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); setMoreOpen(false); moreRef.current?.querySelector<HTMLButtonElement>('button')?.focus(); }
+            else moveFocus(event, '[role="menuitem"]:not([disabled])');
+          }}>
             <button role="menuitem" onClick={() => action(props.onOpenAgents)}><UsersRound size={15} />All agents</button>
             <button role="menuitem" onClick={() => action(props.onOpenScheduled)}><CalendarClock size={15} />Scheduled</button>
             <button role="menuitem" onClick={() => action(props.onOpenConnections)}><Plug size={15} />Connections</button>

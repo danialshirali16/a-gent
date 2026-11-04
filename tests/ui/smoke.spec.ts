@@ -161,7 +161,15 @@ test('agent groups create, assign, rename, and delete from the sidebar', async (
   await expect(page.getByRole('heading', { name: 'New agent group' })).toBeVisible();
   await page.getByLabel('Group name').fill('Product');
   await page.getByRole('button', { name: 'Create group' }).click();
-  await expect(page.getByRole('button', { name: 'Options for Product' })).toBeVisible();
+  const groupOptions = page.getByRole('button', { name: 'Options for Product' });
+  await expect(groupOptions).toBeVisible();
+  await groupOptions.focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('menuitem', { name: 'Rename group' })).toBeFocused();
+  await page.keyboard.press('ArrowDown');
+  await expect(page.getByRole('menuitem', { name: 'Delete group' })).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(groupOptions).toBeFocused();
 
   await page.getByRole('button', { name: 'More workspace options' }).click();
   await page.getByRole('menuitem', { name: 'All agents' }).click();
@@ -200,4 +208,81 @@ test('side panel files browse the workspace read-only', async ({ page }) => {
   await expect(files.getByText('index.ts')).toBeVisible();
   await files.getByRole('button', { name: 'Back to parent folder' }).click();
   await expect(files.getByText('README.md')).toBeVisible();
+});
+
+
+test('keyboard navigates the workspace menu', async ({ page }) => {
+  await page.goto('/');
+  const trigger = page.getByRole('button', { name: 'More workspace options' });
+  await trigger.focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('menuitem', { name: 'All agents' })).toBeFocused();
+  await page.keyboard.press('ArrowDown');
+  await expect(page.getByRole('menuitem', { name: 'Scheduled' })).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('menu', { name: 'Workspace options' })).not.toBeVisible();
+  await expect(trigger).toBeFocused();
+});
+
+test('keyboard navigates the composer add menu', async ({ page }) => {
+  await page.goto('/');
+  const trigger = page.getByRole('button', { name: 'Add' });
+  await trigger.focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('menuitem', { name: 'Attach files' })).toBeFocused();
+  await page.keyboard.press('ArrowDown');
+  await expect(page.getByRole('menuitem', { name: /Project folder/ })).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('menu', { name: 'Add' })).not.toBeVisible();
+  await expect(trigger).toBeFocused();
+});
+
+test('keyboard toggles and navigates the side panel', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.getByRole('textbox', { name: 'Message A Gent' })).toBeVisible();
+  await page.keyboard.press('Control+Backslash');
+  await expect(page.getByRole('tab', { name: 'Session', exact: true })).toBeVisible();
+  await page.getByRole('tab', { name: 'Session', exact: true }).focus();
+  await page.keyboard.press('ArrowRight');
+  await expect(page.getByRole('tab', { name: 'Sessions', exact: true })).toHaveAttribute('aria-selected', 'true');
+  await page.keyboard.press('ArrowRight');
+  await expect(page.getByRole('tab', { name: 'Files' })).toHaveAttribute('aria-selected', 'true');
+  await page.keyboard.press('End');
+  await expect(page.getByRole('tab', { name: 'Approvals' })).toHaveAttribute('aria-selected', 'true');
+  await page.keyboard.press('Home');
+  await expect(page.getByRole('tab', { name: 'Session', exact: true })).toHaveAttribute('aria-selected', 'true');
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('tab', { name: 'Session', exact: true })).not.toBeVisible();
+});
+
+test('dialogs close with Escape and restore focus', async ({ page }) => {
+  await page.goto('/');
+  const trigger = page.getByRole('button', { name: /Personal workspace/ });
+  await trigger.click();
+  await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('heading', { name: 'Settings' })).not.toBeVisible();
+  await expect(trigger).toBeFocused();
+});
+
+test('model picker supports keyboard navigation', async ({ page }) => {
+  await page.goto('/');
+  const trigger = page.getByRole('button', { name: /Codex Balanced/ });
+  await trigger.focus();
+  await page.keyboard.press('ArrowDown');
+  await expect(page.getByRole('dialog', { name: 'Choose a model' })).toBeVisible();
+  await expect(page.locator('.reason-model-group button').first()).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog', { name: 'Choose a model' })).not.toBeVisible();
+  await expect(trigger).toBeFocused();
+});
+
+
+test('dialogs keep keyboard focus inside', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: /Personal workspace/ }).click();
+  await expect(page.getByRole('dialog', { name: 'Settings' })).toBeVisible();
+  for (let index = 0; index < 20; index++) await page.keyboard.press('Tab');
+  const inside = await page.evaluate(() => Boolean(document.activeElement?.closest('dialog')));
+  expect(inside).toBe(true);
 });

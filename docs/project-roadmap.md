@@ -64,7 +64,6 @@ Implemented on `ui/reason-style`:
 Not finished:
 
 - Retry/more message actions.
-- Full keyboard menu navigation.
 - Physical Android and Windows runtime checks.
 
 ### Built artifacts
@@ -123,9 +122,9 @@ These are engineering estimates, not precise metrics.
 | macOS delivery | 90% | 10% | Artifact built and app verified; signing/notarization/Intel missing |
 | Windows delivery | 60% | 40% | Artifacts built; no runtime test, no icon metadata, unsigned |
 | Android delivery | 40% | 60% | Debug APK built; companion-only, no device test, no release signing |
-| Reason-like UI | 84% | 16% | Major surfaces, Devices settings, agent groups, Files, and Terminal done; smaller interactions pending |
+| Reason-like UI | 88% | 12% | Major surfaces, Devices settings, agent groups, Files, Terminal, and keyboard navigation done; smaller interactions pending |
 | Security and reliability | 82% | 18% | Hashed per-device tokens, cookie migration, Settings device management, data lock, recovery, CSP, and approval diffs; limits still need work |
-| Tests and QA | 86% | 14% | 11 backend tests, 9 smoke tests, and 10 visual baselines pass; full E2E and accessibility pending |
+| Tests and QA | 90% | 10% | 11 backend tests, 15 smoke tests, and 10 visual baselines pass; full E2E and accessibility pending |
 | Docs and release | 50% | 50% | README/roadmap exist; validation doc and release truth missing |
 | Full Reason parity | 35% | 65% | Cloud/billing intentionally excluded; native/browser/voice/connectors missing |
 
@@ -205,7 +204,7 @@ These are engineering estimates, not precise metrics.
 - Agent groups are available in the sidebar with create, assign, rename, and delete.
 - Files and Terminal side-panel tabs are available with read-only workspace browsing and activity detail.
 - Add retry/more message actions.
-- Add full keyboard navigation for menus.
+- Full keyboard navigation is available for sidebar menus, the composer menu, model picker, dialogs, and side-panel tabs.
 - Screenshot visual coverage is in place for 5 viewports and both themes; full E2E flows remain.
 - Audit contrast, focus, target sizes, and screen-reader behavior.
 - Remove the unused page views from `views.tsx` by extracting `ProviderCard`.
@@ -339,7 +338,7 @@ Out of scope unless explicitly added:
 - [x] Approvals in side panel.
 - [x] Files/Terminal tabs.
 - [ ] Retry/more message actions.
-- [ ] Full keyboard menu navigation.
+- [x] Full keyboard menu navigation.
 - [x] Playwright smoke tests.
 - [x] Playwright screenshot visual baselines (5 viewports × 2 themes).
 - [ ] Accessibility audit.

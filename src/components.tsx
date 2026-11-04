@@ -28,9 +28,16 @@ export function IconButton({ label, children, onClick, className = '', disabled 
 }
 export function Modal({ title, children, onClose, wide = false, className = '' }: { title: string; children: ReactNode; onClose: () => void; wide?: boolean; className?: string }) {
   const ref = useRef<HTMLDialogElement>(null);
+  const returnFocus = useRef<HTMLElement | null>(null);
   const titleId = `dialog-${title.replace(/[^a-z0-9]/gi, '-')}`;
-  useEffect(() => { const dialog = ref.current; dialog?.showModal(); dialog?.querySelector<HTMLElement>('input, textarea, select')?.focus(); }, []);
-  return <dialog className={`modal ${wide ? 'modal-wide' : ''} ${className}`} ref={ref} aria-labelledby={titleId} onCancel={event => { event.preventDefault(); onClose(); }} onClick={event => { if (event.target === event.currentTarget) onClose(); }}>
+  useEffect(() => {
+    returnFocus.current = document.activeElement as HTMLElement | null;
+    const dialog = ref.current;
+    dialog?.showModal();
+    (dialog?.querySelector<HTMLElement>('input, textarea, select') || dialog?.querySelector<HTMLElement>('button:not([disabled])'))?.focus();
+    return () => { if (returnFocus.current?.isConnected) returnFocus.current.focus(); };
+  }, []);
+  return <dialog className={`modal ${wide ? 'modal-wide' : ''} ${className}`} ref={ref} aria-labelledby={titleId} aria-modal="true" onCancel={event => { event.preventDefault(); onClose(); }} onClick={event => { if (event.target === event.currentTarget) onClose(); }}>
     <div className="modal-content"><div className="modal-heading"><h2 id={titleId}>{title}</h2><IconButton label="Close dialog" onClick={onClose}><X size={19} /></IconButton></div>{children}</div>
   </dialog>;
 }

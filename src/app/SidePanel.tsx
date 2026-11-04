@@ -1,4 +1,5 @@
 import { AlertCircle, Check, FolderPlus, LoaderCircle, MessageSquare, Plus, PanelRightClose, Settings2 } from 'lucide-react';
+import type { KeyboardEvent } from 'react';
 import type { Activity as ActivityItem, Agent, Conversation, Group, Run } from '../../shared/types';
 import { AgentGlyph, IconButton, formatDate } from '../components';
 import type { Api } from '../dialogs';
@@ -6,6 +7,14 @@ import { FilesPanel } from './FilesPanel';
 import { TerminalPanel } from './TerminalPanel';
 
 export type SidePanelTab = 'session' | 'sessions' | 'files' | 'terminal' | 'activity' | 'approvals';
+const sidePanelTabs: Array<{ id: SidePanelTab; label: string }> = [
+  { id: 'session', label: 'Session' },
+  { id: 'sessions', label: 'Sessions' },
+  { id: 'files', label: 'Files' },
+  { id: 'terminal', label: 'Terminal' },
+  { id: 'activity', label: 'Activity' },
+  { id: 'approvals', label: 'Approvals' },
+];
 
 export interface SidePanelProps {
   tab: SidePanelTab;
@@ -45,20 +54,29 @@ export function SidePanel(props: SidePanelProps) {
   const workspace = props.conversation?.workspacePath || props.agent?.workspacePath || '';
   const status = props.currentRun ? (props.currentRun.status === 'waiting' ? 'Waiting for approval' : 'Working') : 'Ready';
   const pendingApprovals = props.currentRun?.approvals.filter(approval => approval.status === 'pending') || [];
+  const onTabKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+    const buttons = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="tab"]'));
+    const current = buttons.indexOf(document.activeElement as HTMLButtonElement);
+    if (current < 0) return;
+    let next = current;
+    if (event.key === 'ArrowLeft') next = (current - 1 + buttons.length) % buttons.length;
+    else if (event.key === 'ArrowRight') next = (current + 1) % buttons.length;
+    else if (event.key === 'Home') next = 0;
+    else if (event.key === 'End') next = buttons.length - 1;
+    event.preventDefault();
+    buttons[next].focus();
+    props.onTab(sidePanelTabs[next].id);
+  };
 
   return <aside className="reason-sidepanel" aria-label="Session details">
     <div className="reason-sidepanel-header">
-      <div className="reason-sidepanel-tabs" role="tablist" aria-label="Session panel">
-        <button role="tab" aria-selected={props.tab === 'session'} className={props.tab === 'session' ? 'is-active' : ''} onClick={() => props.onTab('session')}>Session</button>
-        <button role="tab" aria-selected={props.tab === 'sessions'} className={props.tab === 'sessions' ? 'is-active' : ''} onClick={() => props.onTab('sessions')}>Sessions</button>
-        <button role="tab" aria-selected={props.tab === 'files'} className={props.tab === 'files' ? 'is-active' : ''} onClick={() => props.onTab('files')}>Files</button>
-        <button role="tab" aria-selected={props.tab === 'terminal'} className={props.tab === 'terminal' ? 'is-active' : ''} onClick={() => props.onTab('terminal')}>Terminal</button>
-        <button role="tab" aria-selected={props.tab === 'activity'} className={props.tab === 'activity' ? 'is-active' : ''} onClick={() => props.onTab('activity')}>Activity</button>
-        <button role="tab" aria-selected={props.tab === 'approvals'} className={props.tab === 'approvals' ? 'is-active' : ''} onClick={() => props.onTab('approvals')}>Approvals{pendingApprovals.length > 0 && <span className="reason-tab-count">{pendingApprovals.length}</span>}</button>
+      <div className="reason-sidepanel-tabs" role="tablist" aria-label="Session panel" onKeyDown={onTabKeyDown}>
+        {sidePanelTabs.map(tab => <button key={tab.id} role="tab" id={`side-tab-${tab.id}`} aria-selected={props.tab === tab.id} tabIndex={props.tab === tab.id ? 0 : -1} className={props.tab === tab.id ? 'is-active' : ''} onClick={() => props.onTab(tab.id)}>{tab.label}{tab.id === 'approvals' && pendingApprovals.length > 0 && <span className="reason-tab-count">{pendingApprovals.length}</span>}</button>)}
       </div>
       <IconButton label="Close side panel" onClick={props.onClose}><PanelRightClose size={18} /></IconButton>
     </div>
-    <div className="reason-sidepanel-body">
+    <div className="reason-sidepanel-body" role="tabpanel" aria-labelledby={`side-tab-${props.tab}`}>
       {props.tab === 'session' && <>
         {props.agent ? <>
           <div className="reason-session-card">

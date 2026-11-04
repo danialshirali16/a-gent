@@ -29,7 +29,7 @@ Implemented in the first pass:
 - Centered model-change and reasoning-effort events in conversations.
 - Tool stream setting: Compact / Verbose / Hidden.
 
-Still pending from the roadmap: full keyboard navigation, formal accessibility audit, and the full E2E matrix.
+Still pending from the roadmap: formal accessibility audit and the full E2E matrix.
 
 ## 1. Goal
 
@@ -306,7 +306,7 @@ src/
 - [x] Add attachment chips and drag/drop.
 - [x] Move Chat/Work and effort into popovers.
 - [x] Remove caption.
-- [ ] Add full keyboard menu behavior.
+- [x] Add full keyboard menu behavior.
 
 ### Phase 6 — Modals and surfaces
 
@@ -349,13 +349,13 @@ src/
 - [x] Keep focus-visible rings across interactive controls.
 - [x] `aria-live` and `aria-busy` for streaming replies.
 - [x] Native modal focus trap/restore.
-- [ ] Full arrow-key menu navigation.
+- [x] Full arrow-key menu navigation.
 - [x] Surface `run.error` in the conversation.
 - [x] Failed tool activity error icon.
 - [x] Empty/loading/error states for the main surfaces.
 - [x] Reduced motion.
 - [x] Tool-stream view setting.
-- [ ] Full keyboard shortcut coverage.
+- [x] Full keyboard shortcut coverage.
 
 ### Phase 10 — QA, docs, release
 
