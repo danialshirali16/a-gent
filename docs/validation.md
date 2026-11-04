@@ -26,10 +26,10 @@ Electron: 45.2.2
 
 | Artifact | Size | SHA-256 |
 | --- | ---: | --- |
-| `A-Gent-0.1.0-mac-arm64.dmg` | 121 MB | `e2253d7aa04748b0fa834f7dc841c3af26ea1d19a2bb91378108d28da849bd36` |
-| `A-Gent-0.1.0-mac-arm64.zip` | 118 MB | `c9985cef71cffa111b6839aa122c4a8ce6dd31f5040e78ff9459170e5f835605` |
-| `A-Gent-Setup-0.1.0-x64.exe` | 120 MB | `df33c20bbd6a19c9734f6e7e3dcb9c4fac05d856ac493113e83acf1c624f351f` |
-| `A-Gent-Portable-0.1.0-x64.exe` | 108 MB | `757d461668c43208655c59c6c2610431f4a4ff238a6f6b6c57f2f7ef08501bd9` |
+| `A-Gent-0.1.0-mac-arm64.dmg` | 121 MB | `6d009d1ca167111dfa74c1c84e1c15c9c991e04d4c0f47db6c1ccc9ddef3367b` |
+| `A-Gent-0.1.0-mac-arm64.zip` | 118 MB | `9e85e46532b207e75f309ca307c723b5abb26609be591c1fe3b4b084c40462ea` |
+| `A-Gent-Setup-0.1.0-x64.exe` | 120 MB | `10104e9afccfb501d2997ff221b53c20b9672990781b2f21bd9ca4a9f2ec2637` |
+| `A-Gent-Portable-0.1.0-x64.exe` | 108 MB | `3748fcde6f00907237a0fa6787b24f6d14da824229cece1b023f6809154d47a0` |
 | `A-Gent-0.1.0-android-debug.apk` | 4.3 MB | `ad871757273e6847a26e4111b726ed4427f2fe09116a5174e8b1816e9345a908` |
 
 ## Platform details
@@ -81,6 +81,8 @@ Electron: 45.2.2
 - Android back handler: the `agent:back` event closes an open settings dialog in the browser harness. Device behavior is still unverified.
 - Workspace data lock rejects a second host using the same data directory.
 - Corrupt `state.json` recovers from `state.json.bak`.
+- CSP now sets `default-src 'self'` and blocks remote images.
+- File-change approvals include the available patch/diff text.
 
 ## Not verified
 
@@ -102,6 +104,7 @@ Electron: 45.2.2
 - Android APK is debug-signed and companion-only.
 - Remote pairing token injection is sensitive to reverse-proxy header configuration.
 - Very large exports can still exceed the 32 MB import limit.
+- Remote Markdown images are blocked by CSP until an image policy is chosen.
 - No UI E2E/visual test suite yet.
 
 See `docs/project-roadmap.md` for the remaining work and `docs/ui-roadmap.md` for the UI-specific plan.

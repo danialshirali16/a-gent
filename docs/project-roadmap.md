@@ -127,7 +127,7 @@ These are engineering estimates, not precise metrics.
 | Windows delivery | 60% | 40% | Artifacts built; no runtime test, no icon metadata, unsigned |
 | Android delivery | 40% | 60% | Debug APK built; companion-only, no device test, no release signing |
 | Reason-like UI | 75% | 25% | Major surfaces done; tests and smaller interactions pending |
-| Security and reliability | 60% | 40% | Data lock and backup recovery added; token pairing and limits still need work |
+| Security and reliability | 65% | 35% | Data lock, recovery, CSP, and approval diffs added; token pairing and limits still need work |
 | Tests and QA | 40% | 60% | Backend tests strong; no UI/E2E/device tests |
 | Docs and release | 50% | 50% | README/roadmap exist; validation doc and release truth missing |
 | Full Reason parity | 35% | 65% | Cloud/billing intentionally excluded; native/browser/voice/connectors missing |
@@ -323,9 +323,9 @@ Out of scope unless explicitly added:
 - [x] Add data-directory lock.
 - [x] Add rolling backups and corrupt-state recovery.
 - [ ] Finish import/export streaming; body limit raised to 32 MB.
-- [ ] Add CSP and remote-image policy.
+- [x] Add CSP and remote-image policy.
 - [ ] Review provider URL SSRF.
-- [ ] Add file-diff approvals and session approvals.
+- [x] Add file-diff approvals; session approvals still pending.
 - [ ] Add approval/turn timeouts.
 - [ ] Add large-workspace/SSE performance checks.
 

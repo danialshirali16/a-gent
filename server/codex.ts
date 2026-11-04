@@ -208,6 +208,9 @@ export class CodexBridge {
           const method = message.method;
           if (method === 'item/commandExecution/requestApproval' || method === 'item/fileChange/requestApproval' || method === 'item/permissions/requestApproval') {
             const command = typeof p.command === 'string' ? p.command : undefined;
+            const fileDiff = method.includes('fileChange')
+              ? (typeof p.patch === 'string' ? p.patch : Array.isArray(p.changes) ? p.changes.map((change: any) => `${change.path ?? change.file ?? 'file'}\n${change.diff ?? ''}`).join('\n') : undefined)
+              : undefined;
             const permissions = method === 'item/permissions/requestApproval' ? JSON.stringify(p.permissions, null, 2) : undefined;
             const respond = (accept: boolean) => {
               pendingApprovalIds.delete(requestId);
@@ -216,7 +219,7 @@ export class CodexBridge {
               this.send({ id: requestId, result });
             };
             if (signal.aborted) respond(false);
-            else callbacks.approval({ title: method.includes('fileChange') ? 'Approve file changes' : method.includes('permissions') ? 'Approve requested access' : 'Approve command', description: [p.reason, p.cwd ? `Folder: ${p.cwd}` : '', permissions].filter(Boolean).join('\n') || 'Codex is asking for your approval before continuing.', command }, respond);
+            else callbacks.approval({ title: method.includes('fileChange') ? 'Approve file changes' : method.includes('permissions') ? 'Approve requested access' : 'Approve command', description: [p.reason, p.cwd ? `Folder: ${p.cwd}` : '', permissions].filter(Boolean).join('\n') || 'Codex is asking for your approval before continuing.', command: command || fileDiff }, respond);
           } else if (method === 'mcpServer/elicitation/request') {
             // This release supports decline without collecting secrets or accepting an unseen form.
             callbacks.activity({ id: id(), kind: 'status', title: 'An app connection needs additional input', detail: p.message ?? 'Complete this app connection in Codex, then retry the task.', status: 'failed', createdAt: now() });
