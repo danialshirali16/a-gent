@@ -74,10 +74,13 @@ An HTTPS reverse proxy should preserve the backend authority in its upstream Hos
 npm run typecheck
 npm test
 npm run test:ui
+npm run test:visual
 npm run desktop:mac
 npm run desktop:win
 npm run android:apk
 ```
+
+Visual baselines live in `tests/ui/visual.spec.ts-snapshots/` and are generated on macOS arm64 with Chrome. Refresh them with `npm run test:visual:update` after an intentional UI change.
 
 Android builds require JDK 21, the Android SDK and its accepted licenses. The project includes a Gradle wrapper. The delivered APK uses the development signing key; production signing and store publication are separate steps. Desktop packages are local development builds, with no commercial code-signing certificate or notarization.
 

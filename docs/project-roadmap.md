@@ -65,8 +65,6 @@ Not finished:
 - Files and Terminal tabs.
 - Retry/more message actions.
 - Full keyboard menu navigation.
-- Playwright screenshot visual-regression baselines.
-- Android back-button handling.
 - Physical Android and Windows runtime checks.
 
 ### Built artifacts
@@ -106,15 +104,14 @@ b1982c0612e4bcfcbfee361f4da34cb170f4be2d186e1855eb537d2eaa0cedb8  A-Gent-Portabl
 ### Not verified
 
 - Windows installer/portable runtime on real Windows.
-- Windows icon/version metadata.
+- Windows icon rendering on a Windows desktop.
 - Android APK on a physical device or emulator.
 - Android HTTPS host pairing, back button, safe areas, token persistence.
 - macOS Gatekeeper on a clean Mac.
 - macOS notarization.
 - Windows code signing.
 - Android release signing.
-- Playwright screenshot visual-regression baselines.
-- CI execution.
+- CI execution (workflow has not run on GitHub yet).
 
 ## 3. Completion assessment
 
@@ -128,7 +125,7 @@ These are engineering estimates, not precise metrics.
 | Android delivery | 40% | 60% | Debug APK built; companion-only, no device test, no release signing |
 | Reason-like UI | 75% | 25% | Major surfaces done; tests and smaller interactions pending |
 | Security and reliability | 70% | 30% | Desktop pairing cookie, data lock, recovery, CSP, and approval diffs added; per-device tokens and limits still need work |
-| Tests and QA | 65% | 35% | 8 backend tests and 3 Playwright smoke tests pass; device and visual-regression tests pending |
+| Tests and QA | 75% | 25% | 8 backend tests, 3 smoke tests, and 10 visual baselines pass; device and full E2E tests pending |
 | Docs and release | 50% | 50% | README/roadmap exist; validation doc and release truth missing |
 | Full Reason parity | 35% | 65% | Cloud/billing intentionally excluded; native/browser/voice/connectors missing |
 
@@ -209,7 +206,7 @@ These are engineering estimates, not precise metrics.
 - Add approvals, Files, and Terminal to the side panel.
 - Add retry/more message actions.
 - Add full keyboard navigation for menus.
-- Add Playwright screenshot visual coverage; smoke flows are in place.
+- Screenshot visual coverage is in place for 5 viewports and both themes; full E2E flows remain.
 - Audit contrast, focus, target sizes, and screen-reader behavior.
 - Remove the unused page views from `views.tsx` by extracting `ProviderCard`.
 
@@ -343,7 +340,7 @@ Out of scope unless explicitly added:
 - [ ] Retry/more message actions.
 - [ ] Full keyboard menu navigation.
 - [x] Playwright smoke tests.
-- [ ] Playwright screenshot visual baselines.
+- [x] Playwright screenshot visual baselines (5 viewports × 2 themes).
 - [ ] Accessibility audit.
 - [ ] Remove unused page views.
 
@@ -405,9 +402,9 @@ Prioritize:
 | No Windows runtime available here | Windows artifacts unverified | Use a Windows VM/device or GitHub Actions Windows runner |
 | No Android device/emulator available here | APK unverified | Use a physical device or set up an emulator |
 | macOS ad-hoc signature | Gatekeeper blocks other Macs | Developer ID + notarization |
-| Windows icon/metadata skipped | Generic Electron icon/metadata | Fix `signExecutable` and verify |
+| Windows runtime unverified | Installer/portable may fail on real Windows | Test on a Windows VM/device or GitHub Actions Windows runner |
 | Android companion only | User expects standalone | Decide S1 explicitly |
-| Token pairing via proxy | Workspace compromise | Redesign pairing and add per-device tokens |
+| Per-device tokens not implemented | No token rotation or revocation | Add device records, rotation, and revocation |
 | State corruption | Data loss | Backups, lock, recovery |
 | Scope creep | Delays | Keep cloud/billing/native/voice out of v1 |
 | Full Reason parity expectation | Unbounded scope | Define “core local workspace + selected parity” |

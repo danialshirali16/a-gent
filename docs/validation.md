@@ -13,9 +13,10 @@ Electron: 45.2.2
 | `npm run typecheck` | Pass |
 | `npm test` | 8/8 pass |
 | `npm run test:ui` | 3/3 Playwright smoke tests pass |
+| `npm run test:visual` | 10/10 Playwright screenshot baselines pass |
 | `npm run build` | Pass |
 | `npm run desktop:mac` | Pass |
-| `npm run desktop:win` | Pass, with icon/metadata warning |
+| `npm run desktop:win` | Pass; unsigned, icon/version metadata applied |
 | `npm run android:apk` | Pass |
 | Packaged macOS app launch | Pass |
 | Real Codex account/model discovery | Pass |
@@ -81,6 +82,8 @@ Electron: 45.2.2
 - Reason-style shell, chat bubbles, composer, settings/connections modals, side panel, and compact rail render correctly in smoke checks.
 - Android back handler: the `agent:back` event closes an open settings dialog in the browser harness. Device behavior is still unverified.
 - Playwright smoke tests cover the shell, compact rail, settings modal, connections modal, fake-Codex chat streaming, and mobile drawer.
+- Visual baselines cover the home screen at 1440×900, 1280×800, 1024×768, 768×1024, and 390×844 in light and dark themes.
+- Baselines were generated on macOS arm64 with Chrome. The `visual` CI job runs on `macos-latest`.
 - Workspace data lock rejects a second host using the same data directory.
 - Desktop pairing cookie gates token injection; the packaged macOS app loads the workspace through that cookie.
 - Local browser token injection is opt-in via `AGENT_ALLOW_LOCAL_TOKEN_INJECTION=1`.
@@ -91,15 +94,14 @@ Electron: 45.2.2
 ## Not verified
 
 - Windows installer/portable on real Windows.
-- Windows icon/version metadata.
+- Windows icon rendering on a Windows desktop.
 - Android APK on a real device or emulator.
 - Android HTTPS pairing, back button, token persistence, safe areas.
 - macOS Gatekeeper on a clean Mac.
 - macOS notarization.
 - Windows code signing.
 - Android release signing.
-- Playwright screenshot visual-regression baselines.
-- CI execution.
+- CI execution (the workflow has not run on GitHub yet).
 
 ## Known issues
 
@@ -109,6 +111,5 @@ Electron: 45.2.2
 - Local browser token injection remains opt-in; use HTTPS and manual pairing for remote access.
 - Very large exports can still exceed the 32 MB import limit.
 - Remote Markdown images are blocked by CSP until an image policy is chosen.
-- No screenshot visual-regression baseline yet.
 
 See `docs/project-roadmap.md` for the remaining work and `docs/ui-roadmap.md` for the UI-specific plan.

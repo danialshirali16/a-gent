@@ -24,7 +24,9 @@
     "android:sync": "npm run build && node scripts/android.mjs sync",
     "android:apk": "npm run build && node scripts/android.mjs apk",
     "test": "tsx --test tests/server/*.test.ts",
-    "test:ui": "npm run build && playwright test"
+    "test:ui": "npm run build && playwright test --project=smoke",
+    "test:visual": "npm run build && playwright test --project=visual",
+    "test:visual:update": "npm run build && playwright test --project=visual --update-snapshots"
   },
   "dependencies": {
     "@capacitor/android": "8.6.0",

@@ -20,6 +20,23 @@ jobs:
       - run: npx playwright install --with-deps chrome
       - run: npm run test:ui
 
+  visual:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install chrome
+      - run: npm run test:visual
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: visual-regression-diff
+          path: test-results/
+
   desktop:
     strategy:
       matrix:
