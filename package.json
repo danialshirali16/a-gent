@@ -23,7 +23,8 @@
     "desktop:win": "npm run build && electron-builder --win --x64",
     "android:sync": "npm run build && node scripts/android.mjs sync",
     "android:apk": "npm run build && node scripts/android.mjs apk",
-    "test": "tsx --test tests/server/*.test.ts"
+    "test": "tsx --test tests/server/*.test.ts",
+    "test:ui": "npm run build && playwright test"
   },
   "dependencies": {
     "@capacitor/android": "8.6.0",
@@ -39,6 +40,7 @@
   },
   "devDependencies": {
     "@capacitor/cli": "8.6.0",
+    "@playwright/test": "^1.64.1",
     "@resvg/resvg-js": "2.6.2",
     "@types/express": "5.0.6",
     "@types/node": "26.6.6",

@@ -246,7 +246,7 @@ src/
 - [x] Commit baseline.
 - [x] Create `ui/reason-style` branch.
 - [ ] Capture baseline screenshots at 1440×900, 1280×800, 1024×768, 768×1024, 390×844.
-- [ ] Add Playwright visual test scaffold.
+- [x] Add Playwright visual test scaffold.
 - [x] Add this roadmap.
 - [x] Run typecheck, server tests, and production build after the first UI pass.
 
@@ -361,7 +361,8 @@ src/
 ### Phase 10 — QA, docs, release
 
 - [ ] Visual regression at 5 widths × 2 themes.
-- [ ] Playwright E2E flows.
+- [x] Playwright smoke flows.
+- [ ] Full Playwright E2E matrix and visual baselines.
 - [ ] Accessibility audit.
 - [ ] Performance check.
 - [ ] macOS, Windows, Android smoke tests.

@@ -65,7 +65,7 @@ Not finished:
 - Files and Terminal tabs.
 - Retry/more message actions.
 - Full keyboard menu navigation.
-- Playwright visual/E2E tests.
+- Playwright screenshot visual-regression baselines.
 - Android back-button handling.
 - Physical Android and Windows runtime checks.
 
@@ -113,7 +113,7 @@ b1982c0612e4bcfcbfee361f4da34cb170f4be2d186e1855eb537d2eaa0cedb8  A-Gent-Portabl
 - macOS notarization.
 - Windows code signing.
 - Android release signing.
-- Playwright visual/E2E tests.
+- Playwright screenshot visual-regression baselines.
 - CI execution.
 
 ## 3. Completion assessment
@@ -128,7 +128,7 @@ These are engineering estimates, not precise metrics.
 | Android delivery | 40% | 60% | Debug APK built; companion-only, no device test, no release signing |
 | Reason-like UI | 75% | 25% | Major surfaces done; tests and smaller interactions pending |
 | Security and reliability | 65% | 35% | Data lock, recovery, CSP, and approval diffs added; token pairing and limits still need work |
-| Tests and QA | 40% | 60% | Backend tests strong; no UI/E2E/device tests |
+| Tests and QA | 60% | 40% | Backend tests and Playwright smoke tests pass; device and visual-regression tests pending |
 | Docs and release | 50% | 50% | README/roadmap exist; validation doc and release truth missing |
 | Full Reason parity | 35% | 65% | Cloud/billing intentionally excluded; native/browser/voice/connectors missing |
 
@@ -209,7 +209,7 @@ These are engineering estimates, not precise metrics.
 - Add approvals, Files, and Terminal to the side panel.
 - Add retry/more message actions.
 - Add full keyboard navigation for menus.
-- Add Playwright visual/E2E coverage.
+- Add Playwright screenshot visual coverage; smoke flows are in place.
 - Audit contrast, focus, target sizes, and screen-reader behavior.
 - Remove the unused page views from `views.tsx` by extracting `ProviderCard`.
 
@@ -342,7 +342,8 @@ Out of scope unless explicitly added:
 - [ ] Files/Terminal tabs.
 - [ ] Retry/more message actions.
 - [ ] Full keyboard menu navigation.
-- [ ] Playwright smoke/visual tests.
+- [x] Playwright smoke tests.
+- [ ] Playwright screenshot visual baselines.
 - [ ] Accessibility audit.
 - [ ] Remove unused page views.
 
@@ -431,7 +432,7 @@ The main target is done when:
 2. Test the Android APK on a device/emulator.
 3. Update README artifact/status text.
 4. Start the security/reliability pass.
-5. Add Playwright UI tests.
+5. Add Playwright screenshot baselines.
 6. Tag a release candidate after runtime checks.
 
 Current environment limitations:

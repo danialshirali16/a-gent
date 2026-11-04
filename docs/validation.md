@@ -12,6 +12,7 @@ Electron: 45.2.2
 | --- | --- |
 | `npm run typecheck` | Pass |
 | `npm test` | 7/7 pass |
+| `npm run test:ui` | 3/3 Playwright smoke tests pass |
 | `npm run build` | Pass |
 | `npm run desktop:mac` | Pass |
 | `npm run desktop:win` | Pass, with icon/metadata warning |
@@ -79,6 +80,7 @@ Electron: 45.2.2
 - Real Codex discovery returns the signed-in account and models.
 - Reason-style shell, chat bubbles, composer, settings/connections modals, side panel, and compact rail render correctly in smoke checks.
 - Android back handler: the `agent:back` event closes an open settings dialog in the browser harness. Device behavior is still unverified.
+- Playwright smoke tests cover the shell, compact rail, settings modal, connections modal, fake-Codex chat streaming, and mobile drawer.
 - Workspace data lock rejects a second host using the same data directory.
 - Corrupt `state.json` recovers from `state.json.bak`.
 - CSP now sets `default-src 'self'` and blocks remote images.
@@ -94,7 +96,7 @@ Electron: 45.2.2
 - macOS notarization.
 - Windows code signing.
 - Android release signing.
-- Playwright visual/E2E tests.
+- Playwright screenshot visual-regression baselines.
 - CI execution.
 
 ## Known issues
@@ -105,6 +107,6 @@ Electron: 45.2.2
 - Remote pairing token injection is sensitive to reverse-proxy header configuration.
 - Very large exports can still exceed the 32 MB import limit.
 - Remote Markdown images are blocked by CSP until an image policy is chosen.
-- No UI E2E/visual test suite yet.
+- No screenshot visual-regression baseline yet.
 
 See `docs/project-roadmap.md` for the remaining work and `docs/ui-roadmap.md` for the UI-specific plan.

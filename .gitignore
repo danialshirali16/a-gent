@@ -11,3 +11,5 @@ android/local.properties
 android/app/build/
 android/build/
 .codebase-memory/
+test-results/
+playwright-report/
