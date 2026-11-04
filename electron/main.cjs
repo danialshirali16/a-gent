@@ -74,6 +74,11 @@ async function createWindow() {
   }
   trustedOrigin = new URL(url).origin;
   session.defaultSession.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
+  const windowChrome = process.platform === 'darwin'
+    ? { titleBarStyle: 'hiddenInset', trafficLightPosition: { x: 16, y: 16 } }
+    : process.platform === 'win32'
+      ? { titleBarStyle: 'hidden', titleBarOverlay: { color: '#0e0e0e', symbolColor: '#f5f5f5', height: 38 } }
+      : {};
   mainWindow = new BrowserWindow({
     width: 1320,
     height: 900,
@@ -83,6 +88,7 @@ async function createWindow() {
     icon: path.join(__dirname, 'assets', 'icon.png'),
     backgroundColor: '#111111',
     autoHideMenuBar: true,
+    ...windowChrome,
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,

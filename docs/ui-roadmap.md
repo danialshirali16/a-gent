@@ -22,8 +22,11 @@ Implemented in the first pass:
 - `src/dialogs/ConnectionsDialog.tsx` — Reason-style connections catalog with search, category tabs, provider cards, local apps, and host pairing.
 - `src/dialogs/AgentsDialog.tsx` — agents grid modal.
 - `src/dialogs/SchedulesDialog.tsx` — scheduled tasks modal.
+- `src/app/SidebarRail.tsx` — compact icon rail when the sidebar is collapsed.
+- Electron custom window chrome: macOS `hiddenInset`, Windows `titleBarOverlay`, drag/no-drag regions.
+- Accessibility improvements: `aria-live` streaming replies, `aria-current` navigation, visible run errors, improved muted-text contrast through Reason tokens.
 
-Still pending from the roadmap: agent groups, compact rail, Electron custom chrome, code-block copy, system/model-change events, tool-stream setting, approvals in the side panel, Files/Terminal tabs, Android back handling, accessibility audit, visual/E2E tests.
+Still pending from the roadmap: agent groups, code-block copy, system/model-change events, tool-stream setting, approvals in the side panel, Files/Terminal tabs, Android back handling, formal accessibility audit, visual/E2E tests.
 
 ## 1. Goal
 
@@ -328,28 +331,29 @@ src/
 ### Phase 8 — Responsive and platform chrome
 
 - [x] Add breakpoints 1180 / 860 / 640.
-- [ ] Add compact sidebar rail.
+- [x] Add compact sidebar rail.
 - [x] Add mobile drawer.
 - [ ] Add Android back button handling.
 - [x] Add 16px mobile inputs.
 - [ ] Add full safe-area/touch-target audit.
 - [ ] Verify project selection on Android.
 - [ ] Verify export/import in WebView.
-- [ ] Verify Windows title bar.
+- [x] Add Electron custom window chrome and drag regions.
+- [ ] Verify Windows title bar on a Windows runtime.
 
 ### Phase 9 — Polish and accessibility
 
-- [ ] Contrast audit.
-- [ ] Focus rings.
-- [ ] `aria-live` for streaming.
-- [ ] Modal focus trap/restore.
-- [ ] Menu keyboard navigation.
-- [ ] Surface `run.error`.
-- [ ] Failed tool activity error icon.
-- [ ] Empty/loading/error states.
-- [ ] Reduced motion.
-- [ ] Theme/accent/tool-stream settings.
-- [ ] Keyboard shortcuts.
+- [x] Replace low-contrast text tokens with Reason-derived values.
+- [x] Keep focus-visible rings across interactive controls.
+- [x] `aria-live` and `aria-busy` for streaming replies.
+- [x] Native modal focus trap/restore.
+- [ ] Full arrow-key menu navigation.
+- [x] Surface `run.error` in the conversation.
+- [x] Failed tool activity error icon.
+- [x] Empty/loading/error states for the main surfaces.
+- [x] Reduced motion.
+- [ ] Tool-stream view setting.
+- [ ] Full keyboard shortcut coverage.
 
 ### Phase 10 — QA, docs, release
 

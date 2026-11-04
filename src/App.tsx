@@ -10,6 +10,7 @@ import { AgentsDialog } from './dialogs/AgentsDialog';
 import { SchedulesDialog } from './dialogs/SchedulesDialog';
 import { useWorkspace } from './useWorkspace';
 import { Sidebar } from './app/Sidebar';
+import { SidebarRail } from './app/SidebarRail';
 import { TopBar } from './app/TopBar';
 import { SidePanel, type SidePanelTab } from './app/SidePanel';
 import { MessageList } from './chat/MessageList';
@@ -41,6 +42,8 @@ export default function App() {
   const currentProvider = data?.providers.find(provider => provider.id === providerId);
   const currentModel = currentProvider?.models.find(model => model.id === modelId);
   const currentRun = [...(data?.runs || [])].reverse().find(run => run.conversationId === conversation?.id && ['running', 'waiting'].includes(run.status));
+  const lastRun = [...(data?.runs || [])].reverse().find(run => run.conversationId === conversation?.id);
+  const runError = lastRun?.status === 'failed' ? lastRun.error : undefined;
   const busy = !!currentRun || sending;
 
   useEffect(() => {
@@ -127,9 +130,9 @@ export default function App() {
       ? [{ Icon: Palette, title: 'Explore a direction', prompt: 'Help me explore a visual direction for a product. Ask about the product and its audience.' }, { Icon: UsersRound, title: 'Improve a flow', prompt: 'Help me improve a user flow. Ask me which flow and what is not working.' }, { Icon: Sparkles, title: 'Shape an idea', prompt: 'Help me turn a product idea into a clear, testable concept.' }]
       : [{ Icon: Sparkles, title: 'Think it through', prompt: 'Help me think through an idea. Ask me what I have in mind.' }, { Icon: Code2, title: 'Build something', prompt: 'Help me plan something I want to build. Ask what I would like to create.' }, { Icon: Telescope, title: 'Look into it', prompt: 'Help me research a topic. Ask what I want to understand and why.' }];
 
-  return <div className={`reason-app ${sidebarOpen ? 'is-sidebar-open' : ''} ${sidePanelOpen ? 'is-panel-open' : ''}`}>
+  return <div className={`reason-app ${sidebarOpen ? 'is-sidebar-open' : ''} ${sidePanelOpen ? 'is-panel-open' : ''}`} data-desktop={window.aGentDesktop ? 'true' : undefined} data-platform={window.aGentDesktop?.platform}>
     {sidebarOpen && <button className="reason-scrim" aria-label="Close sidebar" onClick={() => setSidebarOpen(false)} />}
-    <Sidebar
+    {sidebarOpen ? <Sidebar
       agents={agents}
       activeAgentId={agent?.id}
       runs={data?.runs || []}
@@ -144,7 +147,16 @@ export default function App() {
       onOpenScheduled={() => setDialog({ kind: 'schedules' })}
       onOpenConnections={() => setDialog({ kind: 'connections' })}
       onOpenSettings={() => setDialog({ kind: 'settings' })}
-    />
+    /> : <SidebarRail
+      agents={agents}
+      activeAgentId={agent?.id}
+      onSelectAgent={selectAgent}
+      onNewChat={() => newChat()}
+      onOpenSidebar={() => { setSidePanelOpen(false); setSidebarOpen(true); }}
+      onSearch={() => setDialog({ kind: 'search' })}
+      onOpenSettings={() => setDialog({ kind: 'settings' })}
+      onOpenConnections={() => setDialog({ kind: 'connections' })}
+    />}
     <main className="reason-main">
       <div className="reason-surface">
         <TopBar
@@ -175,6 +187,7 @@ export default function App() {
               currentRun={currentRun}
               showActivity={state?.settings.showActivity ?? true}
               copied={copied}
+              runError={runError}
               onCopy={copyMessage}
               onApproval={handleApproval}
             />}

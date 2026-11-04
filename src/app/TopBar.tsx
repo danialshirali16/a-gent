@@ -18,7 +18,7 @@ export interface TopBarProps {
 export function TopBar(props: TopBarProps) {
   return <header className="reason-topbar">
     <div className="reason-topbar-left">
-      {!props.sidebarOpen && <IconButton label="Open sidebar" onClick={props.onOpenSidebar}><PanelLeftOpen size={19} /></IconButton>}
+      {!props.sidebarOpen && <IconButton label="Open sidebar" className="topbar-sidebar-toggle" onClick={props.onOpenSidebar}><PanelLeftOpen size={19} /></IconButton>}
     </div>
     <button className="reason-top-pill" onClick={props.onToggleSidePanel} aria-label={`Open ${props.label} details`}>
       {props.agent ? <AgentGlyph agent={props.agent} size={24} /> : null}

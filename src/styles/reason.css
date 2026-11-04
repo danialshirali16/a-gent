@@ -41,19 +41,76 @@
 }
 
 .reason-app:not(.is-sidebar-open) {
-  grid-template-columns: 0 minmax(0, 1fr);
+  grid-template-columns: 64px minmax(0, 1fr);
 }
 
 .reason-app:not(.is-sidebar-open).is-panel-open {
-  grid-template-columns: 0 minmax(0, 1fr) var(--ui-detail-width);
-}
-
-.reason-app:not(.is-sidebar-open) .reason-sidebar {
-  display: none;
+  grid-template-columns: 64px minmax(0, 1fr) var(--ui-detail-width);
 }
 
 .reason-app:not(.is-sidebar-open) .reason-main {
   padding-left: 8px;
+}
+
+/* Compact sidebar rail */
+
+.reason-rail {
+  width: 64px;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 6px 10px;
+  background: var(--ui-sidebar);
+  overflow: hidden;
+}
+
+.reason-rail .icon-button {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+}
+
+.reason-rail-agents {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.reason-rail-agent {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.reason-rail-agent:hover {
+  background: color-mix(in srgb, var(--ui-ink) 8%, transparent);
+}
+
+.reason-rail-agent.is-active {
+  background: color-mix(in srgb, var(--ui-ink) 12%, transparent);
+}
+
+.reason-rail-bottom {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin-top: auto;
+}
+
+[data-desktop='true'] .reason-sidebar-top {
+  padding-left: 78px;
+}
+
+[data-desktop='true'] .reason-rail {
+  padding-top: 44px;
 }
 
 /* Sidebar */
@@ -1470,6 +1527,10 @@
     box-shadow: var(--ui-shadow-modal);
   }
 
+  .reason-rail {
+    display: none;
+  }
+
   .reason-app.is-sidebar-open .reason-sidebar {
     transform: translateX(0);
   }
@@ -1862,7 +1923,7 @@
 }
 
 .connections-tabs button {
-  padding: 5px 10px;
+  padding: 6px 10px;
   border: 1px solid var(--ui-border);
   border-radius: var(--ui-radius-pill);
   color: var(--ui-text-2);
@@ -2235,5 +2296,52 @@
   .agents-modal-header .button {
     width: 100%;
     justify-content: center;
+  }
+}
+
+/* Desktop window chrome */
+
+.reason-topbar,
+.reason-sidebar-top,
+.reason-rail {
+  app-region: drag;
+  -webkit-app-region: drag;
+}
+
+.reason-topbar :is(button, input, textarea, select, a),
+.reason-sidebar-top :is(button, input, textarea, select, a),
+.reason-rail :is(button, input, textarea, select, a) {
+  app-region: no-drag;
+  -webkit-app-region: no-drag;
+}
+
+[data-platform='win32'] .reason-sidebar,
+[data-platform='win32'] .reason-rail,
+[data-platform='win32'] .reason-main {
+  padding-top: 46px;
+}
+
+[data-platform='win32'] .reason-sidepanel {
+  margin-top: 46px;
+}
+
+.reason-run-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  width: min(100%, var(--ui-bubble-max));
+  margin: 4px auto 18px;
+  padding: 9px 11px;
+  border: 1px solid color-mix(in srgb, var(--ui-danger) 26%, var(--ui-border));
+  border-radius: 8px;
+  color: var(--ui-danger);
+  background: color-mix(in srgb, var(--ui-danger) 6%, var(--ui-page));
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+@media (min-width: 861px) {
+  .reason-topbar .topbar-sidebar-toggle {
+    display: none;
   }
 }

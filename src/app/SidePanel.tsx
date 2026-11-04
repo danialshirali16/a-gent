@@ -87,7 +87,7 @@ export function SidePanel(props: SidePanelProps) {
           {props.conversations.map(conversation => {
             const owner = props.agent?.id === conversation.agentId ? props.agent : undefined;
             const group = props.groups.find(item => item.id === conversation.groupId);
-            return <button key={conversation.id} className={`reason-session-item ${props.conversation?.id === conversation.id ? 'is-active' : ''}`} onClick={() => props.onSelectConversation(conversation)}>
+            return <button key={conversation.id} className={`reason-session-item ${props.conversation?.id === conversation.id ? 'is-active' : ''}`} aria-current={props.conversation?.id === conversation.id ? 'page' : undefined} onClick={() => props.onSelectConversation(conversation)}>
               {owner ? <AgentGlyph agent={owner} size={18} /> : <MessageSquare size={15} />}
               <span><strong>{conversation.title || 'New conversation'}</strong><small>{group ? `${group.name} · ` : ''}{formatDate(conversation.updatedAt)}</small></span>
             </button>;

@@ -1,5 +1,5 @@
 import { Fragment } from 'react';
-import { Check, Copy, Paperclip, Terminal } from 'lucide-react';
+import { AlertCircle, Check, Copy, Paperclip, Terminal } from 'lucide-react';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import type { Message, Run } from '../../shared/types';
@@ -10,6 +10,7 @@ export interface MessageListProps {
   currentRun?: Run;
   showActivity: boolean;
   copied: string;
+  runError?: string;
   onCopy: (content: string, id: string) => void;
   onApproval: (id: string, accept: boolean) => void;
 }
@@ -52,7 +53,7 @@ export function MessageList(props: MessageListProps) {
           ? <div className="reason-system-event">{message.content}</div>
           : <article className={`reason-message reason-message-${message.role}`}>
             {message.role === 'assistant' && props.showActivity && <ToolStream activities={activities} />}
-            <div className="reason-bubble">
+            <div className="reason-bubble" aria-live={message.status === 'streaming' ? 'polite' : undefined} aria-busy={message.status === 'streaming' || undefined}>
               <MessageBody message={message} />
               <Attachments message={message} />
               {message.status === 'failed' && <p className="reason-message-status is-error">This reply could not be completed. Check the activity log or your connection.</p>}
@@ -73,5 +74,6 @@ export function MessageList(props: MessageListProps) {
         <button className="button primary small" onClick={() => props.onApproval(approval.id, true)}>Allow this action</button>
       </div>
     </div>)}
+    {props.runError && <div className="reason-run-error" role="alert"><AlertCircle size={15} /><span>{props.runError}</span></div>}
   </div>;
 }

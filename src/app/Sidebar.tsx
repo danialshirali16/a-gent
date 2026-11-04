@@ -54,7 +54,7 @@ export function Sidebar(props: SidebarProps) {
     <nav className="reason-agent-list" aria-label="Agents">
       {props.agents.map(agent => {
         const running = props.runs.some(run => run.agentId === agent.id && (run.status === 'running' || run.status === 'waiting'));
-        return <button key={agent.id} className={`reason-agent-row ${props.activeAgentId === agent.id ? 'is-active' : ''}`} onClick={() => props.onSelectAgent(agent)}>
+        return <button key={agent.id} className={`reason-agent-row ${props.activeAgentId === agent.id ? 'is-active' : ''}`} aria-current={props.activeAgentId === agent.id ? 'page' : undefined} onClick={() => props.onSelectAgent(agent)}>
           <AgentGlyph agent={agent} size={24} />
           <span>{agent.name}</span>
           {running && <span className="reason-running-dot" aria-label="Working" />}
