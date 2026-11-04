@@ -13,3 +13,4 @@ android/build/
 .codebase-memory/
 test-results/
 playwright-report/
+.DS_Store

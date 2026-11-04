@@ -5,14 +5,31 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { hostname, networkInterfaces } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import type { Agent, Attachment, Schedule, SendMessageInput, ServerEvent, ServerHandle, ServerOptions } from '../shared/types.js';
+import type { Agent, Attachment, DeviceInfo, Schedule, SendMessageInput, ServerEvent, ServerHandle, ServerOptions } from '../shared/types.js';
+import { DeviceStore } from './devices.js';
 import { agentPatch, conversationPatch, id, InputError, now, object, schedulePatch, settingsPatch, StateStore, string } from './store.js';
 import { ProviderManager } from './providers.js';
 import { RunManager } from './runs.js';
 
+const DEVICE_COOKIE = 'agent_desktop_token';
+
 function textTokenMatches(received: string, expected: string): boolean {
   const left = Buffer.from(received), right = Buffer.from(expected);
   return left.length === right.length && timingSafeEqual(left, right);
+}
+function readCookie(request: express.Request, name: string): string {
+  const header = request.headers.cookie;
+  if (!header) return '';
+  for (const part of header.split(';')) {
+    const index = part.indexOf('=');
+    if (index < 0 || part.slice(0, index).trim() !== name) continue;
+    try { return decodeURIComponent(part.slice(index + 1).trim()); } catch { return ''; }
+  }
+  return '';
+}
+function deviceCookie(request: express.Request, token: string): string {
+  const secure = request.secure || request.headers['x-forwarded-proto'] === 'https';
+  return `${DEVICE_COOKIE}=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=Strict; Max-Age=31536000${secure ? '; Secure' : ''}`;
 }
 async function loadToken(directory: string, supplied?: string): Promise<string> {
   if (supplied) { if (supplied.length < 24) throw new Error('AGENT_TOKEN must contain at least 24 characters.'); return supplied; }
@@ -53,6 +70,9 @@ export async function startServer(options: ServerOptions = {}): Promise<ServerHa
   await mkdir(dataDir, { recursive: true, mode: 0o700 });
   const token = await loadToken(dataDir, options.token ?? process.env.AGENT_TOKEN);
   const store = new StateStore(dataDir, { lock: true }); await store.load();
+  const devices = new DeviceStore(dataDir);
+  try { await devices.load(); }
+  catch (error) { await store.close(); throw error; }
   const clients = new Set<Response>();
   const emit = (event: ServerEvent) => {
     const data = `data: ${JSON.stringify(event)}\n\n`;
@@ -67,17 +87,23 @@ export async function startServer(options: ServerOptions = {}): Promise<ServerHa
   const server = createServer(app);
   let closed = false;
   const allowLocalTokenInjection = options.allowLocalTokenInjection ?? process.env.AGENT_ALLOW_LOCAL_TOKEN_INJECTION === '1';
-  const browserToken = (request: express.Request) => {
-    const cookie = request.headers.cookie?.split(';').map(part => part.trim()).find(part => part.startsWith('agent_desktop_token='))?.slice('agent_desktop_token='.length);
+  const browserSession = async (request: express.Request): Promise<{ token: string; cookie?: string }> => {
+    const cookie = readCookie(request, DEVICE_COOKIE);
     if (cookie) {
-      try { if (textTokenMatches(decodeURIComponent(cookie), token)) return token; } catch { /* malformed cookie */ }
+      if (textTokenMatches(cookie, token)) {
+        // Upgrade the legacy root-token cookie to a revocable per-device token.
+        const created = await devices.create('Desktop app');
+        return { token: created.token, cookie: deviceCookie(request, created.token) };
+      }
+      // A present but invalid cookie must not fall back to the root token.
+      return devices.authenticate(cookie) ? { token: cookie } : { token: '' };
     }
-    if (!allowLocalTokenInjection) return '';
+    if (!allowLocalTokenInjection) return { token: '' };
     const address = request.socket.remoteAddress;
     let requestHost = '';
     try { requestHost = new URL(`http://${request.headers.host}`).hostname; } catch {}
     const forwarded = request.headers.forwarded || request.headers['x-forwarded-for'] || request.headers['x-forwarded-host'] || request.headers['x-real-ip'];
-    return address && ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(address) && ['127.0.0.1', 'localhost', '[::1]', '::1'].includes(requestHost) && !forwarded ? token : '';
+    return address && ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(address) && ['127.0.0.1', 'localhost', '[::1]', '::1'].includes(requestHost) && !forwarded ? { token } : { token: '' };
   };
   let listenPort = port;
   const allowedHosts = new Set(['127.0.0.1', 'localhost', '[::1]', '::1']);
@@ -105,12 +131,20 @@ export async function startServer(options: ServerOptions = {}): Promise<ServerHa
   });
   app.use('/api', (req, res, next) => {
     const authorization = req.headers.authorization;
-    if (!authorization?.startsWith('Bearer ') || !textTokenMatches(authorization.slice(7), token)) { res.status(401).json({ error: 'Connect with this A Gent server’s pairing token.' }); return; }
+    const bearer = authorization?.startsWith('Bearer ') ? authorization.slice(7) : '';
+    const admin = Boolean(bearer) && textTokenMatches(bearer, token);
+    const device = !admin && bearer ? devices.authenticate(bearer) : undefined;
+    if (!admin && !device) { res.status(401).json({ error: 'Connect with this A Gent server’s pairing token.' }); return; }
+    res.locals.auth = { admin, device };
     res.setHeader('Cache-Control', 'no-store');
     next();
   });
   app.use(express.json({ limit: '32mb' }));
   const publish = async () => { await runs.publishState(); };
+  const requireAdmin = (res: Response) => {
+    const auth = res.locals.auth as { admin?: boolean };
+    if (!auth.admin) throw new InputError('Only the host administrator token can manage devices.', 403);
+  };
   const checkGroup = (groupId?: string | null) => { if (groupId && !store.state.groups.some(group => group.id === groupId)) throw new InputError('Group not found.', 404); };
 
   app.get('/api/health', (_req, res) => { res.json({ ok: true, name: 'A Gent', version: '0.1.0' }); });
@@ -202,6 +236,25 @@ export async function startServer(options: ServerOptions = {}): Promise<ServerHa
     store.state.schedules.splice(index, 1); await publish(); res.json({ ok: true });
   });
   app.patch('/api/settings', async (req, res) => { const patch = settingsPatch(req.body); if (patch.defaultProviderId) providers.get(patch.defaultProviderId); Object.assign(store.state.settings, patch); await publish(); res.json(store.state.settings); });
+  app.get('/api/devices', (_req, res) => {
+    const auth = res.locals.auth as { admin: boolean; device?: DeviceInfo };
+    const list = auth.admin ? devices.list() : auth.device ? [auth.device] : [];
+    res.json(list.map(device => ({ ...device, current: auth.device?.id === device.id })));
+  });
+  app.post('/api/devices', async (req, res) => {
+    requireAdmin(res);
+    const data = object(req.body ?? {});
+    const created = await devices.create(data.name === undefined ? 'Desktop app' : string(data.name, 'Device name', 100));
+    res.status(201).json(created);
+  });
+  app.post('/api/devices/:id/rotate', async (req, res) => {
+    requireAdmin(res);
+    res.json(await devices.rotate(String(req.params.id)));
+  });
+  app.delete('/api/devices/:id', async (req, res) => {
+    requireAdmin(res);
+    res.json(await devices.revoke(String(req.params.id)));
+  });
   app.get('/api/providers', (_req, res) => { res.json(providers.providers); });
   app.get('/api/apps', async (_req, res) => { res.json(await providers.apps()); });
   app.post('/api/providers/:id/connect', async (req, res) => { res.json(await providers.connect(String(req.params.id), req.body ?? {})); });
@@ -219,7 +272,9 @@ export async function startServer(options: ServerOptions = {}): Promise<ServerHa
       if (req.method !== 'GET' || !req.accepts('html')) { next(); return; }
       try {
         const source = await readFile(join(process.cwd(), 'index.html'), 'utf8');
-        const html = await vite.transformIndexHtml(req.originalUrl, injectConfig(source, browserToken(req)));
+        const session = await browserSession(req);
+        if (session.cookie) res.setHeader('Set-Cookie', session.cookie);
+        const html = await vite.transformIndexHtml(req.originalUrl, injectConfig(source, session.token));
         res.type('html').send(html);
       } catch (error) { vite.ssrFixStacktrace(error as Error); next(error); }
     });
@@ -227,8 +282,12 @@ export async function startServer(options: ServerOptions = {}): Promise<ServerHa
     app.use(express.static(staticDir, { index: false, dotfiles: 'deny' }));
     app.use(async (req, res, next) => {
       if (req.method !== 'GET' || !req.accepts('html')) { next(); return; }
-      try { res.type('html').send(injectConfig(await readFile(join(staticDir, 'index.html'), 'utf8'), browserToken(req))); }
-      catch (error) { if ((error as NodeJS.ErrnoException).code === 'ENOENT') res.status(503).json({ error: 'Build A Gent with npm run build before starting this server.' }); else next(error); }
+      try {
+        const source = await readFile(join(staticDir, 'index.html'), 'utf8');
+        const session = await browserSession(req);
+        if (session.cookie) res.setHeader('Set-Cookie', session.cookie);
+        res.type('html').send(injectConfig(source, session.token));
+      } catch (error) { if ((error as NodeJS.ErrnoException).code === 'ENOENT') res.status(503).json({ error: 'Build A Gent with npm run build before starting this server.' }); else next(error); }
     });
   }
   const errorHandler: ErrorRequestHandler = (error: Error & { status?: number; type?: string }, _req, res, _next) => {
@@ -241,7 +300,7 @@ export async function startServer(options: ServerOptions = {}): Promise<ServerHa
   try {
     await new Promise<void>((resolve, reject) => { server.once('error', reject); server.listen(port, host, () => { server.off('error', reject); resolve(); }); });
   } catch (error) {
-    await runs.close(); await store.close(); if (closeVite) await closeVite();
+    await runs.close(); await devices.close(); await store.close(); if (closeVite) await closeVite();
     throw error;
   }
   const address = server.address(); if (!address || typeof address === 'string') throw new Error('A Gent server did not obtain a TCP port.');
@@ -253,7 +312,7 @@ export async function startServer(options: ServerOptions = {}): Promise<ServerHa
     if (closed) return; closed = true;
     const listenerClosed = new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
     for (const client of clients) client.end(); clients.clear();
-    await runs.close(); await store.close(); if (closeVite) await closeVite();
+    await runs.close(); await devices.close(); await store.close(); if (closeVite) await closeVite();
     await listenerClosed;
   } };
 }

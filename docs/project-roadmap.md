@@ -35,7 +35,7 @@ Working:
 - Codex local execution through the app-server interface.
 - Ollama and OpenAI-compatible chat providers.
 - Local token auth, host/origin allowlists, Electron sandboxing.
-- 8 backend integration tests.
+- 9 backend integration tests.
 - Typecheck and production build pass.
 
 ### Reason-like UI
@@ -90,7 +90,7 @@ b1982c0612e4bcfcbfee361f4da34cb170f4be2d186e1855eb537d2eaa0cedb8  A-Gent-Portabl
 ### Verified on this machine
 
 - `npm run typecheck` — passes.
-- `npm test` — 6/6 backend tests pass.
+- `npm test` — 9/9 backend tests pass.
 - `npm run build` — passes.
 - `npm run desktop:mac` — builds DMG and ZIP.
 - `npm run desktop:win` — cross-builds NSIS installer and portable EXE.
@@ -124,8 +124,8 @@ These are engineering estimates, not precise metrics.
 | Windows delivery | 60% | 40% | Artifacts built; no runtime test, no icon metadata, unsigned |
 | Android delivery | 40% | 60% | Debug APK built; companion-only, no device test, no release signing |
 | Reason-like UI | 75% | 25% | Major surfaces done; tests and smaller interactions pending |
-| Security and reliability | 70% | 30% | Desktop pairing cookie, data lock, recovery, CSP, and approval diffs added; per-device tokens and limits still need work |
-| Tests and QA | 75% | 25% | 8 backend tests, 3 smoke tests, and 10 visual baselines pass; device and full E2E tests pending |
+| Security and reliability | 78% | 22% | Hashed per-device tokens with rotation/revocation, cookie migration, data lock, recovery, CSP, and approval diffs; device UI and limits still need work |
+| Tests and QA | 78% | 22% | 9 backend tests, 3 smoke tests, and 10 visual baselines pass; device and full E2E tests pending |
 | Docs and release | 50% | 50% | README/roadmap exist; validation doc and release truth missing |
 | Full Reason parity | 35% | 65% | Cloud/billing intentionally excluded; native/browser/voice/connectors missing |
 
@@ -186,8 +186,8 @@ These are engineering estimates, not precise metrics.
 
 ### E. Security and reliability
 
-- Desktop pairing cookie now gates token injection; local browser injection is opt-in. Per-device tokens remain pending.
-- Add per-device tokens and token rotation/revocation.
+- Desktop pairing cookies upgrade to hashed per-device tokens; local browser injection is opt-in.
+- Add a Settings device list for creating, rotating, and revoking tokens.
 - Add a data-directory lock to prevent two hosts clobbering state.
 - Add rolling backups and recovery for corrupt `state.json`.
 - Fix export/import size mismatch: export can exceed the 8 MB import limit.
@@ -316,7 +316,7 @@ Out of scope unless explicitly added:
 **Goal:** Safe for daily local use and remote pairing.
 
 - [x] Replace proxy-sensitive token injection with a desktop pairing cookie.
-- [ ] Add per-device tokens and rotation.
+- [x] Add per-device tokens with rotation/revocation and legacy cookie migration.
 - [x] Add data-directory lock.
 - [x] Add rolling backups and corrupt-state recovery.
 - [ ] Finish import/export streaming; body limit raised to 32 MB.
@@ -404,7 +404,7 @@ Prioritize:
 | macOS ad-hoc signature | Gatekeeper blocks other Macs | Developer ID + notarization |
 | Windows runtime unverified | Installer/portable may fail on real Windows | Test on a Windows VM/device or GitHub Actions Windows runner |
 | Android companion only | User expects standalone | Decide S1 explicitly |
-| Per-device tokens not implemented | No token rotation or revocation | Add device records, rotation, and revocation |
+| No device-management UI | Tokens must be managed through the API | Add a Settings device list |
 | State corruption | Data loss | Backups, lock, recovery |
 | Scope creep | Delays | Keep cloud/billing/native/voice out of v1 |
 | Full Reason parity expectation | Unbounded scope | Define “core local workspace + selected parity” |

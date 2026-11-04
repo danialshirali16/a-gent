@@ -31,6 +31,26 @@ function openExternal(value) {
   try { return shell.openExternal(externalUrl(value)); } catch { return Promise.resolve(); }
 }
 
+async function ensureDesktopPairing() {
+  const cookies = session.defaultSession.cookies;
+  const existing = await cookies.get({ url: backend.url, name: 'agent_desktop_token' });
+  const current = existing[0]?.value;
+  if (current) {
+    try {
+      const response = await fetch(`${backend.url}/api/bootstrap`, { headers: { Authorization: `Bearer ${current}` } });
+      if (response.ok || response.status !== 401) return;
+    } catch { return; }
+  }
+  await cookies.set({
+    url: backend.url,
+    name: 'agent_desktop_token',
+    value: backend.token,
+    httpOnly: true,
+    sameSite: 'strict',
+    expirationDate: Date.now() / 1000 + 365 * 24 * 60 * 60,
+  });
+}
+
 async function createWindow() {
   preparePath();
   let url = process.env.AGENT_DEV_URL;
@@ -71,7 +91,7 @@ async function createWindow() {
       try { fs.unlinkSync(temporaryPortFile); } catch {}
     }
     try {
-      await session.defaultSession.cookies.set({ url: backend.url, name: 'agent_desktop_token', value: backend.token, httpOnly: true, sameSite: 'strict' });
+      await ensureDesktopPairing();
     } catch { /* the desktop page will fall back to manual pairing */ }
     url = backend.url;
   }

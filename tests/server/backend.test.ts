@@ -56,23 +56,106 @@ test('data lock prevents two hosts from using the same workspace', async () => {
   } finally { await rm(directory, { recursive: true, force: true }); }
 });
 
-test('desktop pairing cookie gates token injection', async () => {
+test('desktop pairing cookie migrates to a revocable device token', async () => {
   const directory = await mkdtemp(join(scratch, 'agent-cookie-test-'));
   const staticDir = join(directory, 'static'); await mkdir(staticDir); await writeFile(join(staticDir, 'index.html'), '<!doctype html><html><head></head><body>A Gent</body></html>');
   const previousProbe = process.env.AGENT_SKIP_PROVIDER_PROBE;
   process.env.AGENT_SKIP_PROVIDER_PROBE = '1';
   const handle = await startServer({ port: 0, dataDir: directory, staticDir, dev: false });
-  const readPage = (headers: Record<string, string>) => new Promise<string>((resolve, reject) => {
+  const readPage = (headers: Record<string, string>) => new Promise<{ body: string; headers: Record<string, string | string[] | undefined> }>((resolve, reject) => {
     const request = httpRequest(handle.url, { headers, agent: false }, response => {
       let body = ''; response.setEncoding('utf8');
       response.on('data', chunk => { body += chunk; });
-      response.on('end', () => resolve(body));
+      response.on('end', () => resolve({ body, headers: response.headers }));
     });
     request.on('error', reject); request.end();
   });
   try {
-    assert.ok(!(await readPage({})).includes(handle.token));
-    assert.ok((await readPage({ Cookie: `agent_desktop_token=${handle.token}` })).includes(handle.token));
+    const anonymous = await readPage({});
+    assert.ok(!anonymous.body.includes(handle.token));
+    assert.ok(!anonymous.body.includes('agt_'));
+
+    const legacy = await readPage({ Cookie: `agent_desktop_token=${encodeURIComponent(handle.token)}` });
+    assert.ok(!legacy.body.includes(handle.token), 'the legacy root token is never injected');
+    const setCookie = legacy.headers['set-cookie'];
+    const cookieHeader = Array.isArray(setCookie) ? setCookie.join('\n') : setCookie ?? '';
+    assert.match(cookieHeader, /agent_desktop_token=agt_/);
+    assert.match(cookieHeader, /HttpOnly/);
+    assert.match(cookieHeader, /SameSite=Strict/);
+    const config = JSON.parse(/window\.__AGENT_CONFIG__=(\{.*?\});<\/script>/.exec(legacy.body)![1]);
+    assert.match(config.token, /^agt_/);
+    assert.notEqual(config.token, handle.token);
+    assert.equal((await fetch(`${handle.url}/api/bootstrap`, { headers: { Authorization: `Bearer ${config.token}` } })).status, 200);
+
+    const paired = await readPage({ Cookie: `agent_desktop_token=${encodeURIComponent(config.token)}` });
+    assert.ok(paired.body.includes(config.token));
+    const devicesResponse = await fetch(`${handle.url}/api/devices`, { headers: { Authorization: `Bearer ${handle.token}` } });
+    const devices = await devicesResponse.json() as Array<{ id: string; name: string }>;
+    assert.equal(devices.length, 1, 'a repeated device-cookie page load does not create another device');
+    assert.equal(devices[0].name, 'Desktop app');
+
+    await fetch(`${handle.url}/api/devices/${devices[0].id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${handle.token}` } });
+    const revoked = await readPage({ Cookie: `agent_desktop_token=${encodeURIComponent(config.token)}` });
+    assert.ok(!revoked.body.includes(handle.token), 'a revoked cookie does not fall back to the root token');
+    assert.ok(!revoked.body.includes(config.token));
+  } finally {
+    await handle.close(); await rm(directory, { recursive: true, force: true });
+    if (previousProbe === undefined) delete process.env.AGENT_SKIP_PROVIDER_PROBE; else process.env.AGENT_SKIP_PROVIDER_PROBE = previousProbe;
+  }
+});
+
+test('device tokens can be created, rotated, revoked, and survive a host restart', async () => {
+  const directory = await mkdtemp(join(scratch, 'agent-device-test-'));
+  const staticDir = join(directory, 'static'); await mkdir(staticDir); await writeFile(join(staticDir, 'index.html'), '<!doctype html><html><head></head><body>A Gent</body></html>');
+  const previousProbe = process.env.AGENT_SKIP_PROVIDER_PROBE;
+  process.env.AGENT_SKIP_PROVIDER_PROBE = '1';
+  const start = () => startServer({ port: 0, dataDir: directory, staticDir, dev: false });
+  let handle = await start();
+  const call = async (token: string, path: string, body?: unknown, method = body === undefined ? 'GET' : 'POST') => {
+    const response = await fetch(`${handle.url}/api${path}`, { method, headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
+    return { status: response.status, body: await response.json() as any };
+  };
+  try {
+    const created = await call(handle.token, '/devices', { name: 'Pixel' }, 'POST');
+    assert.equal(created.status, 201);
+    assert.match(created.body.token, /^agt_/);
+    assert.equal(created.body.device.name, 'Pixel');
+    const raw = await readFile(join(directory, 'devices.json'), 'utf8');
+    assert.ok(!raw.includes(created.body.token), 'only a token hash is stored');
+    assert.equal((await call(created.body.token, '/bootstrap')).status, 200);
+
+    const own = await call(created.body.token, '/devices');
+    assert.equal(own.status, 200);
+    assert.equal(own.body.length, 1);
+    assert.equal(own.body[0].id, created.body.device.id);
+    assert.equal(own.body[0].current, true);
+    assert.equal((await call(created.body.token, '/devices', { name: 'Other' }, 'POST')).status, 403, 'device tokens cannot create more devices');
+    assert.equal((await call(created.body.token, `/devices/${created.body.device.id}/rotate`, {}, 'POST')).status, 403, 'device tokens cannot rotate themselves without the administrator');
+    assert.equal((await call(created.body.token, `/devices/${created.body.device.id}`, undefined, 'DELETE')).status, 403, 'device tokens cannot revoke devices');
+    const adminList = await call(handle.token, '/devices');
+    assert.equal(adminList.body.length, 1);
+    assert.equal(adminList.body[0].name, 'Pixel');
+
+    const rotated = await call(handle.token, `/devices/${created.body.device.id}/rotate`, {}, 'POST');
+    assert.equal(rotated.status, 200);
+    assert.notEqual(rotated.body.token, created.body.token);
+    assert.equal((await call(created.body.token, '/bootstrap')).status, 401, 'rotation invalidates the old token');
+    assert.equal((await call(rotated.body.token, '/bootstrap')).status, 200);
+
+    await handle.close();
+    handle = await start();
+    assert.equal((await call(rotated.body.token, '/bootstrap')).status, 200, 'rotated tokens survive a restart');
+    assert.equal((await call(created.body.token, '/bootstrap')).status, 401);
+
+    const revoked = await call(handle.token, `/devices/${created.body.device.id}`, undefined, 'DELETE');
+    assert.equal(revoked.status, 200);
+    assert.ok(revoked.body.revokedAt);
+    assert.equal((await call(rotated.body.token, '/bootstrap')).status, 401, 'revocation is immediate');
+    assert.equal((await call(handle.token, '/bootstrap')).status, 200, 'the root administrator token remains valid');
+
+    await handle.close();
+    handle = await start();
+    assert.equal((await call(rotated.body.token, '/bootstrap')).status, 401, 'revocation survives a restart');
   } finally {
     await handle.close(); await rm(directory, { recursive: true, force: true });
     if (previousProbe === undefined) delete process.env.AGENT_SKIP_PROVIDER_PROBE; else process.env.AGENT_SKIP_PROVIDER_PROBE = previousProbe;

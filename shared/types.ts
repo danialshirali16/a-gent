@@ -47,6 +47,15 @@ export interface Conversation {
   providerThreadId?: string;
 }
 export interface Group { id: string; name: string; createdAt: string; }
+export interface DeviceInfo {
+  id: string;
+  name: string;
+  createdAt: string;
+  lastUsedAt?: string;
+  rotatedAt?: string;
+  revokedAt?: string;
+  current?: boolean;
+}
 export interface Schedule {
   id: string;
   agentId: string;

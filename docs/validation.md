@@ -11,7 +11,7 @@ Electron: 45.2.2
 | Check | Result |
 | --- | --- |
 | `npm run typecheck` | Pass |
-| `npm test` | 8/8 pass |
+| `npm test` | 9/9 pass |
 | `npm run test:ui` | 3/3 Playwright smoke tests pass |
 | `npm run test:visual` | 10/10 Playwright screenshot baselines pass |
 | `npm run build` | Pass |
@@ -86,6 +86,9 @@ Electron: 45.2.2
 - Baselines were generated on macOS arm64 with Chrome. The `visual` CI job runs on `macos-latest`.
 - Workspace data lock rejects a second host using the same data directory.
 - Desktop pairing cookie gates token injection; the packaged macOS app loads the workspace through that cookie.
+- Legacy desktop cookies migrate to a hashed per-device token and are replaced by the server.
+- Per-device tokens can be created, rotated, and revoked; only SHA-256 hashes are stored in `devices.json`.
+- Packaged macOS app migrated its legacy cookie to a device token; after that device was revoked, the next launch created a fresh device and loaded the workspace.
 - Local browser token injection is opt-in via `AGENT_ALLOW_LOCAL_TOKEN_INJECTION=1`.
 - Corrupt `state.json` recovers from `state.json.bak`.
 - CSP now sets `default-src 'self'` and blocks remote images.
@@ -108,7 +111,8 @@ Electron: 45.2.2
 - macOS app is ad-hoc signed and not notarized.
 - Windows artifacts are unsigned.
 - Android APK is debug-signed and companion-only.
-- Local browser token injection remains opt-in; use HTTPS and manual pairing for remote access.
+- Local browser token injection remains opt-in; use HTTPS and a dedicated device token for remote access.
+- Device-token management is currently API-only; there is no Settings device list yet.
 - Very large exports can still exceed the 32 MB import limit.
 - Remote Markdown images are blocked by CSP until an image policy is chosen.
 

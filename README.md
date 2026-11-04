@@ -16,7 +16,7 @@ npm run build
 npm start
 ```
 
-Open `http://127.0.0.1:4317` and pair with the token from `.data/.token`, or set `AGENT_ALLOW_LOCAL_TOKEN_INJECTION=1` for local browser convenience. The packaged desktop app pairs automatically through its own cookie. For development, use `npm run dev`. On this device, a compatible existing runtime is `/opt/homebrew/opt/node@24/bin/node`; place its directory first on PATH when using npm.
+Open `http://127.0.0.1:4317` and pair with the administrator token from `.data/.token`, or set `AGENT_ALLOW_LOCAL_TOKEN_INJECTION=1` for local browser convenience. The packaged desktop app pairs automatically and upgrades its cookie to a per-device token. For development, use `npm run dev`. On this device, a compatible existing runtime is `/opt/homebrew/opt/node@24/bin/node`; place its directory first on PATH when using npm.
 
 To launch the desktop shell from source:
 
@@ -49,10 +49,36 @@ The Android APK is a companion client. It connects to an A Gent host running on 
 
 1. Run one persistent host for the workspace you want to share.
 2. Make that host reachable through a private HTTPS connection or an HTTPS reverse proxy you control.
-3. In the host’s **Connections** screen, use **Copy host token**.
-4. Open A Gent on Android and enter the host’s HTTPS address and access token.
+3. Create a dedicated device token for the phone with the administrator token (see **Device pairing tokens**).
+4. Open A Gent on Android and enter the host’s HTTPS address and that device token.
 
-The host address is remembered on the device. The token remains in the current app session. To use the same workspace on a desktop client, choose **Connections → Connect another host**. Do not run two host processes against the same data directory.
+The host address is remembered on the device. The device token remains in the current app session. To use the same workspace on a desktop client, choose **Connections → Connect another host**. Do not run two host processes against the same data directory.
+
+## Device pairing tokens
+
+The token in `.data/.token` (or `AGENT_TOKEN`) is the host administrator token. It can create, rotate, and revoke per-device tokens. Device tokens are stored as SHA-256 hashes in `devices.json`; the plaintext token is returned only when it is created or rotated.
+
+```sh
+TOKEN=$(cat .data/.token)
+HOST=http://127.0.0.1:4317
+
+# Create a token for one device. Save the returned token.
+curl -s -X POST "$HOST/api/devices" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Android phone"}'
+
+# List devices (administrator view).
+curl -s "$HOST/api/devices" -H "Authorization: Bearer $TOKEN"
+
+# Rotate a device token. The previous token stops working immediately.
+curl -s -X POST "$HOST/api/devices/<device-id>/rotate" -H "Authorization: Bearer $TOKEN"
+
+# Revoke a device. Access stops immediately and survives restarts.
+curl -s -X DELETE "$HOST/api/devices/<device-id>" -H "Authorization: Bearer $TOKEN"
+```
+
+A device token can read its own device record but cannot manage other devices. If a desktop device token is revoked, its next launch falls back to the administrator cookie and creates a fresh device record. Use HTTPS for remote access and give each phone or computer its own token.
 
 The host defaults to loopback. No public service or tunnel is created by the build. Available host configuration:
 
@@ -61,7 +87,7 @@ The host defaults to loopback. No public service or tunnel is created by the bui
 | `AGENT_PORT` | Host port; defaults to 4317. |
 | `AGENT_HOST` | Listen address; defaults to `127.0.0.1`. |
 | `AGENT_DATA_DIR` | Persistent workspace directory; source start defaults to `.data`. |
-| `AGENT_TOKEN` | Optional existing pairing token, at least 24 characters. Otherwise generated in the data directory’s `.token` file. |
+| `AGENT_TOKEN` | Optional existing administrator pairing token, at least 24 characters. Otherwise generated in the data directory’s `.token` file. |
 | `AGENT_ALLOWED_HOSTS` | Extra accepted hostnames, comma separated. |
 | `AGENT_ALLOWED_ORIGINS` | Extra accepted browser origins, comma separated. Capacitor’s local origin is already accepted. |
 | `AGENT_ALLOW_LOCAL_TOKEN_INJECTION` | Set to `1` to embed the pairing token in local browser HTML. Off by default; the desktop app uses a pairing cookie instead. |
