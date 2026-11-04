@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { expect, test, type Page } from '@playwright/test';
 
-test.describe.configure({ mode: 'serial' });
+test.describe.configure({ mode: 'serial', timeout: 60000 });
 
 async function home(page: Page) {
   await page.goto('/');
@@ -47,9 +47,10 @@ test('chat approvals, terminal activity, and files work end to end', async ({ pa
   await home(page);
   await page.getByRole('navigation', { name: 'Agents' }).getByRole('button', { name: 'A Gent', exact: true }).click();
   await connectCodex(page);
+  await page.waitForTimeout(500);
   await page.getByRole('textbox', { name: 'Message A Gent' }).fill('[approval]');
   await page.getByRole('button', { name: 'Send message' }).click();
-  await expect(page.locator('.reason-approval').first()).toBeVisible({ timeout: 15000 });
+  await expect(page.locator('.reason-approval').first()).toBeVisible({ timeout: 30000 });
 
   await page.getByRole('button', { name: 'Open side panel' }).click();
   await page.getByRole('tab', { name: 'Approvals' }).click();

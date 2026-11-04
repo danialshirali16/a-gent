@@ -124,7 +124,7 @@ These are engineering estimates, not precise metrics.
 | Android delivery | 40% | 60% | Debug APK built; companion-only, no device test, no release signing |
 | Reason-like UI | 88% | 12% | Major surfaces, Devices settings, agent groups, Files, Terminal, and keyboard navigation done; smaller interactions pending |
 | Security and reliability | 82% | 18% | Hashed per-device tokens, cookie migration, Settings device management, data lock, recovery, CSP, and approval diffs; limits still need work |
-| Tests and QA | 95% | 5% | 11 backend tests, 15 smoke tests, 10 visual baselines, 6 axe scans, and 6 E2E workflows pass; manual screen-reader audit pending |
+| Tests and QA | 96% | 4% | 11 backend tests, 16 smoke tests, 10 visual baselines, 6 axe scans, and 6 E2E workflows pass; manual screen-reader audit pending |
 | Docs and release | 50% | 50% | README/roadmap exist; validation doc and release truth missing |
 | Full Reason parity | 35% | 65% | Cloud/billing intentionally excluded; native/browser/voice/connectors missing |
 

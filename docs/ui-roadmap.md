@@ -99,8 +99,8 @@ These values were extracted from Reason’s public CSS bundles and the running 0
 
 ### Typography
 
-- Text: Geist Variable.
-- Mono: Geist Mono.
+- Text: Inter Variable.
+- Mono: system monospace (SF Mono / Menlo fallback).
 - Base: `14px`.
 - Micro: `12px`.
 - Body weight: `400` / `420`.
@@ -253,7 +253,8 @@ src/
 - [x] Add `src/styles/tokens.css` with light/dark tokens.
 - [x] Add type, spacing, radii, shadow, and motion scales.
 - [x] Alias existing CSS variables to new tokens.
-- [ ] Add Geist Mono if needed.
+- [x] Use Inter Variable for UI text.
+- [ ] Add a dedicated mono font if needed.
 - [x] Verify theme switching and build.
 
 ### Phase 2 — App shell and top bar

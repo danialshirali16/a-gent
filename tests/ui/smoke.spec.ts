@@ -286,3 +286,17 @@ test('dialogs keep keyboard focus inside', async ({ page }) => {
   const inside = await page.evaluate(() => Boolean(document.activeElement?.closest('dialog')));
   expect(inside).toBe(true);
 });
+
+
+test('loads the Inter Latin variable font only', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.getByRole('textbox', { name: /^Message / })).toBeVisible();
+  await page.evaluate(() => document.fonts.ready);
+  expect(await page.evaluate(() => document.fonts.check('14px "Inter Variable"'))).toBe(true);
+  const fonts = await page.evaluate(() => performance.getEntriesByType('resource')
+    .filter(entry => /inter-.*\.woff2/.test(entry.name))
+    .map(entry => ({ name: entry.name, size: (entry as PerformanceResourceTiming).encodedBodySize })));
+  expect(fonts).toHaveLength(1);
+  expect(fonts[0].size).toBeGreaterThan(0);
+  expect(fonts[0].size).toBeLessThan(60_000);
+});
