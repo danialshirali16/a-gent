@@ -124,7 +124,7 @@ These are engineering estimates, not precise metrics.
 | Android delivery | 40% | 60% | Debug APK built; companion-only, no device test, no release signing |
 | Reason-like UI | 88% | 12% | Major surfaces, Devices settings, agent groups, Files, Terminal, and keyboard navigation done; smaller interactions pending |
 | Security and reliability | 82% | 18% | Hashed per-device tokens, cookie migration, Settings device management, data lock, recovery, CSP, and approval diffs; limits still need work |
-| Tests and QA | 92% | 8% | 11 backend tests, 15 smoke tests, 10 visual baselines, and 6 axe scans pass; manual screen-reader audit and full E2E pending |
+| Tests and QA | 95% | 5% | 11 backend tests, 15 smoke tests, 10 visual baselines, 6 axe scans, and 6 E2E workflows pass; manual screen-reader audit pending |
 | Docs and release | 50% | 50% | README/roadmap exist; validation doc and release truth missing |
 | Full Reason parity | 35% | 65% | Cloud/billing intentionally excluded; native/browser/voice/connectors missing |
 
@@ -205,7 +205,7 @@ These are engineering estimates, not precise metrics.
 - Files and Terminal side-panel tabs are available with read-only workspace browsing and activity detail.
 - Add retry/more message actions.
 - Full keyboard navigation is available for sidebar menus, the composer menu, model picker, dialogs, and side-panel tabs.
-- Screenshot visual coverage is in place for 5 viewports and both themes; full E2E flows remain.
+- Screenshot visual coverage and a core-workflow E2E matrix are in place; manual screen-reader audit remains.
 - Audit contrast, focus, target sizes, and screen-reader behavior.
 - Remove the unused page views from `views.tsx` by extracting `ProviderCard`.
 

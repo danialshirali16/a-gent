@@ -112,6 +112,7 @@ npm test
 npm run test:ui
 npm run test:visual
 npm run test:a11y
+npm run test:e2e
 npm run desktop:mac
 npm run desktop:win
 npm run android:apk

@@ -15,6 +15,7 @@ Electron: 45.2.2
 | `npm run test:ui` | 15/15 Playwright smoke tests pass |
 | `npm run test:visual` | 10/10 Playwright screenshot baselines pass |
 | `npm run test:a11y` | 6/6 axe scans pass; 0 violations |
+| `npm run test:e2e` | 6/6 macOS E2E workflows pass |
 | `npm run build` | Pass |
 | `npm run desktop:mac` | Pass |
 | `npm run desktop:win` | Not rerun; macOS-only scope |
@@ -100,6 +101,7 @@ Windows and Android artifacts below are from the previous cross-platform build. 
 - Packaged macOS app verified with Computer Use: Files tab browsed `README.md` and `src/index.ts`; Terminal tab showed its read-only empty state.
 - Keyboard navigation covers sidebar and group menus, the composer add menu, model picker, dialog Escape/focus trap, and side-panel tabs.
 - Axe scans cover home in light/dark, Settings, Connections, the side panel, and mobile home with 0 violations.
+- E2E matrix covers agent create/customize, chat approval completion, Terminal activity, Files browsing, schedule creation, workspace export/import, device token lifecycle, and keyboard flows.
 - The light-theme faint text token was darkened to meet WCAG AA contrast.
 - `⌘ \` toggles the side panel; dialog focus returns to the opening control after Escape.
 - Packaged macOS app verified with Computer Use: Escape closed Settings and restored focus, Right Arrow moved the side-panel tab from Session to Sessions, and Down Arrow moved workspace-menu focus from All agents to Scheduled.

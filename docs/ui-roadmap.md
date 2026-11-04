@@ -29,7 +29,7 @@ Implemented in the first pass:
 - Centered model-change and reasoning-effort events in conversations.
 - Tool stream setting: Compact / Verbose / Hidden.
 
-Still pending from the roadmap: manual screen-reader audit and the full E2E matrix.
+Still pending from the roadmap: manual screen-reader audit.
 
 ## 1. Goal
 
@@ -362,7 +362,7 @@ src/
 - [x] Visual regression at 5 widths × 2 themes.
 - [x] Playwright smoke flows.
 - [x] Playwright screenshot visual baselines.
-- [ ] Full Playwright E2E matrix.
+- [x] Full Playwright E2E matrix.
 - [x] Automated axe accessibility audit.
 - [ ] Manual screen-reader and reduced-motion audit.
 - [ ] Performance check.

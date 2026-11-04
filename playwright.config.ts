@@ -3,6 +3,7 @@ import { defineConfig } from '@playwright/test';
 const smokeURL = 'http://127.0.0.1:4410';
 const visualURL = 'http://127.0.0.1:4411';
 const accessibilityURL = 'http://127.0.0.1:4412';
+const e2eURL = 'http://127.0.0.1:4413';
 
 export default defineConfig({
   testDir: './tests/ui',
@@ -32,6 +33,11 @@ export default defineConfig({
       testMatch: /accessibility\.spec\.ts/,
       use: { baseURL: accessibilityURL },
     },
+    {
+      name: 'e2e',
+      testMatch: /e2e\.spec\.ts/,
+      use: { baseURL: e2eURL },
+    },
   ],
   webServer: [
     {
@@ -49,6 +55,12 @@ export default defineConfig({
     {
       command: 'node scripts/ui-test-server.mjs 4412',
       url: accessibilityURL,
+      reuseExistingServer: false,
+      timeout: 30000,
+    },
+    {
+      command: 'node scripts/ui-test-server.mjs 4413',
+      url: e2eURL,
       reuseExistingServer: false,
       timeout: 30000,
     },
