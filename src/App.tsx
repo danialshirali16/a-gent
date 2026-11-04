@@ -75,6 +75,16 @@ export default function App() {
     if (modelPicker) window.addEventListener('pointerdown', handler);
     return () => window.removeEventListener('pointerdown', handler);
   }, [modelPicker]);
+  useEffect(() => {
+    const handler = (event: Event) => {
+      if (modelPicker) { event.preventDefault(); setModelPicker(false); return; }
+      if (dialog) { event.preventDefault(); setDialog(null); return; }
+      if (sidePanelOpen) { event.preventDefault(); setSidePanelOpen(false); return; }
+      if (sidebarOpen && window.innerWidth < 860) { event.preventDefault(); setSidebarOpen(false); }
+    };
+    window.addEventListener('agent:back', handler);
+    return () => window.removeEventListener('agent:back', handler);
+  }, [modelPicker, dialog, sidePanelOpen, sidebarOpen]);
 
   function closeMobileSidebar() { if (window.innerWidth < 860) setSidebarOpen(false); }
   function closeMobilePanel() { if (window.innerWidth < 1180) setSidePanelOpen(false); }

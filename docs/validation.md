@@ -11,7 +11,7 @@ Electron: 45.2.2
 | Check | Result |
 | --- | --- |
 | `npm run typecheck` | Pass |
-| `npm test` | 6/6 pass |
+| `npm test` | 7/7 pass |
 | `npm run build` | Pass |
 | `npm run desktop:mac` | Pass |
 | `npm run desktop:win` | Pass, with icon/metadata warning |
@@ -26,11 +26,11 @@ Electron: 45.2.2
 
 | Artifact | Size | SHA-256 |
 | --- | ---: | --- |
-| `A-Gent-0.1.0-mac-arm64.dmg` | 121 MB | `61434e53107a5f853087a85fcef75369b8d64f448e4b9725344de70a13796a1c` |
-| `A-Gent-0.1.0-mac-arm64.zip` | 118 MB | `05fbfb9f94ffec892913580186f65b02bc3cb7e303fb93c1954d793e379e1b19` |
-| `A-Gent-Setup-0.1.0-x64.exe` | 120 MB | `4fdc030b006fe37a33acb3d53593446d458d0c3c59ba518cdb29d8eee1f54fb1` |
-| `A-Gent-Portable-0.1.0-x64.exe` | 108 MB | `b1982c0612e4bcfcbfee361f4da34cb170f4be2d186e1855eb537d2eaa0cedb8` |
-| `A-Gent-0.1.0-android-debug.apk` | 4.1 MB | `4fb2f074302af379eec6905306c8c07f46812a2d21041a7fab4d557cf39cb56f` |
+| `A-Gent-0.1.0-mac-arm64.dmg` | 121 MB | `e2253d7aa04748b0fa834f7dc841c3af26ea1d19a2bb91378108d28da849bd36` |
+| `A-Gent-0.1.0-mac-arm64.zip` | 118 MB | `c9985cef71cffa111b6839aa122c4a8ce6dd31f5040e78ff9459170e5f835605` |
+| `A-Gent-Setup-0.1.0-x64.exe` | 120 MB | `df33c20bbd6a19c9734f6e7e3dcb9c4fac05d856ac493113e83acf1c624f351f` |
+| `A-Gent-Portable-0.1.0-x64.exe` | 108 MB | `757d461668c43208655c59c6c2610431f4a4ff238a6f6b6c57f2f7ef08501bd9` |
+| `A-Gent-0.1.0-android-debug.apk` | 4.3 MB | `ad871757273e6847a26e4111b726ed4427f2fe09116a5174e8b1816e9345a908` |
 
 ## Platform details
 
@@ -48,9 +48,10 @@ Electron: 45.2.2
 - Installer: NSIS, x64.
 - Portable: x64.
 - Unsigned.
+- Icon and version metadata are applied.
 - electron-builder reported:
-  - `executable resource editing and code signing skipped — signAndEditExecutable is false`
-  - This means the executable icon and version metadata are not applied.
+  - `file signing skipped via signExecutable configuration`
+  - The executable contains version `0.1.0.0`.
 - Not runtime-tested; no Windows runtime or Wine is available on this host.
 
 ### Android
@@ -77,6 +78,9 @@ Electron: 45.2.2
 - Packaged macOS app starts its local host and serves the UI.
 - Real Codex discovery returns the signed-in account and models.
 - Reason-style shell, chat bubbles, composer, settings/connections modals, side panel, and compact rail render correctly in smoke checks.
+- Android back handler: the `agent:back` event closes an open settings dialog in the browser harness. Device behavior is still unverified.
+- Workspace data lock rejects a second host using the same data directory.
+- Corrupt `state.json` recovers from `state.json.bak`.
 
 ## Not verified
 
@@ -94,12 +98,10 @@ Electron: 45.2.2
 ## Known issues
 
 - macOS app is ad-hoc signed and not notarized.
-- Windows executable metadata/icon are skipped.
+- Windows artifacts are unsigned.
 - Android APK is debug-signed and companion-only.
 - Remote pairing token injection is sensitive to reverse-proxy header configuration.
-- Export can exceed the 8 MB import limit.
-- Attachment totals can exceed the 8 MB JSON body limit.
-- No data-directory lock or automatic state backup.
+- Very large exports can still exceed the 32 MB import limit.
 - No UI E2E/visual test suite yet.
 
 See `docs/project-roadmap.md` for the remaining work and `docs/ui-roadmap.md` for the UI-specific plan.

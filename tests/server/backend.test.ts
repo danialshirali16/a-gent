@@ -34,10 +34,25 @@ test('workspace validation rejects bad references and imports without credential
     const second = new StateStore(directory); await second.load();
     assert.equal(second.state.conversations[0].messages[0].content, 'Saved answer');
     assert.equal(second.state.conversations[0].providerThreadId, 'private-provider-thread');
+    await store.save();
+    await writeFile(join(directory, 'state.json'), '{not valid json');
+    const recovered = new StateStore(directory); await recovered.load();
+    assert.equal(recovered.state.conversations[0].messages[0].content, 'Saved answer');
     const imported = validateImport(store.state);
     assert.equal(imported.conversations[0].providerThreadId, undefined);
     assert.throws(() => validateImport({ ...store.state, conversations: [{ ...conversation, agentId: 'missing' }] }), /unknown agent/);
     assert.throws(() => validateImport({ ...store.state, agents: [{ ...store.state.agents[0], color: 'javascript:bad' }] }), /hex/);
+  } finally { await rm(directory, { recursive: true, force: true }); }
+});
+
+test('data lock prevents two hosts from using the same workspace', async () => {
+  const directory = await mkdtemp(join(scratch, 'agent-lock-test-'));
+  try {
+    const first = new StateStore(directory, { lock: true }); await first.load();
+    const second = new StateStore(directory, { lock: true });
+    await assert.rejects(() => second.load(), /already using/);
+    await first.close();
+    const third = new StateStore(directory, { lock: true }); await third.load(); await third.close();
   } finally { await rm(directory, { recursive: true, force: true }); }
 });
 

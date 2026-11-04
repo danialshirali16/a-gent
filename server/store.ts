@@ -1,7 +1,8 @@
-import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { join } from 'node:path';
 import type { Activity, Agent, Conversation, Group, Schedule, Settings, WorkspaceState } from '../shared/types.js';
+import { acquireDataLock, type DataLock } from './lock.js';
 
 export class InputError extends Error {
   constructor(message: string, public status = 400) { super(message); }
@@ -147,33 +148,67 @@ export function validateImport(value: unknown): WorkspaceState {
 export class StateStore {
   state: WorkspaceState = initialState();
   private writes: Promise<void> = Promise.resolve();
-  constructor(public readonly directory: string) {}
-  async load(): Promise<void> {
-    await mkdir(this.directory, { recursive: true, mode: 0o700 });
-    try {
-      const raw = JSON.parse(await readFile(join(this.directory, 'state.json'), 'utf8')) as WorkspaceState;
-      // Validate durable state, then restore same-machine provider binding and task enablement.
-      this.state = validateImport(raw);
-      for (const c of this.state.conversations) c.providerThreadId = raw.conversations.find(r => r.id === c.id)?.providerThreadId;
-      for (const s of this.state.schedules) {
-        const saved = raw.schedules.find(r => r.id === s.id);
-        s.enabled = saved?.enabled ?? false;
-        s.lastRunAt = saved?.lastRunAt;
-        s.error = saved?.error;
-      }
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw new Error(`Could not read A Gent workspace at ${this.directory}: ${(error as Error).message}`);
-      await this.save();
+  private lock?: DataLock;
+  constructor(public readonly directory: string, private options: { lock?: boolean } = {}) {}
+  private async readState(filename: string): Promise<void> {
+    const raw = JSON.parse(await readFile(filename, 'utf8')) as WorkspaceState;
+    // Validate durable state, then restore same-machine provider binding and task enablement.
+    this.state = validateImport(raw);
+    for (const c of this.state.conversations) c.providerThreadId = raw.conversations.find(r => r.id === c.id)?.providerThreadId;
+    for (const s of this.state.schedules) {
+      const saved = raw.schedules.find(r => r.id === s.id);
+      s.enabled = saved?.enabled ?? false;
+      s.lastRunAt = saved?.lastRunAt;
+      s.error = saved?.error;
     }
   }
-  save(): Promise<void> {
+  async load(): Promise<void> {
+    await mkdir(this.directory, { recursive: true, mode: 0o700 });
+    if (this.options.lock && !this.lock) this.lock = await acquireDataLock(this.directory);
+    try {
+      const primary = join(this.directory, 'state.json');
+      try {
+        await this.readState(primary);
+        return;
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+          await this.save();
+          return;
+        }
+      }
+      const backup = join(this.directory, 'state.json.bak');
+      try {
+        await this.readState(backup);
+        console.warn(`A Gent recovered the workspace from ${backup}.`);
+        // Do not copy the corrupt primary over the valid backup during recovery.
+        await this.save(true);
+      } catch {
+        throw new Error(`Could not read A Gent workspace at ${this.directory}. The primary state and backup are unreadable.`);
+      }
+    } catch (error) {
+      await this.close();
+      throw error;
+    }
+  }
+  save(skipBackup = false): Promise<void> {
     const bytes = JSON.stringify(this.state);
     this.writes = this.writes.catch(() => {}).then(async () => {
+      const primary = join(this.directory, 'state.json');
       const temporary = join(this.directory, `.state-${id()}.tmp`);
       await writeFile(temporary, bytes, { mode: 0o600 });
-      await rename(temporary, join(this.directory, 'state.json'));
+      if (!skipBackup) {
+        try { await copyFile(primary, join(this.directory, 'state.json.bak')); }
+        catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error; }
+      }
+      await rename(temporary, primary);
     });
     return this.writes;
+  }
+  async close(): Promise<void> {
+    const lock = this.lock;
+    if (!lock) return;
+    this.lock = undefined;
+    await lock.release();
   }
   async merge(value: unknown): Promise<WorkspaceState> {
     const imported = validateImport(value);

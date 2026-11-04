@@ -336,7 +336,7 @@ src/
 - [x] Add breakpoints 1180 / 860 / 640.
 - [x] Add compact sidebar rail.
 - [x] Add mobile drawer.
-- [ ] Add Android back button handling.
+- [x] Add Android back button handling.
 - [x] Add 16px mobile inputs.
 - [ ] Add full safe-area/touch-target audit.
 - [ ] Verify project selection on Android.

@@ -52,7 +52,7 @@ export async function startServer(options: ServerOptions = {}): Promise<ServerHa
   const dataDir = resolve(options.dataDir ?? process.env.AGENT_DATA_DIR ?? join(process.cwd(), '.data'));
   await mkdir(dataDir, { recursive: true, mode: 0o700 });
   const token = await loadToken(dataDir, options.token ?? process.env.AGENT_TOKEN);
-  const store = new StateStore(dataDir); await store.load();
+  const store = new StateStore(dataDir, { lock: true }); await store.load();
   const clients = new Set<Response>();
   const emit = (event: ServerEvent) => {
     const data = `data: ${JSON.stringify(event)}\n\n`;
@@ -103,7 +103,7 @@ export async function startServer(options: ServerOptions = {}): Promise<ServerHa
     res.setHeader('Cache-Control', 'no-store');
     next();
   });
-  app.use(express.json({ limit: '8mb' }));
+  app.use(express.json({ limit: '32mb' }));
   const publish = async () => { await runs.publishState(); };
   const checkGroup = (groupId?: string | null) => { if (groupId && !store.state.groups.some(group => group.id === groupId)) throw new InputError('Group not found.', 404); };
 
@@ -229,13 +229,13 @@ export async function startServer(options: ServerOptions = {}): Promise<ServerHa
     if (res.headersSent) { res.end(); return; }
     const status = error instanceof InputError ? error.status : error.type === 'entity.too.large' ? 413 : error instanceof SyntaxError ? 400 : 500;
     if (status === 500) console.error('A Gent request failed:', error.message);
-    res.status(status).json({ error: status === 413 ? 'This request exceeds the 8 MB limit.' : status === 500 ? 'A Gent could not complete this request. Check the server log.' : error.message });
+    res.status(status).json({ error: status === 413 ? 'This request exceeds the 32 MB limit.' : status === 500 ? 'A Gent could not complete this request. Check the server log.' : error.message });
   };
   app.use(errorHandler);
   try {
     await new Promise<void>((resolve, reject) => { server.once('error', reject); server.listen(port, host, () => { server.off('error', reject); resolve(); }); });
   } catch (error) {
-    await runs.close(); if (closeVite) await closeVite();
+    await runs.close(); await store.close(); if (closeVite) await closeVite();
     throw error;
   }
   const address = server.address(); if (!address || typeof address === 'string') throw new Error('A Gent server did not obtain a TCP port.');
@@ -247,7 +247,7 @@ export async function startServer(options: ServerOptions = {}): Promise<ServerHa
     if (closed) return; closed = true;
     const listenerClosed = new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
     for (const client of clients) client.end(); clients.clear();
-    await runs.close(); if (closeVite) await closeVite();
+    await runs.close(); await store.close(); if (closeVite) await closeVite();
     await listenerClosed;
   } };
 }

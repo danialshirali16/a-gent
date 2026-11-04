@@ -35,7 +35,7 @@ Working:
 - Codex local execution through the app-server interface.
 - Ollama and OpenAI-compatible chat providers.
 - Local token auth, host/origin allowlists, Electron sandboxing.
-- 6 backend integration tests.
+- 7 backend integration tests.
 - Typecheck and production build pass.
 
 ### Reason-like UI
@@ -127,7 +127,7 @@ These are engineering estimates, not precise metrics.
 | Windows delivery | 60% | 40% | Artifacts built; no runtime test, no icon metadata, unsigned |
 | Android delivery | 40% | 60% | Debug APK built; companion-only, no device test, no release signing |
 | Reason-like UI | 75% | 25% | Major surfaces done; tests and smaller interactions pending |
-| Security and reliability | 55% | 45% | Good baseline; token pairing, backups, limits need work |
+| Security and reliability | 60% | 40% | Data lock and backup recovery added; token pairing and limits still need work |
 | Tests and QA | 40% | 60% | Backend tests strong; no UI/E2E/device tests |
 | Docs and release | 50% | 50% | README/roadmap exist; validation doc and release truth missing |
 | Full Reason parity | 35% | 65% | Cloud/billing intentionally excluded; native/browser/voice/connectors missing |
@@ -255,10 +255,10 @@ Out of scope unless explicitly added:
 **Goal:** Make the repository and artifacts describe reality.
 
 - [ ] Update README artifact table and platform status.
-- [ ] Add `docs/validation.md` with current build/test evidence.
-- [ ] Decide merge of `ui/reason-style` into `main`.
+- [x] Add `docs/validation.md` with current build/test evidence.
+- [x] Merge `ui/reason-style` into `main`.
 - [ ] Tag a build (`v0.1.0-ui` or similar).
-- [ ] Record artifact hashes and sizes.
+- [x] Record artifact hashes and sizes.
 - [ ] Add release checklist.
 
 **Exit:** main/branch is green; docs match artifacts; no false delivery claims.
@@ -269,8 +269,8 @@ Out of scope unless explicitly added:
 
 **Goal:** A Windows user can install, launch, and use A Gent.
 
-- [ ] Fix Windows icon/version metadata (`signExecutable: false` or rcedit).
-- [ ] Rebuild setup and portable artifacts.
+- [x] Fix Windows icon/version metadata (`signExecutable: false`).
+- [x] Rebuild setup and portable artifacts.
 - [ ] Test on Windows 11 x64.
 - [ ] Verify Codex discovery/sign-in and HTTP providers.
 - [ ] Verify project folder picker, approvals, interruption, schedules.
@@ -287,7 +287,7 @@ Out of scope unless explicitly added:
 **Goal:** A phone can install the APK, pair with a host, and use the workspace.
 
 - [ ] Test APK on a physical device/emulator.
-- [ ] Add Android back-button handling.
+- [x] Add Android back-button handling.
 - [ ] Add persistent secure token storage.
 - [ ] Add QR/short-code pairing if feasible.
 - [ ] Verify HTTPS host pairing.
@@ -320,9 +320,9 @@ Out of scope unless explicitly added:
 
 - [ ] Replace proxy-sensitive token injection.
 - [ ] Add per-device tokens and rotation.
-- [ ] Add data-directory lock.
-- [ ] Add rolling backups and corrupt-state recovery.
-- [ ] Fix import/export and attachment size limits.
+- [x] Add data-directory lock.
+- [x] Add rolling backups and corrupt-state recovery.
+- [ ] Finish import/export streaming; body limit raised to 32 MB.
 - [ ] Add CSP and remote-image policy.
 - [ ] Review provider URL SSRF.
 - [ ] Add file-diff approvals and session approvals.
@@ -427,12 +427,12 @@ The main target is done when:
 
 ## 10. Immediate next actions
 
-1. Decide whether to merge `ui/reason-style` into `main`.
-2. Fix Windows icon/version metadata and rebuild.
-3. Test the Windows artifacts on a real Windows runtime.
-4. Test the Android APK on a device/emulator.
-5. Add `docs/validation.md` and update README.
-6. Start the security/reliability pass.
+1. Test the Windows artifacts on a real Windows runtime.
+2. Test the Android APK on a device/emulator.
+3. Update README artifact/status text.
+4. Start the security/reliability pass.
+5. Add Playwright UI tests.
+6. Tag a release candidate after runtime checks.
 
 Current environment limitations:
 

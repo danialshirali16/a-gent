@@ -27,6 +27,7 @@
   },
   "dependencies": {
     "@capacitor/android": "8.6.0",
+    "@capacitor/app": "^8.1.2",
     "@capacitor/core": "8.6.0",
     "@fontsource-variable/geist": "5.3.0",
     "express": "5.3.0",
@@ -84,7 +85,7 @@
         "nsis",
         "portable"
       ],
-      "signAndEditExecutable": false
+      "signExecutable": false
     },
     "nsis": {
       "artifactName": "A-Gent-Setup-${version}-${arch}.${ext}",
