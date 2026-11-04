@@ -28,11 +28,11 @@ Electron: 45.2.2
 
 | Artifact | Size | SHA-256 |
 | --- | ---: | --- |
-| `A-Gent-0.1.0-mac-arm64.dmg` | 121 MB | `0f43ef754a20a7a4ae6bb0fd8a1f12a2da69095c4c911770125114098cee8bcd` |
-| `A-Gent-0.1.0-mac-arm64.zip` | 118 MB | `e0ac2dfaca8eacb556849a372ee40143821f9c0cc9491bd9097ad437a648e98f` |
-| `A-Gent-Setup-0.1.0-x64.exe` | 120 MB | `aec990568e4b2343a681bea41665bfbc6241fc084a89a5f94c2578a8b40dbf93` |
-| `A-Gent-Portable-0.1.0-x64.exe` | 108 MB | `bbfdb2b6e77a3997c12d8e35228964f82b46eb908f3bef95bea5e6b6a1592735` |
-| `A-Gent-0.1.0-android-debug.apk` | 4.3 MB | `ad871757273e6847a26e4111b726ed4427f2fe09116a5174e8b1816e9345a908` |
+| `A-Gent-0.1.0-mac-arm64.dmg` | 121 MB | `9228356925f7fc33ae7ea1a12ddf3eef91b4d234c92d53f0e613b4a35ec4e3c5` |
+| `A-Gent-0.1.0-mac-arm64.zip` | 118 MB | `8f116b89003842631f98409491bc59eae443eb6b8d9335c7837d5b5d5d0fae9e` |
+| `A-Gent-Setup-0.1.0-x64.exe` | 120 MB | `4ef4c19e8b9437c246b42a436ab95ad73a65105c432105ead2241f750914df92` |
+| `A-Gent-Portable-0.1.0-x64.exe` | 108 MB | `f65ba83b3719106ac8984ddb4bef1c3b6ad4c8806534d63ca3c566477e8f8ba7` |
+| `A-Gent-0.1.0-android-debug.apk` | 4.3 MB | `e3d476344f8ba3492657bec03b0626dce11aee4c5a24d99047fad45e240cac2c` |
 
 ## Platform details
 

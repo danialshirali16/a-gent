@@ -311,6 +311,8 @@ export async function startServer(options: ServerOptions = {}): Promise<ServerHa
   return { url, token, close: async () => {
     if (closed) return; closed = true;
     const listenerClosed = new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
+    server.closeIdleConnections();
+    server.closeAllConnections();
     for (const client of clients) client.end(); clients.clear();
     await runs.close(); await devices.close(); await store.close(); if (closeVite) await closeVite();
     await listenerClosed;

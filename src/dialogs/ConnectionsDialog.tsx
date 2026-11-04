@@ -66,9 +66,9 @@ export function ConnectionsDialog({ providers, api, onRefresh, connection, onHos
             <code>{connection.url}</code>
             <div className="connection-host-actions">
               <button className="button secondary small" onClick={onHost}>Connect another host<ArrowUpRight size={14} /></button>
-              <button className="button quiet small" onClick={async () => { try { await navigator.clipboard.writeText(connection.token); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch { setCopied(false); } }}>{copied ? <Check size={14} /> : <Copy size={14} />}{copied ? 'Token copied' : 'Copy host token'}</button>
+              <button className="button quiet small" onClick={async () => { try { await navigator.clipboard.writeText(connection.token); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch { setCopied(false); } }}>{copied ? <Check size={14} /> : <Copy size={14} />}{copied ? 'Token copied' : 'Copy pairing token'}</button>
             </div>
-            <p className="connections-note">Android connects to this host over a reachable HTTPS address. The host token is required once per app session.</p>
+            <p className="connections-note">Android connects to this host over a reachable HTTPS address. A pairing token is required once per app session. Create a dedicated token for each device with the administrator token.</p>
           </div>
         </section>}
       </div>

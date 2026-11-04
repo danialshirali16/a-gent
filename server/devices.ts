@@ -64,7 +64,6 @@ function validateDevice(value: unknown): DeviceRecord {
 export class DeviceStore {
   private records: DeviceRecord[] = [];
   private writes: Promise<void> = Promise.resolve();
-  private lastTouchSave = 0;
 
   constructor(public readonly directory: string) {}
 
@@ -118,7 +117,6 @@ export class DeviceStore {
     const record = this.records.find(record => record.id === deviceId);
     if (!record || record.revokedAt || !hashesMatch(hashToken(token), record.tokenHash)) return undefined;
     record.lastUsedAt = now();
-    if (Date.now() - this.lastTouchSave > 60_000) { this.lastTouchSave = Date.now(); void this.save().catch(() => { /* a later write retries */ }); }
     return publicDevice(record);
   }
 
@@ -145,6 +143,7 @@ export class DeviceStore {
   }
 
   async close(): Promise<void> {
+    try { await this.save(); } catch { /* the host is already shutting down */ }
     await this.writes.catch(() => {});
   }
 }
