@@ -1,5 +1,5 @@
-import { AlertCircle, Check, LoaderCircle, MessageSquare, Plus, PanelRightClose, Settings2 } from 'lucide-react';
-import type { Activity as ActivityItem, Agent, Conversation, Run } from '../../shared/types';
+import { AlertCircle, Check, FolderPlus, LoaderCircle, MessageSquare, Plus, PanelRightClose, Settings2 } from 'lucide-react';
+import type { Activity as ActivityItem, Agent, Conversation, Group, Run } from '../../shared/types';
 import { AgentGlyph, IconButton, formatDate } from '../components';
 
 export type SidePanelTab = 'session' | 'sessions' | 'activity';
@@ -11,9 +11,11 @@ export interface SidePanelProps {
   agent?: Agent;
   conversation?: Conversation;
   conversations: Conversation[];
+  groups: Group[];
   currentRun?: Run;
   onSelectConversation: (conversation: Conversation) => void;
   onNewChat: () => void;
+  onCreateGroup: () => void;
   onOpenConversationDetails: (conversation: Conversation) => void;
   onOpenAgent: () => void;
 }
@@ -78,11 +80,16 @@ export function SidePanel(props: SidePanelProps) {
             <Plus size={15} />
             <span><strong>New conversation</strong><small>Start with {props.agent?.name || 'your agent'}</small></span>
           </button>
+          <button className="reason-session-item" onClick={props.onCreateGroup}>
+            <FolderPlus size={15} />
+            <span><strong>New group</strong><small>Organize related conversations</small></span>
+          </button>
           {props.conversations.map(conversation => {
             const owner = props.agent?.id === conversation.agentId ? props.agent : undefined;
+            const group = props.groups.find(item => item.id === conversation.groupId);
             return <button key={conversation.id} className={`reason-session-item ${props.conversation?.id === conversation.id ? 'is-active' : ''}`} onClick={() => props.onSelectConversation(conversation)}>
               {owner ? <AgentGlyph agent={owner} size={18} /> : <MessageSquare size={15} />}
-              <span><strong>{conversation.title || 'New conversation'}</strong><small>{formatDate(conversation.updatedAt)}</small></span>
+              <span><strong>{conversation.title || 'New conversation'}</strong><small>{group ? `${group.name} · ` : ''}{formatDate(conversation.updatedAt)}</small></span>
             </button>;
           })}
           {!props.conversations.length && <div className="reason-sidepanel-empty">No conversations yet.</div>}

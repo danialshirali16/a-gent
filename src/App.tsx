@@ -4,7 +4,10 @@ import type { Agent, Attachment, Conversation, Run } from '../shared/types';
 import { initialConnection, request, type Connection } from './api';
 import { AgentGlyph, IconButton, Mark, Spinner } from './components';
 import { AgentDialog, GroupDialog, ConversationDialog, SearchDialog, ScheduleDialog, ConnectionDialog, type DialogKind } from './dialogs';
-import { AgentsView, ConnectionsView, SchedulesView, SettingsView } from './views';
+import { SettingsDialog } from './dialogs/SettingsDialog';
+import { ConnectionsDialog } from './dialogs/ConnectionsDialog';
+import { AgentsDialog } from './dialogs/AgentsDialog';
+import { SchedulesDialog } from './dialogs/SchedulesDialog';
 import { useWorkspace } from './useWorkspace';
 import { Sidebar } from './app/Sidebar';
 import { TopBar } from './app/TopBar';
@@ -12,16 +15,12 @@ import { SidePanel, type SidePanelTab } from './app/SidePanel';
 import { MessageList } from './chat/MessageList';
 import { Composer } from './composer/Composer';
 
-type View = 'chat' | 'agents' | 'connections' | 'scheduled' | 'settings';
-
 function saved(key: string, fallback = '') { try { return localStorage.getItem(key) || fallback; } catch { return fallback; } }
 function remember(key: string, value: string) { try { localStorage.setItem(key, value); } catch { /* storage is optional */ } }
-const viewLabels: Record<Exclude<View, 'chat'>, string> = { agents: 'Agents', connections: 'Connections', scheduled: 'Scheduled', settings: 'Settings' };
 
 export default function App() {
   const [connection, setConnection] = useState<Connection>(initialConnection);
   const { data, api, refresh, loading, error, setError, online, updateRun } = useWorkspace(connection);
-  const [view, setView] = useState<View>('chat');
   const [activeAgentId, setActiveAgentId] = useState(saved('aGent.agent', 'primary'));
   const [activeConversationId, setActiveConversationId] = useState<string | null>(saved('aGent.conversation') || null);
   const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 860);
@@ -75,10 +74,9 @@ export default function App() {
 
   function closeMobileSidebar() { if (window.innerWidth < 860) setSidebarOpen(false); }
   function closeMobilePanel() { if (window.innerWidth < 1180) setSidePanelOpen(false); }
-  function selectChat(chat: Conversation) { setActiveConversationId(chat.id); setActiveAgentId(chat.agentId); remember('aGent.conversation', chat.id); remember('aGent.agent', chat.agentId); setView('chat'); setText(''); setAttachments([]); closeMobileSidebar(); closeMobilePanel(); }
-  function selectAgent(next: Agent) { const last = conversations.find(chat => chat.agentId === next.id); setActiveAgentId(next.id); setActiveConversationId(last?.id || null); remember('aGent.agent', next.id); remember('aGent.conversation', last?.id || ''); setView('chat'); setText(''); setAttachments([]); closeMobileSidebar(); closeMobilePanel(); }
-  function newChat(selectedAgent?: Agent) { if (selectedAgent) { setActiveAgentId(selectedAgent.id); remember('aGent.agent', selectedAgent.id); } setActiveConversationId(null); remember('aGent.conversation', ''); setView('chat'); setText(''); setAttachments([]); closeMobileSidebar(); closeMobilePanel(); setTimeout(() => composer.current?.focus(), 30); }
-  function navigate(next: View) { setView(next); closeMobileSidebar(); setSidePanelOpen(false); }
+  function selectChat(chat: Conversation) { setActiveConversationId(chat.id); setActiveAgentId(chat.agentId); remember('aGent.conversation', chat.id); remember('aGent.agent', chat.agentId); setText(''); setAttachments([]); closeMobileSidebar(); closeMobilePanel(); }
+  function selectAgent(next: Agent) { const last = conversations.find(chat => chat.agentId === next.id); setActiveAgentId(next.id); setActiveConversationId(last?.id || null); remember('aGent.agent', next.id); remember('aGent.conversation', last?.id || ''); setText(''); setAttachments([]); closeMobileSidebar(); closeMobilePanel(); }
+  function newChat(selectedAgent?: Agent) { if (selectedAgent) { setActiveAgentId(selectedAgent.id); remember('aGent.agent', selectedAgent.id); } setActiveConversationId(null); remember('aGent.conversation', ''); setText(''); setAttachments([]); closeMobileSidebar(); closeMobilePanel(); setTimeout(() => composer.current?.focus(), 30); }
   function openSidePanel(tab: SidePanelTab = 'session') { if (window.innerWidth < 860) setSidebarOpen(false); setSidePanelTab(tab); setSidePanelOpen(true); }
   async function chooseFolder() {
     if (window.aGentDesktop) { const chosen = await window.aGentDesktop.selectDirectory(); if (chosen) setWorkspacePath(chosen); }
@@ -122,7 +120,7 @@ export default function App() {
   async function stopRun() { if (!currentRun) return; try { updateRun(await api<Run>(`/api/runs/${currentRun.id}/interrupt`, 'POST')); } catch (reason) { setError((reason as Error).message); } }
   function openConversationDetails(chat: Conversation) { setDialog({ kind: 'conversation', conversation: chat }); }
 
-  const label = view === 'chat' ? agent?.name || 'A Gent' : viewLabels[view];
+  const label = agent?.name || 'A Gent';
   const starterPrompts = agent?.icon === 'code'
     ? [{ Icon: Code2, title: 'Build something', prompt: 'Help me plan and build a new feature. Start by asking what I want to create.' }, { Icon: Search, title: 'Find the problem', prompt: 'Help me investigate a bug. Ask me for the symptoms and the relevant project.' }, { Icon: Terminal, title: 'Review my project', prompt: 'Review my project and identify the most useful next improvement.' }]
     : agent?.icon === 'design'
@@ -142,10 +140,10 @@ export default function App() {
       onSelectAgent={selectAgent}
       onSearch={() => setDialog({ kind: 'search' })}
       onCreateAgent={() => setDialog({ kind: 'agent' })}
-      onOpenAgents={() => navigate('agents')}
-      onOpenScheduled={() => navigate('scheduled')}
-      onOpenConnections={() => navigate('connections')}
-      onOpenSettings={() => navigate('settings')}
+      onOpenAgents={() => setDialog({ kind: 'agents' })}
+      onOpenScheduled={() => setDialog({ kind: 'schedules' })}
+      onOpenConnections={() => setDialog({ kind: 'connections' })}
+      onOpenSettings={() => setDialog({ kind: 'settings' })}
     />
     <main className="reason-main">
       <div className="reason-surface">
@@ -153,7 +151,6 @@ export default function App() {
           label={label}
           agent={agent}
           conversation={conversation}
-          isChat={view === 'chat'}
           online={online}
           hasData={!!data}
           sidebarOpen={sidebarOpen}
@@ -161,13 +158,12 @@ export default function App() {
           onOpenSidebar={() => { setSidePanelOpen(false); setSidebarOpen(true); }}
           onToggleSidePanel={() => sidePanelOpen ? setSidePanelOpen(false) : openSidePanel('session')}
           onOpenConversationDetails={() => conversation && openConversationDetails(conversation)}
-          onBackToChat={() => setView('chat')}
         />
         {error && <div className="error-banner" role="alert"><AlertCircle size={16} /><span>{error}</span><IconButton label="Dismiss error" onClick={() => setError('')}><X size={15} /></IconButton></div>}
         {!data ? <div className="reason-initial">
           <Mark size={54} />
           {loading ? <><Spinner size={22} /><h1>Opening your workspace…</h1></> : <><h1>Your agents. Wherever you are.</h1><p>Connect to your A Gent host to get started.</p><button className="button primary" onClick={() => setDialog({ kind: 'connection' })}>Connect workspace<ArrowUpRight size={16} /></button></>}
-        </div> : view === 'chat' ? <div className="reason-chat" onDragOver={event => event.preventDefault()} onDrop={event => { event.preventDefault(); if (event.dataTransfer.files.length) void addFiles(event.dataTransfer.files); }}>
+        </div> : <div className="reason-chat" onDragOver={event => event.preventDefault()} onDrop={event => { event.preventDefault(); if (event.dataTransfer.files.length) void addFiles(event.dataTransfer.files); }}>
           <div className={`reason-chat-scroll ${!conversation?.messages.length ? 'is-empty' : ''}`} ref={scroll}>
             {!conversation?.messages.length ? <div className="reason-welcome">
               <div className="reason-welcome-mark">{agent?.id === 'primary' || !agent ? <Mark size={48} /> : <AgentGlyph agent={agent} size={48} />}</div>
@@ -210,16 +206,11 @@ export default function App() {
             attachInputRef={attachInput}
             onChooseModel={chooseModel}
             onChooseFolder={() => void chooseFolder()}
-            onOpenConnections={() => navigate('connections')}
+            onOpenConnections={() => setDialog({ kind: 'connections' })}
             onSetMode={setMode}
             onSetEffort={value => void chooseEffort(value)}
             onComposerKey={onComposerKey}
           />
-        </div> : <div className="reason-page-scroll">
-          {view === 'agents' ? <AgentsView agents={agents} onCreate={() => setDialog({ kind: 'agent' })} onEdit={value => setDialog({ kind: 'agent', agent: value })} onChat={value => newChat(value)} />
-            : view === 'connections' ? <ConnectionsView providers={data.providers} api={api} onRefresh={refresh} connection={connection} onHost={() => setDialog({ kind: 'connection' })} />
-              : view === 'scheduled' ? <SchedulesView state={data.state} api={api} onCreate={() => setDialog({ kind: 'schedule' })} onOpen={id => { const chat = state?.conversations.find(item => item.id === id); if (chat) selectChat(chat); }} onError={setError} />
-                : <SettingsView state={data.state} api={api} onError={setError} onRefresh={refresh} />}
         </div>}
       </div>
     </main>
@@ -230,14 +221,20 @@ export default function App() {
       agent={agent}
       conversation={conversation}
       conversations={conversations}
+      groups={state?.groups || []}
       currentRun={currentRun}
       onSelectConversation={selectChat}
       onNewChat={() => newChat()}
+      onCreateGroup={() => setDialog({ kind: 'group' })}
       onOpenConversationDetails={openConversationDetails}
       onOpenAgent={() => agent && setDialog({ kind: 'agent', agent })}
     />}
     {dialog?.kind === 'connection' && <ConnectionDialog connection={connection} onConnect={connect} onClose={() => setDialog(null)} />}
-    {data && dialog?.kind === 'agent' && <AgentDialog agent={dialog.agent} providers={data.providers} api={api} onClose={() => setDialog(null)} onSaved={value => { setActiveAgentId(value.id); setActiveConversationId(null); setView('chat'); }} />}
+    {data && dialog?.kind === 'settings' && <SettingsDialog state={data.state} api={api} onError={setError} onRefresh={refresh} onClose={() => setDialog(null)} onOpenConnections={() => setDialog({ kind: 'connections' })} />}
+    {data && dialog?.kind === 'connections' && <ConnectionsDialog providers={data.providers} api={api} onRefresh={refresh} connection={connection} onHost={() => setDialog({ kind: 'connection' })} onClose={() => setDialog(null)} />}
+    {data && dialog?.kind === 'agents' && <AgentsDialog agents={agents} onCreate={() => setDialog({ kind: 'agent' })} onEdit={value => setDialog({ kind: 'agent', agent: value })} onChat={value => { newChat(value); setDialog(null); }} onClose={() => setDialog(null)} />}
+    {data && dialog?.kind === 'schedules' && <SchedulesDialog state={data.state} api={api} onCreate={() => setDialog({ kind: 'schedule' })} onOpen={id => { const chat = state?.conversations.find(item => item.id === id); if (chat) selectChat(chat); setDialog(null); }} onError={setError} onClose={() => setDialog(null)} />}
+    {data && dialog?.kind === 'agent' && <AgentDialog agent={dialog.agent} providers={data.providers} api={api} onClose={() => setDialog(null)} onSaved={value => { setActiveAgentId(value.id); setActiveConversationId(null); }} />}
     {data && dialog?.kind === 'group' && <GroupDialog api={api} onClose={() => setDialog(null)} />}
     {data && dialog?.kind === 'conversation' && <ConversationDialog conversation={dialog.conversation} state={data.state} api={api} onClose={() => setDialog(null)} onArchived={() => { if (activeConversationId === dialog.conversation.id) newChat(); }} />}
     {data && dialog?.kind === 'search' && <SearchDialog state={data.state} onSelect={selectChat} onClose={() => setDialog(null)} />}

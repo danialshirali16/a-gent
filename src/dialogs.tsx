@@ -5,7 +5,7 @@ import type { Connection } from './api';
 import { Avatar, Modal, Spinner, formatDate } from './components';
 
 export type Api = <T>(path: string, method?: string, body?: unknown) => Promise<T>;
-export type DialogKind = { kind: 'agent'; agent?: Agent } | { kind: 'group' } | { kind: 'schedule' } | { kind: 'search' } | { kind: 'connection' } | { kind: 'conversation'; conversation: Conversation };
+export type DialogKind = { kind: 'agent'; agent?: Agent } | { kind: 'group' } | { kind: 'schedule' } | { kind: 'search' } | { kind: 'connection' } | { kind: 'conversation'; conversation: Conversation } | { kind: 'settings' } | { kind: 'connections' } | { kind: 'agents' } | { kind: 'schedules' };
 
 export function AgentDialog({ agent, providers, api, onClose, onSaved }: { agent?: Agent; providers: ProviderInfo[]; api: Api; onClose: () => void; onSaved: (agent: Agent) => void }) {
   const [name, setName] = useState(agent?.name || '');

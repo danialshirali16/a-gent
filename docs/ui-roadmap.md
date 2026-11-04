@@ -18,8 +18,12 @@ Implemented in the first pass:
 - `src/composer/Composer.tsx` — one-line composer, plus menu, combined model/effort pill.
 - `src/App.tsx` — new shell composition; conversations moved out of the sidebar.
 - `src/components.tsx` — `AgentGlyph` for solid-color agent icons.
+- `src/dialogs/SettingsDialog.tsx` — Reason-style settings modal with left navigation and search.
+- `src/dialogs/ConnectionsDialog.tsx` — Reason-style connections catalog with search, category tabs, provider cards, local apps, and host pairing.
+- `src/dialogs/AgentsDialog.tsx` — agents grid modal.
+- `src/dialogs/SchedulesDialog.tsx` — scheduled tasks modal.
 
-Still pending from the roadmap: agent groups, compact rail, Electron custom chrome, code-block copy, system/model-change events, tool-stream setting, settings/connections modals, approvals in the side panel, Files/Terminal tabs, Android back handling, accessibility audit, visual/E2E tests.
+Still pending from the roadmap: agent groups, compact rail, Electron custom chrome, code-block copy, system/model-change events, tool-stream setting, approvals in the side panel, Files/Terminal tabs, Android back handling, accessibility audit, visual/E2E tests.
 
 ## 1. Goal
 
@@ -302,12 +306,14 @@ src/
 
 ### Phase 6 — Modals and surfaces
 
-- [ ] Add shared `Modal` primitive.
-- [ ] Add `SettingsDialog` with left nav and search.
-- [ ] Add `ConnectionsDialog` with search/categories/cards.
-- [ ] Add `AgentDialog`, `GroupDialog`, `ScheduleDialog`, `ConversationDialog`, `SearchDialog`.
-- [ ] Convert `views.tsx` pages into modal content.
-- [ ] Add mobile modal behavior.
+- [x] Extend shared `Modal` primitive with surface classes.
+- [x] Add `SettingsDialog` with left nav and search.
+- [x] Add `ConnectionsDialog` with search/categories/cards.
+- [x] Add `AgentDialog`, `GroupDialog`, `ScheduleDialog`, `ConversationDialog`, `SearchDialog`.
+- [x] Add `AgentsDialog` and `SchedulesDialog` surfaces.
+- [x] Move Settings, Connections, Agents, and Scheduled out of full-page views.
+- [x] Add mobile modal behavior.
+- [ ] Move the remaining `ProviderCard` implementation out of `views.tsx` and delete the unused page views.
 
 ### Phase 7 — Side panel
 
