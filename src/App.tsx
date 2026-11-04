@@ -1,17 +1,22 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react';
-import { Plus, Search, PanelLeftClose, PanelLeftOpen, ChevronDown, ChevronRight, ArrowUp, Folder, FolderPlus, FolderOpen, MessageSquare, Plug, CalendarClock, Settings2, MoreHorizontal, Check, Copy, X, Square, Paperclip, ArrowUpRight, Sparkles, Code2, Palette, Telescope, Terminal, AlertCircle, WifiOff, UsersRound } from 'lucide-react';
-import Markdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
+import { AlertCircle, ArrowUpRight, Code2, Palette, Search, Sparkles, Telescope, Terminal, UsersRound, X } from 'lucide-react';
 import type { Agent, Attachment, Conversation, Run } from '../shared/types';
 import { initialConnection, request, type Connection } from './api';
-import { Avatar, Activities, IconButton, Mark, Spinner, downloadJson } from './components';
+import { AgentGlyph, IconButton, Mark, Spinner } from './components';
 import { AgentDialog, GroupDialog, ConversationDialog, SearchDialog, ScheduleDialog, ConnectionDialog, type DialogKind } from './dialogs';
 import { AgentsView, ConnectionsView, SchedulesView, SettingsView } from './views';
 import { useWorkspace } from './useWorkspace';
+import { Sidebar } from './app/Sidebar';
+import { TopBar } from './app/TopBar';
+import { SidePanel, type SidePanelTab } from './app/SidePanel';
+import { MessageList } from './chat/MessageList';
+import { Composer } from './composer/Composer';
 
 type View = 'chat' | 'agents' | 'connections' | 'scheduled' | 'settings';
+
 function saved(key: string, fallback = '') { try { return localStorage.getItem(key) || fallback; } catch { return fallback; } }
 function remember(key: string, value: string) { try { localStorage.setItem(key, value); } catch { /* storage is optional */ } }
+const viewLabels: Record<Exclude<View, 'chat'>, string> = { agents: 'Agents', connections: 'Connections', scheduled: 'Scheduled', settings: 'Settings' };
 
 export default function App() {
   const [connection, setConnection] = useState<Connection>(initialConnection);
@@ -20,8 +25,9 @@ export default function App() {
   const [activeAgentId, setActiveAgentId] = useState(saved('aGent.agent', 'primary'));
   const [activeConversationId, setActiveConversationId] = useState<string | null>(saved('aGent.conversation') || null);
   const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 860);
+  const [sidePanelOpen, setSidePanelOpen] = useState(false);
+  const [sidePanelTab, setSidePanelTab] = useState<SidePanelTab>('session');
   const [dialog, setDialog] = useState<DialogKind | null>(null);
-  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const [text, setText] = useState(''); const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [providerId, setProviderId] = useState('codex'); const [modelId, setModelId] = useState('');
   const [effort, setEffort] = useState('medium'); const [mode, setMode] = useState<'chat' | 'work'>('chat');
@@ -57,7 +63,7 @@ export default function App() {
     const handler = (event: globalThis.KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); setDialog({ kind: 'search' }); }
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'n') { event.preventDefault(); newChat(); }
-      if (event.key === 'Escape') setModelPicker(false);
+      if (event.key === 'Escape') { setModelPicker(false); if (!dialog) setSidePanelOpen(false); }
     };
     window.addEventListener('keydown', handler); return () => window.removeEventListener('keydown', handler);
   });
@@ -68,10 +74,12 @@ export default function App() {
   }, [modelPicker]);
 
   function closeMobileSidebar() { if (window.innerWidth < 860) setSidebarOpen(false); }
-  function selectChat(chat: Conversation) { setActiveConversationId(chat.id); setActiveAgentId(chat.agentId); remember('aGent.conversation', chat.id); remember('aGent.agent', chat.agentId); setView('chat'); setText(''); setAttachments([]); closeMobileSidebar(); }
-  function selectAgent(next: Agent) { const last = conversations.find(chat => chat.agentId === next.id); setActiveAgentId(next.id); setActiveConversationId(last?.id || null); remember('aGent.agent', next.id); remember('aGent.conversation', last?.id || ''); setView('chat'); setText(''); setAttachments([]); closeMobileSidebar(); }
-  function newChat(selectedAgent?: Agent) { if (selectedAgent) { setActiveAgentId(selectedAgent.id); remember('aGent.agent', selectedAgent.id); } setActiveConversationId(null); remember('aGent.conversation', ''); setView('chat'); setText(''); setAttachments([]); closeMobileSidebar(); setTimeout(() => composer.current?.focus(), 30); }
-  function navigate(next: View) { setView(next); closeMobileSidebar(); }
+  function closeMobilePanel() { if (window.innerWidth < 1180) setSidePanelOpen(false); }
+  function selectChat(chat: Conversation) { setActiveConversationId(chat.id); setActiveAgentId(chat.agentId); remember('aGent.conversation', chat.id); remember('aGent.agent', chat.agentId); setView('chat'); setText(''); setAttachments([]); closeMobileSidebar(); closeMobilePanel(); }
+  function selectAgent(next: Agent) { const last = conversations.find(chat => chat.agentId === next.id); setActiveAgentId(next.id); setActiveConversationId(last?.id || null); remember('aGent.agent', next.id); remember('aGent.conversation', last?.id || ''); setView('chat'); setText(''); setAttachments([]); closeMobileSidebar(); closeMobilePanel(); }
+  function newChat(selectedAgent?: Agent) { if (selectedAgent) { setActiveAgentId(selectedAgent.id); remember('aGent.agent', selectedAgent.id); } setActiveConversationId(null); remember('aGent.conversation', ''); setView('chat'); setText(''); setAttachments([]); closeMobileSidebar(); closeMobilePanel(); setTimeout(() => composer.current?.focus(), 30); }
+  function navigate(next: View) { setView(next); closeMobileSidebar(); setSidePanelOpen(false); }
+  function openSidePanel(tab: SidePanelTab = 'session') { if (window.innerWidth < 860) setSidebarOpen(false); setSidePanelTab(tab); setSidePanelOpen(true); }
   async function chooseFolder() {
     if (window.aGentDesktop) { const chosen = await window.aGentDesktop.selectDirectory(); if (chosen) setWorkspacePath(chosen); }
     else { const chosen = window.prompt('Project folder on the A Gent host', workspacePath); if (chosen !== null) setWorkspacePath(chosen.trim()); }
@@ -104,28 +112,130 @@ export default function App() {
     setProviderId(nextProvider); setModelId(nextModel); setModelPicker(false); if (nextProvider !== 'codex') setMode('chat');
     if (agent) try { await api(`/api/agents/${agent.id}`, 'PATCH', { providerId: nextProvider, modelId: nextModel }); } catch (reason) { setError((reason as Error).message); }
   }
+  async function chooseEffort(next: string) {
+    setEffort(next);
+    if (agent) try { await api(`/api/agents/${agent.id}`, 'PATCH', { reasoningEffort: next }); } catch (reason) { setError((reason as Error).message); }
+  }
   async function connect(next: Connection) { await request(next, '/api/bootstrap'); remember('aGent.host', next.url); try { sessionStorage.setItem('aGent.token', next.token); } catch { /* session-only fallback */ } setConnection(next); setActiveConversationId(null); setActiveAgentId('primary'); }
   async function copyMessage(content: string, id: string) { try { await navigator.clipboard.writeText(content); setCopied(id); setTimeout(() => setCopied(''), 1500); } catch { setError('Clipboard access is unavailable on this device.'); } }
+  async function handleApproval(id: string, accept: boolean) { try { await api(`/api/approvals/${id}`, 'POST', { decision: accept ? 'accept' : 'decline' }); } catch (reason) { setError((reason as Error).message); } }
+  async function stopRun() { if (!currentRun) return; try { updateRun(await api<Run>(`/api/runs/${currentRun.id}/interrupt`, 'POST')); } catch (reason) { setError((reason as Error).message); } }
+  function openConversationDetails(chat: Conversation) { setDialog({ kind: 'conversation', conversation: chat }); }
 
-  const renderConversation = (chat: Conversation) => <div className={`chat-link-row ${activeConversationId === chat.id && view === 'chat' ? 'active' : ''}`} key={chat.id}><button className="chat-link" onClick={() => selectChat(chat)}><MessageSquare size={14} /><span>{chat.title || 'New conversation'}</span></button><IconButton label={`Details for ${chat.title}`} onClick={() => setDialog({ kind: 'conversation', conversation: chat })}><MoreHorizontal size={15} /></IconButton></div>;
+  const label = view === 'chat' ? agent?.name || 'A Gent' : viewLabels[view];
+  const starterPrompts = agent?.icon === 'code'
+    ? [{ Icon: Code2, title: 'Build something', prompt: 'Help me plan and build a new feature. Start by asking what I want to create.' }, { Icon: Search, title: 'Find the problem', prompt: 'Help me investigate a bug. Ask me for the symptoms and the relevant project.' }, { Icon: Terminal, title: 'Review my project', prompt: 'Review my project and identify the most useful next improvement.' }]
+    : agent?.icon === 'design'
+      ? [{ Icon: Palette, title: 'Explore a direction', prompt: 'Help me explore a visual direction for a product. Ask about the product and its audience.' }, { Icon: UsersRound, title: 'Improve a flow', prompt: 'Help me improve a user flow. Ask me which flow and what is not working.' }, { Icon: Sparkles, title: 'Shape an idea', prompt: 'Help me turn a product idea into a clear, testable concept.' }]
+      : [{ Icon: Sparkles, title: 'Think it through', prompt: 'Help me think through an idea. Ask me what I have in mind.' }, { Icon: Code2, title: 'Build something', prompt: 'Help me plan something I want to build. Ask what I would like to create.' }, { Icon: Telescope, title: 'Look into it', prompt: 'Help me research a topic. Ask what I want to understand and why.' }];
 
-  return <div className={`app-shell ${sidebarOpen ? 'sidebar-is-open' : ''}`}>
-    {sidebarOpen && <button className="sidebar-scrim" aria-label="Close sidebar" onClick={() => setSidebarOpen(false)} />}
-    <aside className="sidebar" aria-label="Workspace navigation" aria-hidden={!sidebarOpen} inert={!sidebarOpen}><div className="sidebar-brand"><button className="brand" onClick={() => newChat(agents.find(item => item.id === 'primary') || agent)}><Mark size={30} /><span>A Gent</span></button><IconButton label="Search conversations (⌘K)" onClick={() => setDialog({ kind: 'search' })}><Search size={18} /></IconButton><IconButton label="Collapse sidebar" onClick={() => setSidebarOpen(false)}><PanelLeftClose size={18} /></IconButton></div>
-      <button className="new-chat" onClick={() => newChat()}><Plus size={18} /><span>New conversation</span><kbd>⌘ N</kbd></button>
-      <div className="sidebar-scroll"><div className="sidebar-section-title"><button onClick={() => navigate('agents')}>Your agents</button><IconButton label="Create an agent" onClick={() => setDialog({ kind: 'agent' })}><Plus size={14} /></IconButton></div><nav className="agent-nav" aria-label="Agents">{agents.map(item => <button key={item.id} className={agent?.id === item.id && view === 'chat' ? 'active' : ''} onClick={() => selectAgent(item)}><Avatar agent={item} size={27} /><span>{item.name}</span>{data?.runs.some(run => run.agentId === item.id && run.status === 'running') && <span className="agent-running" />}</button>)}</nav>
-        <div className="sidebar-section-title conversations-title"><span>Conversations</span><IconButton label="Create a group" onClick={() => setDialog({ kind: 'group' })}><FolderPlus size={15} /></IconButton></div>{state?.groups.map(group => <div className="chat-group" key={group.id}><button className="group-heading" onClick={() => setCollapsedGroups(previous => { const next = new Set(previous); if (next.has(group.id)) next.delete(group.id); else next.add(group.id); return next; })} aria-expanded={!collapsedGroups.has(group.id)}>{collapsedGroups.has(group.id) ? <ChevronRight size={13} /> : <ChevronDown size={13} />}<Folder size={14} /><span>{group.name}</span><small>{conversations.filter(chat => chat.groupId === group.id).length}</small></button>{!collapsedGroups.has(group.id) && conversations.filter(chat => chat.groupId === group.id).map(renderConversation)}</div>)}{conversations.filter(chat => !chat.groupId).slice(0, 30).map(renderConversation)}{!conversations.length && <p className="sidebar-empty">Good conversations start here.</p>}
-      </div><div className="sidebar-bottom"><button className={view === 'agents' ? 'active' : ''} onClick={() => navigate('agents')}><UsersRound size={17} /><span>All agents</span></button><button className={view === 'scheduled' ? 'active' : ''} onClick={() => navigate('scheduled')}><CalendarClock size={17} /><span>Scheduled</span>{!!state?.schedules.filter(schedule => schedule.enabled && !schedule.lastRunAt).length && <small>{state.schedules.filter(schedule => schedule.enabled && !schedule.lastRunAt).length}</small>}</button><button className={view === 'connections' ? 'active' : ''} onClick={() => navigate('connections')}><Plug size={17} /><span>Connections</span><i className={`connection-dot ${data?.providers.some(provider => provider.status === 'connected') ? 'connected' : ''}`} /></button><button className={`workspace-account ${view === 'settings' ? 'active' : ''}`} onClick={() => navigate('settings')}><span className="workspace-avatar">A</span><span><strong>Personal workspace</strong><small>A Gent · Your own space</small></span><Settings2 size={16} /></button></div>
-    </aside>
-    <main className="main-panel"><header className="topbar"><div className="topbar-left">{!sidebarOpen && <IconButton label="Open sidebar" onClick={() => setSidebarOpen(true)}><PanelLeftOpen size={19} /></IconButton>}<span className="topbar-context">{view === 'chat' ? conversation?.title || 'New conversation' : ({ agents: 'Agents', connections: 'Connections', scheduled: 'Scheduled', settings: 'Settings' } as const)[view]}</span></div>{view === 'chat' && agent && <button className="agent-title" onClick={() => setDialog({ kind: 'agent', agent })}><Avatar agent={agent} size={23} /><span>{agent.name}</span><ChevronDown size={13} /></button>}<div className="topbar-right">{!online && data && <span className="offline-indicator" title="Reconnecting to your host"><WifiOff size={14} /><span>Reconnecting</span></span>}{view === 'chat' && <><button className={`project-button ${workspacePath ? 'has-project' : ''}`} onClick={() => void chooseFolder()} title={workspacePath || 'Choose a project folder'}><FolderOpen size={15} /><span>{workspacePath ? workspacePath.split(/[\\/]/).filter(Boolean).at(-1) : 'Add project'}</span></button>{conversation && <IconButton label="Conversation details" onClick={() => setDialog({ kind: 'conversation', conversation })}><MoreHorizontal size={19} /></IconButton>}</>}</div></header>
-      {error && <div className="error-banner" role="alert"><AlertCircle size={16} /><span>{error}</span><IconButton label="Dismiss error" onClick={() => setError('')}><X size={15} /></IconButton></div>}
-      {!data ? <div className="initial-screen"><Mark size={54} />{loading ? <><Spinner size={22} /><h1>Opening your workspace…</h1></> : <><h1>Your agents. Wherever you are.</h1><p>Connect to your A Gent host to get started.</p><button className="button primary" onClick={() => setDialog({ kind: 'connection' })}>Connect workspace<ArrowUpRight size={16} /></button></>}</div> : view === 'agents' ? <AgentsView agents={agents} onCreate={() => setDialog({ kind: 'agent' })} onEdit={value => setDialog({ kind: 'agent', agent: value })} onChat={value => newChat(value)} /> : view === 'connections' ? <ConnectionsView providers={data.providers} api={api} onRefresh={refresh} connection={connection} onHost={() => setDialog({ kind: 'connection' })} /> : view === 'scheduled' ? <SchedulesView state={data.state} api={api} onCreate={() => setDialog({ kind: 'schedule' })} onOpen={id => { const chat = state?.conversations.find(item => item.id === id); if (chat) selectChat(chat); }} onError={setError} /> : view === 'settings' ? <SettingsView state={data.state} api={api} onError={setError} onRefresh={refresh} /> : <div className="conversation-layout" onDragOver={event => event.preventDefault()} onDrop={event => { event.preventDefault(); if (event.dataTransfer.files.length) void addFiles(event.dataTransfer.files); }}>
-        <div className={`chat-scroll ${!conversation?.messages.length ? 'is-empty' : ''}`} ref={scroll}>
-          {!conversation?.messages.length ? <div className="welcome"><div className="welcome-mark" style={{ '--agent-color': agent?.color } as CSSProperties}>{agent?.id === 'primary' ? <Mark size={57} /> : agent && <Avatar agent={agent} size={60} />}</div><span className="welcome-eyebrow">{agent?.id === 'primary' ? 'A GENT, AT YOUR SIDE' : agent?.name.toUpperCase()}</span><h1>What would you like<br className="mobile-break" /> to get done?</h1><p>{agent?.description || 'A place to think clearly and move things forward.'}</p><div className="starter-prompts">{(agent?.icon === 'code' ? [{ Icon: Code2, title: 'Build something', prompt: 'Help me plan and build a new feature. Start by asking what I want to create.' }, { Icon: Search, title: 'Find the problem', prompt: 'Help me investigate a bug. Ask me for the symptoms and the relevant project.' }, { Icon: Terminal, title: 'Review my project', prompt: 'Review my project and identify the most useful next improvement.' }] : agent?.icon === 'design' ? [{ Icon: Palette, title: 'Explore a direction', prompt: 'Help me explore a visual direction for a product. Ask about the product and its audience.' }, { Icon: UsersRound, title: 'Improve a flow', prompt: 'Help me improve a user flow. Ask me which flow and what is not working.' }, { Icon: Sparkles, title: 'Shape an idea', prompt: 'Help me turn a product idea into a clear, testable concept.' }] : [{ Icon: Sparkles, title: 'Think it through', prompt: 'Help me think through an idea. Ask me what I have in mind.' }, { Icon: Code2, title: 'Build something', prompt: 'Help me plan something I want to build. Ask what I would like to create.' }, { Icon: Telescope, title: 'Look into it', prompt: 'Help me research a topic. Ask what I want to understand and why.' }]).map(({ Icon, title, prompt }) => <button key={title} onClick={() => { setText(prompt); composer.current?.focus(); }}><Icon size={17} /><span>{title}</span><ArrowUpRight size={14} /></button>)}</div></div> : <div className="messages">{conversation.messages.map(message => <article key={message.id} className={`message message-${message.role}`}><div className="message-meta">{message.role === 'assistant' && agent ? <><Avatar agent={agent} size={23} /><span>{agent.name}</span></> : message.role === 'system' ? <span>Workspace</span> : <span>You</span>}<time dateTime={message.createdAt}>{new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' }).format(new Date(message.createdAt))}</time></div><div className="message-body">{message.role === 'assistant' && state?.settings.showActivity && <Activities activities={currentRun?.messageId === message.id ? currentRun.activities : message.activities || []} />}{message.content ? <div className="markdown"><Markdown remarkPlugins={[remarkGfm]} components={{ a: ({ children, href }) => <a href={href} target="_blank" rel="noopener noreferrer">{children}</a> }}>{message.content}</Markdown></div> : message.status === 'streaming' ? <div className="thinking"><span /><span /><span /><span className="sr-only">Agent is working</span></div> : null}{message.attachments?.map(file => <div className="message-attachment" key={file.id}><Paperclip size={14} /><span>{file.name}</span></div>)}{message.status === 'failed' && <p className="message-status error">This reply could not be completed. Check your connection and try again.</p>}{message.status === 'interrupted' && <p className="message-status">Stopped by you</p>}</div>{message.role === 'assistant' && message.content && <div className="message-actions"><button title="Copy reply" aria-label="Copy reply" onClick={() => void copyMessage(message.content, message.id)}>{copied === message.id ? <Check size={14} /> : <Copy size={14} />}</button></div>}</article>)}{currentRun?.approvals.filter(approval => approval.status === 'pending').map(approval => <div className="approval-card" key={approval.id}><div><Terminal size={17} /><h3>{approval.title}</h3></div><p>{approval.description}</p>{approval.command && <pre>{approval.command}</pre>}<div className="approval-actions"><button className="button quiet small" onClick={async () => { try { await api(`/api/approvals/${approval.id}`, 'POST', { decision: 'decline' }); } catch (reason) { setError((reason as Error).message); } }}>Decline</button><button className="button primary small" onClick={async () => { try { await api(`/api/approvals/${approval.id}`, 'POST', { decision: 'accept' }); } catch (reason) { setError((reason as Error).message); } }}>Allow this action</button></div></div>)}</div>}
-        </div>
-        <div className="composer-region"><div className={`composer ${busy ? 'composer-busy' : ''}`}><div className="composer-input-row"><textarea ref={composer} value={text} onChange={event => setText(event.target.value)} onKeyDown={onComposerKey} placeholder={`Message ${agent?.name || 'A Gent'}…`} aria-label={`Message ${agent?.name || 'A Gent'}`} rows={1} disabled={sending} />{busy ? <button className="send-button stop-button" title="Stop reply" aria-label="Stop reply" disabled={!currentRun} onClick={async () => { if (currentRun) try { updateRun(await api<Run>(`/api/runs/${currentRun.id}/interrupt`, 'POST')); } catch (reason) { setError((reason as Error).message); } }}><Square size={15} fill="currentColor" /></button> : <button className="send-button" title="Send message" aria-label="Send message" disabled={!text.trim() && !attachments.length} onClick={() => void send()}><ArrowUp size={20} strokeWidth={2.3} /></button>}</div>{attachments.length > 0 && <div className="attachment-chips">{attachments.map(file => <span key={file.id}><Paperclip size={12} />{file.name}<button aria-label={`Remove ${file.name}`} onClick={() => setAttachments(previous => previous.filter(item => item.id !== file.id))}><X size={12} /></button></span>)}</div>}<div className="composer-toolbar"><div className="composer-tools"><IconButton label="Attach text files" onClick={() => attachInput.current?.click()}><Plus size={19} /></IconButton><input type="file" multiple hidden ref={attachInput} accept="text/*,.md,.txt,.json,.csv,.ts,.tsx,.js,.jsx,.py,.rs,.go,.css,.html,.yaml,.yml,.toml,.log" onChange={event => { if (event.target.files) void addFiles(event.target.files); event.target.value = ''; }} /><span className="toolbar-divider" /><label className="mode-select">{mode === 'chat' ? <MessageSquare size={13} /> : <Terminal size={13} />}<select aria-label="Agent mode" value={mode} onChange={event => setMode(event.target.value as 'chat' | 'work')}><option value="chat">Chat</option><option value="work" disabled={providerId !== 'codex'}>Work in project</option></select><ChevronDown size={11} /></label></div><div className="model-controls"><div className="model-picker-anchor" ref={pickerRef}><button className="model-trigger" aria-expanded={modelPicker} aria-haspopup="dialog" onClick={() => setModelPicker(!modelPicker)}><span className={`provider-dot ${currentProvider?.status === 'connected' ? 'connected' : ''}`} /><span>{currentModel?.name || (modelId || currentProvider?.name || 'Choose model')}</span><ChevronDown size={12} /></button>{modelPicker && <div className="model-popup" role="dialog" aria-label="Choose a model"><div className="popover-heading">Choose a model<IconButton label="Close model picker" onClick={() => setModelPicker(false)}><X size={14} /></IconButton></div><div className="model-popup-scroll">{data.providers.map(provider => <div className="model-provider" key={provider.id}><span>{provider.name}<small>{provider.status === 'connected' ? 'Connected' : 'Not connected'}</small></span><button className={providerId === provider.id && !modelId ? 'selected' : ''} onClick={() => void chooseModel(provider.id, '')}><span>Provider default</span>{providerId === provider.id && !modelId && <Check size={14} />}</button>{provider.models.map(model => <button key={model.id} className={providerId === provider.id && modelId === model.id ? 'selected' : ''} onClick={() => void chooseModel(provider.id, model.id)}><span>{model.name}</span>{providerId === provider.id && modelId === model.id && <Check size={14} />}</button>)}</div>)}</div><button className="manage-connections" onClick={() => { setModelPicker(false); navigate('connections'); }}><Plug size={14} />Manage connections<ArrowUpRight size={14} /></button></div>}</div>{providerId === 'codex' && <label className="effort-select"><select aria-label="Reasoning effort" value={effort} onChange={async event => { const next = event.target.value; setEffort(next); if (agent) try { await api(`/api/agents/${agent.id}`, 'PATCH', { reasoningEffort: next }); } catch (reason) { setError((reason as Error).message); } }}><option value="low">Light</option><option value="medium">Balanced</option><option value="high">Deep</option></select><ChevronDown size={10} /></label>}</div></div></div><p className="composer-caption"><span>{mode === 'chat' ? 'Think it through. Your agent asks before taking action.' : workspacePath ? `Working in ${workspacePath.split(/[\\/]/).filter(Boolean).at(-1)}` : 'Choose a project above, or use your host’s default workspace.'}</span><span><kbd>↵</kbd> send <span className="caption-separator">·</span> <kbd>⇧ ↵</kbd> new line</span></p></div>
-      </div>}
+  return <div className={`reason-app ${sidebarOpen ? 'is-sidebar-open' : ''} ${sidePanelOpen ? 'is-panel-open' : ''}`}>
+    {sidebarOpen && <button className="reason-scrim" aria-label="Close sidebar" onClick={() => setSidebarOpen(false)} />}
+    <Sidebar
+      agents={agents}
+      activeAgentId={agent?.id}
+      runs={data?.runs || []}
+      providers={data?.providers || []}
+      open={sidebarOpen}
+      onClose={() => setSidebarOpen(false)}
+      onNewChat={newChat}
+      onSelectAgent={selectAgent}
+      onSearch={() => setDialog({ kind: 'search' })}
+      onCreateAgent={() => setDialog({ kind: 'agent' })}
+      onOpenAgents={() => navigate('agents')}
+      onOpenScheduled={() => navigate('scheduled')}
+      onOpenConnections={() => navigate('connections')}
+      onOpenSettings={() => navigate('settings')}
+    />
+    <main className="reason-main">
+      <div className="reason-surface">
+        <TopBar
+          label={label}
+          agent={agent}
+          conversation={conversation}
+          isChat={view === 'chat'}
+          online={online}
+          hasData={!!data}
+          sidebarOpen={sidebarOpen}
+          sidePanelOpen={sidePanelOpen}
+          onOpenSidebar={() => { setSidePanelOpen(false); setSidebarOpen(true); }}
+          onToggleSidePanel={() => sidePanelOpen ? setSidePanelOpen(false) : openSidePanel('session')}
+          onOpenConversationDetails={() => conversation && openConversationDetails(conversation)}
+          onBackToChat={() => setView('chat')}
+        />
+        {error && <div className="error-banner" role="alert"><AlertCircle size={16} /><span>{error}</span><IconButton label="Dismiss error" onClick={() => setError('')}><X size={15} /></IconButton></div>}
+        {!data ? <div className="reason-initial">
+          <Mark size={54} />
+          {loading ? <><Spinner size={22} /><h1>Opening your workspace…</h1></> : <><h1>Your agents. Wherever you are.</h1><p>Connect to your A Gent host to get started.</p><button className="button primary" onClick={() => setDialog({ kind: 'connection' })}>Connect workspace<ArrowUpRight size={16} /></button></>}
+        </div> : view === 'chat' ? <div className="reason-chat" onDragOver={event => event.preventDefault()} onDrop={event => { event.preventDefault(); if (event.dataTransfer.files.length) void addFiles(event.dataTransfer.files); }}>
+          <div className={`reason-chat-scroll ${!conversation?.messages.length ? 'is-empty' : ''}`} ref={scroll}>
+            {!conversation?.messages.length ? <div className="reason-welcome">
+              <div className="reason-welcome-mark">{agent?.id === 'primary' || !agent ? <Mark size={48} /> : <AgentGlyph agent={agent} size={48} />}</div>
+              <h1>{agent?.name || 'A Gent'}</h1>
+              <p>{agent?.description || 'A place to think clearly and move things forward.'}</p>
+              <div className="reason-starters">{starterPrompts.map(({ Icon, title, prompt }) => <button key={title} onClick={() => { setText(prompt); composer.current?.focus(); }}><Icon size={15} /><span>{title}</span><ArrowUpRight size={13} /></button>)}</div>
+            </div> : <MessageList
+              messages={conversation.messages}
+              currentRun={currentRun}
+              showActivity={state?.settings.showActivity ?? true}
+              copied={copied}
+              onCopy={copyMessage}
+              onApproval={handleApproval}
+            />}
+          </div>
+          <Composer
+            agent={agent}
+            text={text}
+            setText={setText}
+            attachments={attachments}
+            onAddFiles={addFiles}
+            onRemoveAttachment={id => setAttachments(previous => previous.filter(item => item.id !== id))}
+            onSend={() => void send()}
+            onStop={() => void stopRun()}
+            busy={busy}
+            canStop={!!currentRun}
+            sending={sending}
+            providerId={providerId}
+            modelId={modelId}
+            effort={effort}
+            mode={mode}
+            workspacePath={workspacePath}
+            providers={data.providers}
+            currentProvider={currentProvider}
+            currentModel={currentModel}
+            modelPicker={modelPicker}
+            setModelPicker={setModelPicker}
+            pickerRef={pickerRef}
+            textareaRef={composer}
+            attachInputRef={attachInput}
+            onChooseModel={chooseModel}
+            onChooseFolder={() => void chooseFolder()}
+            onOpenConnections={() => navigate('connections')}
+            onSetMode={setMode}
+            onSetEffort={value => void chooseEffort(value)}
+            onComposerKey={onComposerKey}
+          />
+        </div> : <div className="reason-page-scroll">
+          {view === 'agents' ? <AgentsView agents={agents} onCreate={() => setDialog({ kind: 'agent' })} onEdit={value => setDialog({ kind: 'agent', agent: value })} onChat={value => newChat(value)} />
+            : view === 'connections' ? <ConnectionsView providers={data.providers} api={api} onRefresh={refresh} connection={connection} onHost={() => setDialog({ kind: 'connection' })} />
+              : view === 'scheduled' ? <SchedulesView state={data.state} api={api} onCreate={() => setDialog({ kind: 'schedule' })} onOpen={id => { const chat = state?.conversations.find(item => item.id === id); if (chat) selectChat(chat); }} onError={setError} />
+                : <SettingsView state={data.state} api={api} onError={setError} onRefresh={refresh} />}
+        </div>}
+      </div>
     </main>
+    {sidePanelOpen && <SidePanel
+      tab={sidePanelTab}
+      onTab={setSidePanelTab}
+      onClose={() => setSidePanelOpen(false)}
+      agent={agent}
+      conversation={conversation}
+      conversations={conversations}
+      currentRun={currentRun}
+      onSelectConversation={selectChat}
+      onNewChat={() => newChat()}
+      onOpenConversationDetails={openConversationDetails}
+      onOpenAgent={() => agent && setDialog({ kind: 'agent', agent })}
+    />}
     {dialog?.kind === 'connection' && <ConnectionDialog connection={connection} onConnect={connect} onClose={() => setDialog(null)} />}
     {data && dialog?.kind === 'agent' && <AgentDialog agent={dialog.agent} providers={data.providers} api={api} onClose={() => setDialog(null)} onSaved={value => { setActiveAgentId(value.id); setActiveConversationId(null); setView('chat'); }} />}
     {data && dialog?.kind === 'group' && <GroupDialog api={api} onClose={() => setDialog(null)} />}

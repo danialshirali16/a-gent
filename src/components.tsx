@@ -10,6 +10,18 @@ export function Avatar({ agent, size = 28 }: { agent: Pick<Agent, 'color' | 'ico
   const Icon = icons[agent.icon] || Bot;
   return <span className="agent-avatar" style={{ '--agent-color': agent.color, width: size, height: size } as CSSProperties}><Icon size={size * .53} strokeWidth={1.8} /></span>;
 }
+function glyphInk(color: string): string {
+  const match = /^#([0-9a-f]{6})$/i.exec(color);
+  if (!match) return '#fff';
+  const [r, g, b] = match[1].match(/.{2}/g)!.map(value => parseInt(value, 16) / 255);
+  const linear = (value: number) => value <= .03928 ? value / 12.92 : ((value + .055) / 1.055) ** 2.4;
+  const luminance = .2126 * linear(r) + .7152 * linear(g) + .0722 * linear(b);
+  return luminance > .48 ? '#171717' : '#ffffff';
+}
+export function AgentGlyph({ agent, size = 24 }: { agent: Pick<Agent, 'color' | 'icon'>; size?: number }) {
+  const Icon = icons[agent.icon] || Bot;
+  return <span className="agent-glyph" style={{ '--agent-color': agent.color, '--agent-glyph-ink': glyphInk(agent.color), width: size, height: size } as CSSProperties}><Icon size={size * .56} strokeWidth={2} /></span>;
+}
 export function Spinner({ size = 16 }: { size?: number }) { return <LoaderCircle size={size} className="spin" aria-hidden="true" />; }
 export function IconButton({ label, children, onClick, className = '', disabled = false }: { label: string; children: ReactNode; onClick?: () => void; className?: string; disabled?: boolean }) {
   return <button className={`icon-button ${className}`} title={label} aria-label={label} onClick={onClick} disabled={disabled}>{children}</button>;
