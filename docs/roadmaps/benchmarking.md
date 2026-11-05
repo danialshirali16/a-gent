@@ -1,14 +1,16 @@
 # Benchmark prerequisites by scope
 
-Updated: 2026-11-05. [Master roadmap](../project-roadmap.md) · [Task boards](README.md) · [Benchmark process](../benchmarks/README.md) · [Record template](../benchmarks/template.md)
+Updated: 2026-11-05. [Active v1 path](../project-roadmap.md#recommended-execution-order) · [Every task's v1 decision](v1-triage.md) · [Current state](../current-state-review.md)
 
-Every delivery section has a benchmark prerequisite below. Complete the comparison and accept its scope-matched record before development in that section. These are research tasks, so they do not recursively require another benchmark. **BEN-001–BEN-004, BEN-008–BEN-010, and BEN-021/BEN-022 are Done (2026-11-05)**; the rest start **To do**. BEN-005/006/007 are deferred with their provider scopes to the distant future (D-02 amendment). Candidate comparators below are a research shortlist, not a claim they have already been assessed. Replace inaccessible peers with documented relevant alternatives and record the coverage gap.
+**Personal macOS v1 amendment:** The personal-v1 D-11 exception is approved. BEN-001/002/003/010 are CONTINUE as applicable decision reuse; BEN-011–014 are CUT/RETHINK as compulsory release prerequisites. All other BEN items are PAUSE. Earlier accepted research remains evidence, not a launch promise.
 
-Each task's Done condition includes the [required record and acceptance gate](../benchmarks/README.md#required-record-and-acceptance-gate): at least two relevant peers/reference implementations per covered scope, dated/versioned evidence, decisions, and mapped development/verification criteria. Paused and later benchmarks retain the same targets as their work and do not block unrelated R1 scope. Owner cells are suggested roles.
+The tables retain original public R1/R2 targets, full acceptance criteria, and original dependencies for later work. Current implementation statuses are maintained here; v1 scope/effort is maintained only in the triage. A v1 subset can pass its support-matrix row without declaring the whole original task complete. Old M2/M3 continuation and broad feature gates do not govern the active path.
+
+The [approved D-11 exception](../release-contract.md#d-11-benchmark-policy) permits CONTINUE correction/QA/packaging without new peer comparisons. Compatibility research, tests, real Codex checks, and actual Mac package evidence remain required. Deferred full-scope work retains applicable benchmarks on resumption. Owner labels remain suggested roles; Danial is the acting accountable owner.
 
 ## Scope comparisons
 
-| ID | Target | Priority | Status | Owner | Depends on | Task and acceptance |
+| ID | Original target | Priority | Status | Owner | Original dependencies | Original full-scope task and acceptance history |
 | --- | --- | --- | --- | --- | --- | --- |
 | BEN-001 | R1 | P0 | Done | Product + Host | — | **Benchmark foundations and release contract.** Accepted 2026-11-05. Compared Reason 0.1.119/current docs, Codex 0.166.0 app-server, and OpenCode 2.2.5; recorded persistence, recovery, host authority, schema, credential, cancellation, and launch decisions mapped to FND-001–012. Record: [BEN-001](../benchmarks/BEN-001-foundations.md). |
 | BEN-002 | R1 | P0 | Done | Integrations + Product | FND-001, FND-002 | **Benchmark shared provider lifecycle.** Accepted 2026-11-05. Compared Codex 0.166.0, OpenCode 2.2.5, LM Studio (`lms` commit `1b7181b`, server stopped), and Jan docs; defined lifecycle states, discovery-vs-inference proof, model identity/presentation, credentials, edit/remove, recovery, and error contracts. Record: [BEN-002](../benchmarks/BEN-002-provider-lifecycle.md). |
@@ -38,4 +40,4 @@ Each task's Done condition includes the [required record and acceptance gate](..
 
 ## Gate
 
-BEN-001 is the entry point and has no foundation dependency. Other comparisons use the recorded FND-001/002 scope and runtime baseline. Existing implementation and prior screenshots may inform comparisons, but neither closes a benchmark without the required record. This board adds prerequisites rather than marking competitor research complete.
+CONTINUE v1 work proceeds without new two-peer prerequisite research. Required compatibility checks and implementation/runtime/package acceptance remain mandatory. BEN-011–014 are not marked research-complete. Deferred feature/platform benchmarks apply when those scopes are explicitly resumed.

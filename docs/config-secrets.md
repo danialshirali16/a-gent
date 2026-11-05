@@ -1,5 +1,7 @@
 # Config and secret storage interfaces
 
+**Personal-v1 context (2026-11-05):** external Codex sign-in is sufficient; general API-key setup is deferred. ProviderManager now uses SecretStore, but its endpoint/model configuration remains a separate connections.json path rather than ConfigStore. The current default on macOS is the security-CLI Keychain adapter, not Electron safeStorage; AGENT_SECRET_STORAGE=session selects memory. A per-provider UI storage-mode choice is not implemented.
+
 Status: **FND-012 recorded 2026-11-05.** This defines typed, owner-scoped config files and credential references, with atomic updates, rollback, migration, and export exclusion. The provider/speech integrations adopt these interfaces in PVD-003/PVD-004/STT-002; this task establishes and tests the contract first.
 
 [Release contract](release-contract.md) · [Persistence](persistence.md) · [Diagnostics](diagnostics.md) · [Validation](validation.md) · [FND-012 task](project-roadmap.md#foundation-tasks)
@@ -49,11 +51,12 @@ Implementations:
 | Backend | Use | Storage |
 | --- | --- | --- |
 | `MemorySecretStore` | Session-only mode; tests | Process memory; disappears on restart. |
-| `FileSecretStore` | Local persistence fallback until macOS Keychain integration | AES-256-GCM ciphertext in `secrets.json`; 32-byte key in `.secret-key` (mode `0600`); atomic writes + `.bak`. |
+| `KeychainSecretStore` | Default macOS provider API-key storage | Built-in security CLI, a-gent service; missing/locked errors mapped. Actual Mac behavior is not accepted by Windows fixture results. |
+| `FileSecretStore` | Available encrypted-file implementation/tests; not selected by createSecretStore | AES-256-GCM ciphertext in `secrets.json`; 32-byte key in `.secret-key` (mode `0600`); atomic writes + `.bak`. |
 
 `FileSecretStore` never writes plaintext secrets. `list()` returns metadata only (id, owner, timestamps). Delete/update are atomic; a failed write leaves the previous record set intact.
 
-**Security boundary:** `FileSecretStore` is local file protection, not macOS Keychain and not hardware-backed. D-04/PVD-003 still owns the production Keychain/session-only choice. This interface makes that choice replaceable without changing callers.
+**Security boundary:** `FileSecretStore` is local file protection, not macOS Keychain and not hardware-backed. createSecretStore selects macOS Keychain or session memory; full user-facing storage selection remains incomplete. This interface makes that choice replaceable without changing callers.
 
 ## Export exclusion
 

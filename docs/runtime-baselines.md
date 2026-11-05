@@ -1,5 +1,7 @@
 # Runtime and capability baseline
 
+**Personal-v1 amendment (2026-11-05):** [Codex-only scope](release-contract.md) and [V1-02](project-roadmap.md#recommended-execution-order) supersede the public R1 promise. Versions/fixtures below are historical baselines, not a new package pass. Startup version/capability enforcement is required work and is not currently wired into the adapters. The audit executor had Codex 0.166.0-alpha.1/schema drift and no OpenCode; see [validation](validation.md#personal-v1-readiness-assessment).
+
 Status: **Recorded for FND-002 on 2026-11-05.** This is the versioned baseline that the release contract and adapters build against. It records interfaces, not authenticated journeys. A catalog read is not proof of inference access, and a generated schema is not proof that every method is supported by a user's account.
 
 [Release contract](release-contract.md) · [BEN-001 record](benchmarks/BEN-001-foundations.md) · [Support matrix](support-matrix.md) · [Validation](validation.md)
@@ -28,7 +30,7 @@ Status: **Recorded for FND-002 on 2026-11-05.** This is the versioned baseline t
 | TypeScript | 7.0.2 exactly | From the lockfile. |
 | React / Express / Vite / Playwright | 19.3.1 / 5.3.0 / 8.3.5 / 1.64.1 | From the lockfile; UI/QA checks use these versions. |
 | Codex CLI | 0.166.0 exactly for the R1 baseline | Probe at startup; unsupported or changed schema must fail closed for the affected adapter. |
-| OpenCode CLI | 2.2.5 exactly for the R1 baseline | Probe at startup; the v2 server API differs from older public docs. |
+| OpenCode CLI | 2.2.5 historical baseline; paused for personal v1 | Probe at startup; the v2 server API differs from older public docs. |
 | Reason reference | Desktop 0.1.119 artifact; 0.1.120/current docs as workflow reference | Not a runtime dependency and not shipped with A Gent. |
 
 ## Codex app-server baseline
@@ -54,7 +56,7 @@ The checked-in fixture is `tests/fixtures/runtime-baselines/codex-0.166.0/`.
 | --- | --- | --- |
 | `initialize` | Handshake with `clientInfo` and `experimentalApi: true` (`server/codex.ts:91`) | Present |
 | `account/read` | Read account/auth state (`server/codex.ts:97`) | Present |
-| `model/list` | Paginated model catalog (`server/codex.ts:101`) | Present; reasoning metadata is currently discarded |
+| `model/list` | Paginated model catalog (`server/codex.ts:101`) | Present; reasoning metadata is now preserved by the Codex adapter |
 | `thread/start` | New Codex thread (`server/codex.ts:150`) | Present |
 | `thread/resume` | Continue a stored thread (`server/codex.ts:144`) | Present |
 | `turn/start` | Send input and start a turn (`server/codex.ts:267`) | Present |
@@ -66,7 +68,7 @@ The checked-in fixture is `tests/fixtures/runtime-baselines/codex-0.166.0/`.
 | `mcpServer/elicitation/request` | Form/URL interaction with schema validation; unsupported schemas decline with an activity (`server/hil.ts`, `server/codex.ts`) | Present; URL completion is HIL-004 |
 | `item/tool/requestUserInput` | Correlated question with option/free-text validation; answers return to Codex, decline/cancel is explicit (`server/hil.ts`, `server/codex.ts`) | Present; live acceptance is HIL-006 |
 
-### Available but not used in R1
+### Additional methods in the historical public baseline
 
 The 0.166.0 schema also includes account login/logout, rate limits, app list/read/installed, MCP OAuth login and tool call, config read/write, skills list/config/extra roots, plugin/marketplace methods, thread list/read/fork/archive/delete/turns/items, and file-system methods. These are not R1 commitments until a task and benchmark authorize them. In particular, plugin/marketplace methods are marked experimental/under development by the upstream docs.
 

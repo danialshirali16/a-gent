@@ -1,18 +1,18 @@
 # Core product and UI completion
 
-Updated: 2026-11-05. [Master roadmap](../project-roadmap.md) · [Current state](../current-state-review.md)
+Updated: 2026-11-05. [Active v1 path](../project-roadmap.md#recommended-execution-order) · [Every task's v1 decision](v1-triage.md) · [Current state](../current-state-review.md)
 
-Existing chat, agents, groups, text attachments, one-time schedules, data export, and shared UI are foundations. R1 tasks close advertised workflows and recovery gaps. R2 tasks retain deliberately broader functionality rather than counting it as completed.
+**Personal macOS v1 amendment:** The triage selects core onboarding/defaults/drafts/streaming/recovery/import-export and retained UI checks. Schedules, uploads/content expansion, regenerate, broad mobile/reflow work, notifications, and speech/skills/custom reasoning are paused.
 
-Required R1 additions have dedicated boards: [model-specific reasoning](reasoning-effort.md), [Agent skills](skills.md), and [ElevenLabs Speech-to-Text](speech-to-text.md). Include their controls, onboarding, recovery, and accessibility in the product/UI acceptance below. Every section must satisfy its benchmark gate before development.
+The tables retain original public R1/R2 targets, full acceptance criteria, and original dependencies for later work. Current implementation statuses are maintained here; v1 scope/effort is maintained only in the triage. A v1 subset can pass its support-matrix row without declaring the whole original task complete. Old M2/M3 continuation and broad feature gates do not govern the active path.
 
-Task status is **To do** until its evidence is accepted. Owners are suggested roles, not assigned people. Targets: R1 first public macOS release; R2 subsequent product completion; Paused/Optional requires a scope decision. Priority, status, and dependency rules are in the master roadmap.
+The [approved D-11 exception](../release-contract.md#d-11-benchmark-policy) permits CONTINUE correction/QA/packaging without new peer comparisons. Compatibility research, tests, real Codex checks, and actual Mac package evidence remain required. Deferred full-scope work retains applicable benchmarks on resumption. Owner labels remain suggested roles; Danial is the acting accountable owner.
 
 ## Core workflows
 
-Development gate: **BEN-011** in [the benchmark board](benchmarking.md) must have an accepted, scope-matched record before these tasks enter Ready or implementation.
+Original benchmark dependency: BEN-011. Personal-v1 CONTINUE work follows the [D-11 exception](../release-contract.md#d-11-benchmark-policy); deferred full-scope work follows the benchmark process when resumed.
 
-| ID | Target | Priority | Status | Owner | Depends on | Task and acceptance |
+| ID | Original target | Priority | Status | Owner | Original dependencies | Original full-scope task and acceptance history |
 | --- | --- | --- | --- | --- | --- | --- |
 | COR-001 | R1 | P1 | To do | Product + UI | BEN-011, FND-001, PVD-005, APP-006 | **Complete first-run onboarding.** Done when: Fresh installs explain local host/data, detect prerequisites, connect a provider, send a first message, and offer app, ElevenLabs speech, and skill setup with working recovery and accurate prerequisites. |
 | COR-002 | R1 | P1 | To do | UI + Host | BEN-011, PVD-012, EFF-008, SKL-012 | **Finish Settings and agent/chat defaults.** Done when: Default model editing, settings persistence, agent customization, and chat-specific overrides follow the agreed scope and recover failed saves. |
@@ -31,9 +31,9 @@ Development gate: **BEN-011** in [the benchmark board](benchmarking.md) must hav
 
 ## Interface and accessibility
 
-Development gate: **BEN-012** in [the benchmark board](benchmarking.md) must have an accepted, scope-matched record before these tasks enter Ready or implementation.
+Original benchmark dependency: BEN-012. Personal-v1 CONTINUE work follows the [D-11 exception](../release-contract.md#d-11-benchmark-policy); deferred full-scope work follows the benchmark process when resumed.
 
-| ID | Target | Priority | Status | Owner | Depends on | Task and acceptance |
+| ID | Original target | Priority | Status | Owner | Original dependencies | Original full-scope task and acceptance history |
 | --- | --- | --- | --- | --- | --- | --- |
 | UX-001 | R1 | P1 | To do | UI + Product | BEN-012, COR-001, COR-002, APP-012, STT-012, SKL-018, EFF-009 | **Audit every visible action for a complete workflow.** Done when: No advertised control ends at a placeholder, misleading success, unsupported prompt, or unexplained disabled state; each has acceptance evidence. |
 | UX-002 | R1 | P1 | To do | UI | BEN-012, PVD-009, PVD-010, APP-011, EFF-008, STT-012, SKL-012 | **Finish component integration and edge states.** Done when: Preserve the reference design and branding; long/blank data, forms, notifications, overlays, and confirmations behave consistently across real screens. |
@@ -46,4 +46,4 @@ Development gate: **BEN-012** in [the benchmark board](benchmarking.md) must hav
 
 ## Gate
 
-R1 product completion requires the agreed workspace/provider/app flows, model-specific effort, speech and skills integration, recovery behavior, and UX-001 through UX-007 evidence. EFF-012, STT-018, and SKL-020 remain separate feature gates. Binary attachments, recurring schedules, richer files, and native notifications remain explicit R2 work unless FND-001 promotes them.
+Personal v1 accepts only the contract's text/project/data/recovery subset. COR-001/002 and UX-001/002/003/006/007 do not depend on finishing APP/STT/SKL/EFF or browser/mobile redesign. Preserve broader original criteria as unfinished work; gate unsupported visible controls.

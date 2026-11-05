@@ -1,24 +1,33 @@
 # Roadmap task boards
 
-Updated: 2026-11-05. The [master roadmap](../project-roadmap.md) defines milestones, scope, decisions, task status, and release gates.
+Updated: 2026-11-05. **The active execution order is [V1-01 through V1-08](../project-roadmap.md#recommended-execution-order).** [V1 triage](v1-triage.md) is the authoritative per-task scope/effort register: 69 CONTINUE, 163 PAUSE, 5 CUT/RETHINK across 237 IDs.
 
-| Board | Tasks | Scope |
+The detailed boards below retain original public R1/R2 targets, full criteria, original dependencies, and implementation history. Their old milestones/feature prerequisites do not override the approved [personal contract](../release-contract.md) or [support matrix](../support-matrix.md). A v1 subset can pass without completing the full original public task.
+
+| Board | Original tasks | Personal v1 treatment |
 | --- | ---: | --- |
-| [Foundations](../project-roadmap.md#foundation-tasks) | 12 | Scope, compatibility, schemas, authority, sessions, Stop, persistence, interactions, diagnostics |
-| [Provider integration completion](providers.md) | 44 | Shared lifecycle and six advertised provider entries |
-| [MCP and Connect Apps completion](connect-apps.md) | 40 | MCP lifecycle, Connect Apps, questions/forms/approvals |
-| [Model-specific reasoning controls](reasoning-effort.md) | 12 | Verified per-model options/defaults, native mapping, persistence, Thinking UI, verification |
-| [Agent skills](skills.md) | 20 | Create/add/import, discovery, scope, native use, editing, updates, removal/export |
-| [ElevenLabs Speech-to-Text](speech-to-text.md) | 18 | Key setup, capture, streamed transcript, explicit Agent Send, quality, native microphone checks |
-| [Core product and UI completion](product.md) | 22 | Core text workspace, recovery, broader content, UI/a11y |
-| [Quality, packaging, and release](quality-release.md) | 24 | Regression, real integrations, CI, signing, packaging, pilot, publication |
-| [Paused platforms and later product completion](platforms-next.md) | 20 | Windows/Android and later product scope |
-| [Benchmark prerequisites](benchmarking.md) | 25 | Scope-specific peer/reference comparison and design decisions before development |
+| [Foundations](../project-roadmap.md#foundation-tasks) | 12 | Retain/reverify core contracts and fix contradicted lifecycle acceptance. |
+| [Providers](providers.md) | 44 | Codex/shared core CONTINUE; OpenCode/HTTP/Ollama/Google and managed login deferred. |
+| [MCP, Connected Apps, HIL](connect-apps.md) | 40 | MCP/APP paused; HIL-001/002/005/006 retain native approvals/questions/recovery. |
+| [Reasoning controls](reasoning-effort.md) | 12 | Paused; default reasoning for v1. |
+| [Skills](skills.md) | 20 | Paused. |
+| [ElevenLabs STT](speech-to-text.md) | 18 | Paused. |
+| [Product/UI](product.md) | 22 | Core text/project/draft/data/recovery and retained accessibility only. |
+| [Quality/distribution](quality-release.md) | 24 | Current checks, local package, and owner pilot; public signing/publication deferred. |
+| [Platforms/later work](platforms-next.md) | 20 | Windows/Android/FUT paused. |
+| [Benchmarks](benchmarking.md) | 25 | Reuse applicable decisions; approved exception for corrective release work. |
+| **Total** | **237** | Every ID is classified once in v1-triage.md. |
 
-Total: **237 tasks**. After the 2026-11-05 D-02 amendment: **191 R1**, **28 R2**, **16 paused platform**, **2 optional-scope** tasks. These include 25 benchmark tasks and 212 delivery tasks. Counts describe acceptance packages, not effort or percentage completion.
+## Status and evidence
 
-Every new task starts To do. Existing partial implementation is documented in [the integration review](../integration-review.md); move a task to Done only when its acceptance evidence is linked in [validation](../validation.md). Update status in its owning board rather than copying task lists into other documents.
+Implementation status is maintained in the owning board, scope/effort only in the triage. Done means evidence for the stated original acceptance package, not an automatic current candidate pass. Review annotations supersede narrower older acceptance where the audit found contrary behavior.
 
-**M0 accepted (2026-11-05):** BEN-001, FND-001, and FND-002 are Done; D-01–D-11 and the initial QA-001 matrix are recorded. **M1 is complete (2026-11-05):** BEN-001 and FND-001–FND-012 are Done. **M2 is in progress for Codex/OpenCode only:** BEN-002–BEN-004 and BEN-021/BEN-022 are accepted; shared readiness/catalog/model-ID, credentials/disconnect, inference test, endpoint policy, and reasoning controls are implemented (PVD-001–016 Done; EFF-001–007/EFF-011 Done). Remaining M2: PVD-017/CDX/OPC/EFF-008–012. **M3 is in progress:** BEN-008–BEN-010 accepted; MCP-001–005/MCP-009/MCP-015 and HIL-001/HIL-002 Done; MCP-010/011/014 and HIL-003 Review. Cloud/OpenAI-compatible, Ollama, and Gemini/Antigravity are deferred. Next: M3 lifecycle/config/Connect Apps implementation, then M2 closure and M4 tracks.
+Eight prior Done claims were reopened as Review: FND-006, PVD-006/010/011/015/016, OPC-002, and EFF-005. The assessment's earlier 56 Done / 5 Review / 176 To do snapshot therefore becomes 48 Done / 13 Review / 176 To do for original implementation tracking. These counts are not v1 completion percentages.
 
-All 25 delivery sections have a BEN dependency and development gate. Follow [benchmark → design decisions → development → verification](../benchmarks/README.md); an accepted scope-matched comparison is required before Ready. The remaining benchmark peers have not been assessed by this documentation update.
+Use [validation](../validation.md), [current state](../current-state-review.md), and the [support matrix](../support-matrix.md) for actual results. The original 191 R1 / 28 R2 / 16 paused / 2 optional targets are preserved for history, not used as current release totals.
+
+## Dependencies and benchmarking
+
+For CONTINUE v1 work, follow the phase prerequisites and [D-11 exception](../release-contract.md#d-11-benchmark-policy). New peer comparisons are not required before core fixes, QA, or local packaging; direct verification remains mandatory.
+
+The original full-scope dependency lists remain available for future development. Excluded managed-login/OpenCode/MCP/STT/SKL/EFF/signing/publication gates do not block the smaller personal v1 subsets. Resuming deferred features/platforms requires deliberate scope and applicable benchmark coverage.

@@ -26,7 +26,7 @@ The detailed earlier phases and percentage estimates are preserved in [the histo
 ## Immediate next actions
 
 1. Review the seven [modelOptions findings](../model-options-stress-test.md#what-broke), then apply the selected corrections and verify Demo/Worst/Empty/One/Huge/Invalid-ID states again. The invoked break-ui workflow reports before fixing.
-2. Revisit the three backend findings in [current state](../current-state-review.md#backend-findings-tracked-from-the-earlier-review); record fixes or fresh reproductions before closing them.
+2. Revisit the three backend findings in [current state](../current-state-review.md#earlier-backend-findings); record fixes or fresh reproductions before closing them.
 3. Run the release test suites against the resulting source, rebuild the macOS package, and record package hashes and runtime evidence.
 4. Complete packaged VoiceOver/reduced-motion checks and large-workspace/SSE profiling.
 5. Decide arm64 versus universal delivery and complete signing/notarization before a release candidate.

@@ -1,74 +1,78 @@
-# A Gent R1 release contract
+# A Gent personal macOS v1.0 release contract
 
-Status: **Accepted for M0 on 2026-11-05.** This is the FND-001 record. It fixes the first-release boundary, the D-01–D-11 decisions, and the owner/support scope. It is not a claim that the features are implemented or verified.
+Status: **Scope approved by Danial on 2026-11-05. Implementation and candidate acceptance remain open.** This amendment supersedes the broader first-public-release boundary; the [original contract](archive/release-contract-public-r1-2026-11-05.md) remains historical evidence.
 
-[Master roadmap](project-roadmap.md) · [BEN-001 record](benchmarks/BEN-001-foundations.md) · [Runtime baseline](runtime-baselines.md) · [Support matrix](support-matrix.md) · [Validation](validation.md)
+[Roadmap and execution path](project-roadmap.md#recommended-execution-order) · [All 237 task decisions](roadmaps/v1-triage.md) · [Acceptance matrix](support-matrix.md) · [Validation](validation.md)
 
 ## Authority and change rule
 
-- **Accountable owner:** Danial. Role owners below are the suggested roles from the roadmap; until delegation, Danial is the acting DRI for Product, Host, Integrations, QA, and Release.
-- **Acceptance:** owner direction for the M0 pass, 2026-11-05.
-- **Change rule:** a change to a product promise or release boundary requires a dated amendment here, a corresponding status/dependency update in the owning board, and a recheck of the affected BEN record. Technical choices inside an accepted scope may be resolved by their task without reopening this contract unless they change the promise, platform, data handling, or release gate.
+Danial is the accountable owner and reviewer. The approved objective is a version he can install on his Mac, run, and test himself, followed by the remaining roadmap after release. Technical fixes inside this scope may proceed without repeating scope approval. Publication, new runtime promises, and expanded feature/platform commitments require a separate decision.
 
-## R1 definition
+This documentation amendment records scope approval; it does not assert that the app has been fixed, that old tests certify current source, or that an artifact has been accepted.
 
-**A Gent 0.1.0 — first public macOS release.**
+## V1 definition
 
-| Boundary | R1 commitment |
+The target is **A Gent 1.0.0 for personal macOS testing**. Source currently reports 0.1.0; REL-002 must align package, About, API health, app-server client identity, and artifacts for the candidate.
+
+| Boundary | Approved requirement |
 | --- | --- |
-| Platform | macOS 13 (Ventura) or later; Apple silicon (arm64) only. Intel Macs are not supported in R1. |
-| Package | Signed Developer ID app, notarized and stapled, delivered as DMG and ZIP. |
-| Distribution | GitHub Releases, with a reviewed tag/commit, checksums, release notes, support path, and previous signed artifact for rollback. |
-| Updates | Manual download/install in R1. No auto-update channel is promised. |
-| Host model | Local A Gent host on the user's Mac; provider credentials and workspace data remain local except for the provider calls the user initiates. No Reason private cloud or billing integration. |
-| Paused platforms | Windows and Android are not advertised, built as release artifacts, or tested as R1 platforms. Their tasks remain paused and tracked. |
-| Release gate | Every pre-publication R1 task is Done, including QA-012; REL-012 publishes only the concrete approved artifact set. |
+| Platform | macOS only. The existing packaging baseline is macOS 13+ arm64. Danial's actual chip/OS is unconfirmed; confirm compatibility before accepting his package. Intel/universal support is not implied. |
+| Delivery | Installable A Gent.app and convenient DMG/ZIP from identified source. Public publication and automatic updates are deferred. |
+| Runtime | Codex is the only required/advertised runtime; external CLI sign-in is sufficient. OpenCode is paused. |
+| Execution | Multiple persisted chats/agents, initially one active run per host. Enforce the limit in the API and UI. |
+| Chat | Select an available model, stream text, Stop, continue, and retain conversations across restart. |
+| Projects | Native Mac folder selection; read-only Chat and Codex Work under the selected sandbox; correct runtime-requested approvals and native question answers. |
+| Recovery | Draft retention, failed-send recovery, truthful Stop/termination, reconnect/resynchronization, runtime failure, crash/shutdown recovery, and expired pending interactions. |
+| Data | Visible actual data location, one-generation backup with documented limits, migration, sanitized export/import, and private administrator/device credentials. |
+| Reasoning | Provider-default reasoning for v1. Preserve metadata/saved values for later work; custom controls and stale explicit effort must not affect v1 dispatch. |
+| Gate | Fresh V1-06 through V1-08 evidence for the actual candidate and no unresolved core blocker. All 237 public-roadmap tasks are not prerequisites. |
 
-## Recorded decisions
+A permitted workspace write does not necessarily require an approval prompt. Acceptance must separately demonstrate an actual runtime permission request, refusal, approval, and cleanup.
 
-| ID | Decision | Consequences and boundaries | Owner | Recheck trigger |
-| --- | --- | --- | --- | --- |
-| **D-01 — release scope** | First public release is macOS 13+ arm64, A Gent 0.1.0, signed/notarized DMG/ZIP via GitHub Releases; manual updates; Windows/Android paused. | Intel builds, auto-update, Windows, Android, and hosted A Gent accounts are out of R1. A universal/Intel build requires a new scope and package plan. | Product + Release | Electron/macOS support change; demand for Intel/universal; distribution change. |
-| **D-02 — provider promise** | **Amended 2026-11-05:** R1 advertises **Codex and OpenCode only** as agent runtimes. OpenAI-compatible/Cloud endpoints, Antigravity/Gemini, and Ollama are **deferred to the distant future**; they are not R1 launch providers. Codex/OpenCode provide tools, approvals, sessions, and runtime MCP use. | A provider may not be advertised as "connected" or "supported" until its setup, actual inference, failure, Stop, restart, edit, and removal journeys have evidence. Resuming a deferred provider requires a new/amended benchmark and an explicit R1/R2 scope decision; do not present it in R1 onboarding or support material. | Product + Integrations | New adapter; provider API/auth change; decision to resume a deferred provider; evidence that HTTP tool execution is required. |
-| **D-03 — MCP execution ownership** | R1 uses the supported Codex/OpenCode runtime as the owner of MCP execution and auth. A Gent owns connection records, scope, inventory, enable/disable, and UI. Do not create a second uncontrolled MCP process/config/auth path for the same connection. External configuration is discovered read-only by default; adoption or writes require an explicit user action with atomic rollback. | Provider-independent MCP execution for HTTP models is R2 (FUT-001). The app inventory is not a complete connection manager until the APP/MCP lifecycle passes. | Integrations + Host | Runtime MCP implementation change; new transport/auth flow; decision to support MCP for HTTP models. |
-| **D-04 — secrets and authority** | Provider and STT credentials use macOS Keychain (Electron `safeStorage`) by default, with an explicit session-only mode. The host administrator token manages devices and host-level credentials; per-device tokens can use granted chats/apps/tools but cannot manage devices or reveal secrets. Secrets never enter renderer state, exports, logs, packages, or crash reports. | Keychain locked/unavailable must produce an actionable recovery path; session-only users re-authenticate after restart. Device revocation must close existing access. | Host + Product | Credential storage change; remote-device rights change; a new secret-bearing integration. |
-| **D-05 — launch apps** | R1 supports custom MCP server setup (local stdio and supported remote HTTP/OAuth) plus a verified catalog only for connectors that pass the MCP acceptance journey. No connector name/publisher is advertised before real auth, scope, tool-use, restart, disable, and removal evidence. Initial verification candidates are GitHub, Slack, and Google Drive; they are candidates, not promises. | The release may ship with custom setup and a small or empty verified catalog. Marketing, onboarding, and the support matrix must match the verified list. Unverified connectors remain "custom/unsupported" and cannot be counted as launch apps. | Product + Integrations | Connector verification result; publisher/scope change; a decision to promise a named launch catalog. |
-| **D-06 — compatibility and distribution** | Build/tooling floor is Node >=22.12.0; release packaging uses Node 24.x (Electron 45.2.2 embeds Node 24.22.2). Electron is pinned 45.2.2, TypeScript 7.0.2, lockfile v3, and `npm ci`-style reproducibility. Tested runtimes are Codex CLI 0.166.0 and OpenCode 2.2.5. A Gent probes versions/capabilities at startup and disables an unsupported runtime with an actionable message; it never silently substitutes stale fields. | Node 26 is a development probe, not a release guarantee. Codex/OpenCode upgrades require a new baseline and affected-adapter checks. No auto-update of external runtimes by A Gent. macOS 13+ is mandatory because Electron 45 does not support macOS 12. | Release + Integrations | Node/Electron/Codex/OpenCode change; schema drift; macOS support change; signing/hosting change. |
-| **D-07 — behavior and feature scope** | R1 includes the text workspace (agents/groups, chats/search, drafts, one-time schedules, text attachments, import/export), device pairing, read-only Files/Terminal, Codex/OpenCode work modes and approvals, model-specific reasoning controls, Agent skills, ElevenLabs STT, and accessibility. R2 retains multiple connection profiles, provider-independent MCP for HTTP models, binary attachments, recurring schedules, branching, richer files, usage, teams, native/browser control, and signed auto-updates. | A feature may move between R1/R2 only with a dated decision and matching tests/dependencies. The UI and docs must not present R2/paused/optional work as shipped. | Product | Scope change; user requirement change; release pressure that proposes deferral. |
-| **D-08 — Speech-to-Text** | ElevenLabs is the initial and only R1 STT provider. The R1 flow is deliberate microphone capture → editable transcript → explicit Send through the selected Agent. Spoken replies, voice calls, and always-listening behavior are out of scope. Transport (realtime vs batch), model, languages, token/proxy flow, retention, and cost are selected by BEN-018/BEN-019. The permanent key stays out of the renderer; use a host proxy or host-minted short-lived token. | STT is independent of the Agent's LLM provider but must reuse the selected Agent, model, valid effort, skills, and tool policy. Audio/transcript retention must be disclosed; cancellation/crash cleanup is required. | Product + Integrations | ElevenLabs API/model change; transport decision; privacy/retention change. |
-| **D-09 — reasoning controls** | Show only the selected model's verified reasoning options and default. Preserve Codex `defaultReasoningEffort` and `supportedReasoningEfforts`; use OpenCode model variants/capabilities where available. Unknown metadata uses the provider default with no guessed parameter. Unsupported choices are rejected at the API boundary. Switching models migrates only when the saved value is valid; otherwise use the new default. No global Light/Balanced/Deep list applies to every model. | The picker layout is retained, but model descriptions and Media/Reasoning badges stay omitted. Persist the effective model/effort with the chat/agent scope. | Integrations + UI | Model metadata change; new provider mapping; EFF-012 evidence. |
-| **D-10 — Agent skills** | Support the Agent Skills format for create/add/import/manage, per-agent/project/global scope, enable/disable, use, edit/update, remove, and export. Native Codex/OpenCode discovery and execution are used where supported; HTTP models are instruction-only and must not claim native skill execution. Imported scripts never execute during addition. Managed copies are owned by A Gent; external files are tracked read-only unless explicitly adopted. | Updates/removal/rollback must preserve provenance. Skill instructions remain inside the same permission boundary as other Agent input. A skill that requires unavailable runtime support is visibly unsupported. | Product + Integrations | Agent Skills format change; runtime skill API change; import/security finding. |
-| **D-11 — benchmark gate** | Every delivery scope requires an accepted BEN record with at least two relevant comparators, dated/versioned evidence, adopted decisions, and mapped development/verification criteria before Ready or implementation. BEN-001 covers foundations only. No waiver is granted for bugs, new adapters, QA infrastructure, release process, R2, or resumed platforms. | If live access is unavailable, record the limitation and keep the real-world acceptance open; do not mark the benchmark Done on documentation alone. A scope change requires a new or amended record. | Product + QA | New scope; contradictory evidence; runtime/product change that invalidates the comparison. |
+## Decisions to record
 
-## R1 support summary
+D-01–D-11 below replace conflicting public R1 commitments. The archived contract preserves the earlier wording and acceptance history.
 
-The detailed test/evidence mapping is in the [support matrix](support-matrix.md). The release claim is:
+| Decision | Personal v1 amendment |
+| --- | --- |
+| D-01 — release scope | A personally installable/testable macOS v1.0; public GitHub Releases, Developer ID signing, notarization, and automatic updates are deferred. |
+| D-02 — provider promise | Codex only. Pause OpenCode, HTTP/Cloud/OpenAI-compatible, Ollama, and Gemini/Antigravity. Gate unsupported selections/routes without deleting saved data. Rethink the Antigravity label rather than implying a native runtime bridge. |
+| D-03 — MCP ownership | Full MCP/Connected Apps setup/auth/scope/enable/remove is paused. Inspect supported Codex session/config capabilities and constrain inherited MCP tools to the retained local-work policy without rewriting global CLI configuration. Demonstrate the actual restriction before accepting Work; hiding cards alone is insufficient. |
+| D-04 — secrets and authority | Codex account credentials stay owned by the CLI. Preserve administrator/device authority, desktop pairing, self-rotation/revocation, and host-only data operations. Existing HTTP secret storage uses macOS Keychain through the security CLI or session memory through AGENT_SECRET_STORAGE, not Electron safeStorage. Credential UI expansion and remote-device setup are deferred. |
+| D-05 — launch apps | No managed connector catalog or MCP setup promise. Native project tools and their sandbox/approval behavior are required. |
+| D-06 — compatibility/distribution | Node 24.x packaging, the lockfile, Electron 45.2.2, and recorded Codex 0.166.0 baseline. Startup compatibility checks are required work, not current behavior. Drift needs actionable unsupported states and affected checks. No automatic external CLI upgrade. |
+| D-07 — core behavior | Text chat, agent/chat model selection, persisted history, drafts, project work, recovery, backup/import/export, desktop pairing, and retained keyboard/accessibility flows. Scheduling expansion, uploads, richer file editing, regenerate/branches, multiple profiles, remote-host setup, and broader product completion are deferred. Expose only accepted behavior. |
+| D-08 — speech | ElevenLabs capture/transcription/quality/native-microphone work is paused. No microphone feature is promised in v1. |
+| D-09 — reasoning | Provider-default execution only; custom controls and their full gate are paused. Preserve existing implementation/history without inventing defaults or allowing stale selections to block basic sends. |
+| D-10 — skills | Dedicated create/import/manage/scope/use/update/remove/export is paused. Existing CLI-native discovery is not an A Gent skills manager; review inherited runtime capabilities during V1-03. |
+| D-11 — benchmark policy | Apply the personal-v1 exception below. Useful comparisons remain evidence; direct correctness, compatibility, regression, real-runtime, and package verification remain mandatory. |
 
-| Surface | R1 claim | Verification gate |
-| --- | --- | --- |
-| macOS package | macOS 13+ arm64, signed/notarized DMG/ZIP, clean install/upgrade, rollback | REL-003/004/006/007/012 |
-| Codex | Existing or managed sign-in, model/effort, chat, work mode, approvals, real tool use, Stop, restart/resume, edit/remove | CDX-006, PVD-017, QA-005/008 |
-| OpenCode | Auth/readiness, model selection, chat, tool policy, Stop, restart/resume, edit/remove | OPC-006, PVD-017, QA-005/008 |
-| OpenAI-compatible / Cloud | **Deferred to distant future — not R1.** | Resuming requires amended scope + BEN-005 + HTTP-006 |
-| Antigravity / Gemini | **Deferred to distant future — not R1.** | Resuming requires amended scope + BEN-007 + GEM-004 |
-| Ollama | **Deferred to distant future — not R1.** | Resuming requires amended scope + BEN-006 + OLL-004 |
-| MCP / Connect Apps | Add/authenticate/scope/use/disable/remove with user input and recovery | MCP-022, APP-012, HIL-006, QA-005/008 |
-| Reasoning | Only verified per-model options/defaults; unknown/unsupported/switching | EFF-012, QA-005/008 |
-| Skills | Create/import/manage/scope/use/update/disable/remove/export | SKL-020, QA-005/008 |
-| ElevenLabs STT | Key, capture, transcript, edit, explicit Send, quality/cost, signed-Mac microphone | STT-018, QA-005/008/012 |
-| Core workspace | Agents/groups, chats/search, drafts, one-time schedules, text attachments, import/export, recovery, Files/Terminal, keyboard/a11y | COR-009, UX-005, QA-005/006/007/009 |
-| Negative states | Auth denial/expiry, offline, timeout, cancellation, crash/corrupt state, revoked device, schema drift | FND-005/008/009/010/011, QA-003/004/009 |
+### D-11 benchmark policy
 
-## Exclusions and non-promises
+**Owner-approved exception, 2026-11-05:** CONTINUE work in the [v1 triage](roadmaps/v1-triage.md) can follow the ordered roadmap without new two-peer benchmarks first. This includes corrections, core UI/recovery, QA, and local packaging. Reuse and annotate applicable BEN-001/002/003/010 decisions; inspect authoritative runtime/Apple/Electron documentation as needed.
 
-- Reason's private cloud, billing, hosted accounts, and provider credentials are not part of A Gent.
-- Reason parity is not a release claim. The installed UI is a visual/workflow reference only.
-- A Gent does not promise OpenAI-compatible/Cloud, Antigravity/Gemini, or Ollama in R1; these are deferred to the distant future. It also does not promise a native Antigravity runtime, a named launch-app catalog before verification, spoken replies, voice calls, always-listening STT, Windows, Android, Intel Mac support, auto-update, or provider-independent MCP for HTTP models in R1.
-- A passing catalog fetch, fixture suite, screenshot, or old package does not close a provider, app, speech, skill, or release task.
+BEN-011–014 are CUT/RETHINK as compulsory prerequisites for this release, not marked research-complete. Deferred feature/platform scopes retain their benchmark requirements when explicitly resumed. The exception does not authorize a new adapter or product promise.
 
-## Acceptance
+Tests, failure reproductions, fresh real Codex checks, artifact inspection, and actual Mac operation are not waived. Old general board benchmark wording does not reintroduce the superseded public-release gate for CONTINUE work.
 
-- **DRI:** Danial (Product + Host).
-- **Reviewer:** Danial (owner), accepted 2026-11-05 for M0.
-- **Evidence:** [BEN-001](benchmarks/BEN-001-foundations.md), [runtime baseline](runtime-baselines.md), [support matrix](support-matrix.md), [validation](validation.md).
-- **Next gate:** M1 is complete; M2 shared provider/reasoning work is largely implemented; **M3 has BEN-008–BEN-010 accepted** plus scoped inventory, capability inspection, Codex OAuth start, runtime reload, and question/form answers (MCP-001–005/009/015, HIL-001/002). It still needs config adoption, enable/disable/removal, per-agent access, Connect Apps onboarding, and MCP-022/APP-012/HIL-006 acceptance. R1 still requires PVD-017, CDX/OPC/EFF completion, product BEN-011/012, skills BEN-023–BEN-025, and speech BEN-018–BEN-020. BEN-005/006/007 and HTTP/OLL/GEM are deferred.
+## Personal release acceptance
+
+Follow the [support matrix](support-matrix.md) and [Mac test guide](macos-v1-testing.md). Accept a candidate only when:
+
+- Source, runtime/OS/architecture, build commands, artifact/checksum, limitations, and outcomes are recorded in validation.
+- Setup, streaming, model selection, project access, approvals/questions, Stop, persistence, and failure/restart paths pass for that package.
+- Deterministic fixtures, real account calls, browser UI, and the packaged app have separate, scoped evidence.
+- Core blockers are corrected and deferred features are accurately unavailable.
+- Danial completes the packaged-app pilot and accepts the artifact.
+
+Historical Done states do not satisfy this gate automatically. CONTINUE tasks use the mapped v1 acceptance subset; unfinished portions of original public criteria remain open.
+
+## Deferred public release
+
+Signing/notarization, public download/distribution, publication permissions, public license/privacy approval, and REL-012 publication remain later work. A personally built app can be tested without Developer ID signing/notarization; a quarantined download may require a per-app Gatekeeper exception. The earlier security-overridden host's spctl result is not clean-Mac evidence. Global Gatekeeper disablement is not a testing prerequisite.
+
+## Approval and remaining environment detail
+
+- Scope, triage, path, and benchmark exception: approved by Danial in this chat on 2026-11-05.
+- This turn records documentation updates, not implementation or package acceptance.
+- Remaining input: Danial's Mac chip and macOS version. Keep arm64/macOS 13+ provisional for his installation until confirmed.

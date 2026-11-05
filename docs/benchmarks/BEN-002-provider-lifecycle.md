@@ -1,5 +1,7 @@
 # BEN-002 — Shared provider lifecycle comparison
 
+**Personal-v1 reuse amendment, approved 2026-11-05:** Retain applicable readiness, model identity, inference-vs-catalog, connection error, and recovery decisions for Codex. Actual Forget/clear/ID/fixture gaps remain Review; deferred API providers are not launch promises. Follow the [active roadmap](../project-roadmap.md#recommended-execution-order), [contract/D-11 exception](../release-contract.md#d-11-benchmark-policy), and [task triage](../roadmaps/v1-triage.md). The dated comparison below is preserved, not rerun; reuse does not establish fresh runtime/package acceptance.
+
 Status: **Done — accepted for M2 execution on 2026-11-05.**
 
 [Benchmark process](README.md) · [Scope task](../roadmaps/benchmarking.md) · [Provider board](../roadmaps/providers.md) · [Runtime baseline](../runtime-baselines.md) · [Authority model](../authority-model.md)

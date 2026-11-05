@@ -1,5 +1,7 @@
 # Durable workspace schema
 
+**Personal-v1 amendment (2026-11-05):** schema v2 is implemented. MCP/skill/speech records do not imply those features ship in v1. The [audit](validation.md#personal-v1-readiness-assessment) confirmed that actual export still includes runtime bindings; only import validation strips them. COR-009 owns sanitized export before acceptance.
+
 Status: **FND-003 recorded 2026-11-05.** Current workspace version: **2**. The schema is defined in `shared/types.ts` and validated/migrated in `server/store.ts`.
 
 [Release contract](release-contract.md) · [Runtime baseline](runtime-baselines.md) · [Validation](validation.md) · [FND-003 task](project-roadmap.md#foundation-tasks)
@@ -24,11 +26,11 @@ Status: **FND-003 recorded 2026-11-05.** Current workspace version: **2**. The s
 - **Version 1:** adds empty `apps` and `skills` arrays and sets `version: 2`. Existing agents, chats, messages, groups, agent groups, schedules, and settings are preserved.
 - **Any other version:** rejected with `This workspace export version is not supported.`
 
-On local load, `StateStore.readState()` restores same-machine provider data that `validateImport()` intentionally strips from exports:
+On local load, `StateStore.readState()` restores same-machine provider data that validateImport intentionally strips when importing:
 
 - A saved `providerBinding` is validated and restored.
 - A legacy `providerThreadId` is promoted to a `providerBinding` using the conversation's agent provider.
-- Imported/exported chats never carry another user's `providerBinding` or `providerThreadId`.
+- Imported chats discard providerBinding/providerThreadId. Current /api/export returns stored fields; removal from portable exports is a personal-v1 requirement, not current behavior.
 
 ## Runtime session reuse (FND-007)
 
@@ -63,7 +65,7 @@ Saving publishes a temporary file with mode `0600`, copies the previous primary 
 `tests/server/schema-migration.test.ts` covers:
 
 1. Version 1 load, migration, provider-thread promotion, backup creation, corrupt-primary recovery, and version 2 persistence.
-2. Version 2 round-trip of provider bindings, scoped apps/skills, chat effort, and speech settings; export strips provider binding/thread IDs.
+2. Version 2 round-trip of provider bindings, scoped apps/skills, chat effort, and speech settings; validateImport strips provider binding/thread IDs; the HTTP export path still needs correction.
 3. Rejection of unsupported versions, unknown scopes, invalid ownership, invalid speech credentials, and duplicate resource IDs.
 4. Import merge adding scoped resources without replacing existing records.
 5. Provider binding reuse/rebuild rules in `tests/server/session-binding.test.ts`, plus an end-to-end reuse/model-change test in `tests/server/backend.test.ts`.

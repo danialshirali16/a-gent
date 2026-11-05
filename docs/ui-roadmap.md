@@ -1,20 +1,12 @@
-# A Gent → Reason-style UI Roadmap
+# A Gent UI roadmap
 
-Status: active
-Branch: `main`
-Active scope: macOS only
+Updated: 2026-11-05. **Active direction: personal macOS v1.0 with Codex.** The 18-component pass remains historical implementation evidence; current package acceptance is open.
 
-Current focus: **complete provider and MCP/Connect Apps workflows after the completed 18/18 component pass**. The [historical integration review](integration-review.md) records the starting gaps; current status belongs to [the completion roadmap](project-roadmap.md), [workstream boards](roadmaps/README.md), and [validation](validation.md).
+Follow the [ordered V1-01–V1-08 path](project-roadmap.md#recommended-execution-order), [contract](release-contract.md), and [task triage](roadmaps/v1-triage.md). Core provider setup, model/default accuracy, drafts, streaming/Stop/recovery, native project selection, and approval/question accessibility are the retained UI work. Full connectors, custom reasoning, skills, speech, scheduling/uploads expansion, and Windows/Android are paused.
 
-Required next UI scopes also include [model-specific Thinking options](roadmaps/reasoning-effort.md), [Agent skill management](roadmaps/skills.md), and [ElevenLabs Speech-to-Text](roadmaps/speech-to-text.md). Their acceptance is separate from the completed component pass. Every UI/product scope must first complete its [benchmark comparison and design decisions](benchmarks/README.md); the boards carry explicit BEN dependencies before development can start.
+Scope gating is required implementation, not already completed: source still exposes deferred providers/custom reasoning. The approved [benchmark exception](release-contract.md#d-11-benchmark-policy) applies to retained UI corrections; fresh tests and actual Mac evidence remain required.
 
-The [modelOptions stress test](model-options-stress-test.md) still has seven open findings, owned by PVD-008–PVD-011 and their regression tasks. The initial component milestone remains complete; production corrections have not been applied in this planning pass.
-
-The Search field was corrected on 2026-11-05; see [its review](search-component.md). The Avatar family uses pinned `bot-avatars@0.2.2` with saved shapes, full motion, and the inline picker; see [component notes](component-notes.md#avatar-and-agent-mark).
-
-Latest refinement (2026-11-05): the composer model picker now follows the supplied provider-rail reference, shows connected providers only, and omits model descriptions and media/reasoning badges. Search, model selection, Thinking controls, keyboard navigation, and narrow layouts were checked. See [the model picker review](model-picker-review.md) and [focused validation](validation.md#model-picker-refinement). This refinement is in the source and browser preview; the desktop installer has not been rebuilt for it.
-
-Subsequent adversarial testing found blank labels, invalid-ID selection, ambiguous names, Unicode search, retained scroll, count-copy issues, and an unbounded string contract. These findings qualify the earlier normal-fixture review. Reproduce them at `/?component=composer&stress=model-options&data=worst`; review the [proposed fixes](model-options-stress-test.md#what-broke) before the next release check.
+The [picker assessment](model-options-stress-test.md#current-status-after-provider-changes) distinguishes implemented ingestion/disambiguation/Unicode fixes from raw-fixture failures and remaining scroll/count/bounds work. The old blanket “seven open” wording is superseded.
 
 ## Component-by-component pass
 
@@ -56,19 +48,11 @@ The older phase checkboxes below describe the broader shell implementation. They
 
 ### Continuation point
 
-**The 18-component pass is complete.** No component is Next. All shared families are implemented under `src/ui/` (or their feature folder), integrated into existing screens, and linked from the development preview navigation. The preview IDs are `button`, `input`, `field`, `select`, `checkbox`, `tabs`, `tooltip`, `menu`, `popover`, `dialog`, `badge`, `avatar`, `alert`, `card`, `search`, `composer`, `message`, and `sidebar`.
+The 18-component pass has no next component. Preserve implemented controls/design; follow V1-02 baseline, V1-03 scope gating, V1-04 picker/core corrections, V1-05 daily recovery, V1-06 fresh UI/live acceptance, and V1-07/08 actual Mac packaging/pilot.
 
-The final pass ran typecheck, 17 backend tests, production build, 18 Playwright smoke tests, 10 visual baselines, 7 axe scans, and 7 E2E workflows; see [the validation record](validation.md#component-by-component-pass) and the [bot avatar checks](validation.md#bot-avatar-replacement). It also reviewed and corrected the Search field: reset legacy input styling that caused an inner box, single focus treatment, visible Connections field, ArrowDown/Up handoff into results, larger clear target, named search landmark, and correct results spacing. Details are in [search-component.md](search-component.md).
+The earlier 17 backend, 18 smoke, 10 visual, 7 axe, and 7 E2E results certify their recorded stage only. Source bootstrap failed in the latest audit because dependencies were unavailable; current UI suites and actual Mac verification remain open. Existing Search/avatar reviews remain useful implementation references.
 
-Remaining UI work includes provider setup, app authentication/access/management, URL-flow and live HIL recovery, and catalog corrections, alongside manual accessibility and release QA. Supported question/form cards and the capability/reload/sign-in Connect Apps surfaces now exist in source. Large-workspace/SSE checks, packaged notices, distribution, and resumed platform work are tracked in the master/task boards rather than implied complete by the component pass.
-
-Current continuation: M3 has scoped inventory, capability inspection, Codex OAuth start, runtime reload, and question/form cards implemented; finish config adoption, enable/disable/removal, per-agent access, and Connect Apps onboarding (APP-001–APP-012), then HIL-004–006 and live acceptance. UI owners use PVD-005/006/009/010/012 for model/provider setup. UX-001–UX-007 cover final integration/accessibility. Update task status in those boards, keeping this document for component process and UI evidence.
-
-The catalog regression toggle remains Demo data, Worst case, Empty, One choice, 1,000 models, and Invalid IDs, with URL persistence. [The report](model-options-stress-test.md) contains field contracts, reproductions, and verification limits.
-
-Before the next packaged release, include the latest model picker refinement in the macOS rebuild and rerun the release suites. The earlier full-suite and installer results above predate that refinement.
-
-Run `npm run dev` for the previews. Open `/?component=button`, `/?component=input`, or any of the 18 IDs above; the preview navigation lists every family.
+The stress harness still offers Demo/Worst/Empty/One/1,000/Invalid-ID fixtures, but production ingestion now normalizes/caps catalogs. Recheck both raw component props and normalized provider data. Use a newly started dev host; historical port 4492 is not a persistent service.
 
 ## Current implementation status
 
@@ -121,9 +105,11 @@ Implemented:
 - Playwright smoke, visual, accessibility, and E2E coverage.
 - Device pairing tokens with rotation/revocation in Settings → Devices.
 
-Still pending: model catalog corrections, retry message action, manual screen-reader/reduced-motion audit, a large-workspace performance check, Windows/Android runtime checks (paused), packaged notice verification, and a release tag. Notice generation is already part of the build.
+Personal-v1 pending work is defined in the active path: remaining picker/retained-screen recovery, fresh accessibility/source suites, packaged notices, and actual Mac operation. Retry/regenerate, fleet-scale performance, Windows/Android, and public release tagging/publication are deferred. Notice generation already exists.
 
 ## 1. Goal
+
+The phases and original v1/v1.1 labels below are the historical UI plan. The personal-v1 contract and triage govern current scope and acceptance.
 
 Transform A Gent’s interface into a Reason-style workspace while keeping the app local-first and keeping A Gent’s name, logo, and brand.
 
@@ -271,7 +257,7 @@ interface WorkspaceState {
 
 Implemented migration:
 
-- Workspace version stays `1`; `agentGroups` is optional on import and defaults to `[]`.
+- Current workspace version is `2` after FND-003; `agentGroups` remains optional on legacy import and defaults to `[]`.
 - Unknown `agentGroupId` references become `null`.
 - `validateImport` accepts old workspaces and exports `agentGroups`.
 - Agent-group API endpoints cover create, rename, delete, and assignment.
@@ -461,7 +447,7 @@ src/
 - [x] Automated axe accessibility audit.
 - [ ] Manual screen-reader and reduced-motion audit.
 - [ ] Large-workspace performance check.
-- [x] macOS packaged-app smoke checks.
+- [x] Historical macOS packaged-app smoke checks; current candidate acceptance remains open.
 - [ ] Windows and Android runtime smoke tests (paused).
 - [x] Update README and validation docs.
 - [x] Update third-party notices. `npm run build` writes `dist/THIRD_PARTY_NOTICES.txt` from the installed production dependencies.

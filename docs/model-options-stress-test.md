@@ -1,10 +1,28 @@
 # modelOptions stress test
 
-Date: 2026-11-05. Status: audit complete; seven findings open. The dev-only harness is implemented; this audit changes no production model-selection code or styles.
+Original audit: 2026-11-05, before later provider changes. Its seven historical findings are preserved below. The current source assessment follows; this documentation update makes no production fixes.
 
 Scope: `connectedModelGroups` in `src/composer/modelOptions.ts`, rendered through the existing Composer and ModelPicker. Synthetic `ProviderInfo[]` fixtures enter through the normal props boundary. The harness is under `src/dev/`, loaded through the development-only path in `src/main.tsx`.
 
-The invoked [break-ui skill](/Users/danial/.agents/skills/break-ui/SKILL.md) says “Report before fixing.” The corrections below are proposals; they have not been applied.
+The original audit used a machine-local break-ui workflow with “Report before fixing.” That instruction governed the original audit. Follow the owner-approved personal-v1 roadmap for current correction work; the old skill path is not a portable repository dependency.
+
+## Current status after provider changes
+
+Updated: 2026-11-05. Assessment source: fc634674f45bb578c68f8963758eef786aec82ac. [Active v1 path](project-roadmap.md#recommended-execution-order) · [Current validation](validation.md#personal-v1-readiness-assessment).
+
+| Finding | Current source status | Remaining acceptance |
+| --- | --- | --- |
+| 1 — empty/duplicate IDs | normalizeModels rejects/deduplicates at production ingestion; controlled library check confirms it. Raw fixture props bypass normalization and still create duplicate/default choices. | Recheck both raw and normalized boundaries through the picker. |
+| 2 — blank names | Production normalization falls back to valid ID; raw fixtures still produce unnamed choices. | Fresh browser/axe evidence and an explicit component input contract. |
+| 3 — identical names | Picker adds an ID suffix for collisions, including the default-name collision. | Fresh browser/accessibility verification. |
+| 4 — Unicode search | NFKC normalization implemented; existing composed/decomposed search test passed via supplemental runner. | Retained UI regression acceptance. |
+| 5 — scroll | Query changes reset scroll; provider-only switches are absent from reset dependencies. | Complete provider-change behavior and verify keyboard scrolling. |
+| 6 — count copy | Live status still uses plural for one choice and raw unformatted counts. | Correct plural/formatting and verify announcements. |
+| 7 — limits | Shared 200-character ID/name bounds and production 200-model cap exist. Saved connection loading still slices model IDs. | Preserve/reject exact IDs consistently; fresh dispatch/persistence/UI checks. |
+
+Thinking is now model-specific in source, not a fixed low/medium/high list. Custom controls are paused for personal v1, which uses provider default. The contract table below describes original audit input, not current production guarantees.
+
+No fresh browser/full-suite/package pass was possible in the audit environment. Historical blank-label screenshots still demonstrate the raw-fixture failure; they do not prove production ingestion remains unchanged. PVD-006/010/011/015/016 are Review, while PVD-008/009 retain their narrower implementation evidence.
 
 ## Rendered data and contracts
 
@@ -28,6 +46,8 @@ The invoked [break-ui skill](/Users/danial/.agents/skills/break-ui/SKILL.md) say
 This surface renders no timestamps, money, member counts, remote avatars, or permission badges. Provider detail/base URL are not displayed here. Optional descriptions remain omitted as requested.
 
 ## What broke
+
+Historical reproduction table from the original audit. Use the current-status table above for closure/correction decisions.
 
 | # | Severity | Field | Worst-case value | What happens | Fix |
 | --- | --- | --- | --- | --- | --- |
@@ -82,8 +102,8 @@ Evidence: [worst case](screenshots/model-options/final-worst-case.jpg), [invalid
 
 Implementation ownership is now in [the provider board](roadmaps/providers.md): findings 1–2 → PVD-008; finding 3 → PVD-009; findings 4–6 → PVD-010; finding 7 → PVD-011. PVD-016 and QA-003 cover regression evidence. See [the master roadmap](project-roadmap.md) for sequencing and release gates.
 
-Run `npm run dev`, then open `/?component=composer&stress=model-options&data=worst&theme=dark`. The isolated QA host is [the live harness](http://127.0.0.1:4492/?component=composer&stress=model-options&data=worst&theme=dark).
+Run `npm run dev`, then open `/?component=composer&stress=model-options&data=worst&theme=dark` on that newly started host. Port 4492 in historical evidence was a machine-local review session, not a persistent QA service.
 
 Bottom toggle: **Demo data / Worst case / Empty / One choice / 1,000 models / Invalid IDs**. Environment controls: Dark, RTL, 200% root text. The ordinary Composer preview links here. Fixtures: `src/dev/modelOptions.fixtures.ts`; harness: `src/dev/ModelOptionsPreview.tsx`.
 
-Say `fix all` or `fix 1, 3` and I'll apply them.
+Continue with PVD-008–011 regression work in V1-04 and retained UI acceptance in V1-06. Scope approval is recorded in the release contract.

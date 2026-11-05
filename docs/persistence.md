@@ -1,5 +1,7 @@
 # Atomic persistence and recovery
 
+**Personal-v1 audit limit (2026-11-05):** the storage primitives below have fixture evidence; application-level recovery remains open because RunManager reserves a run before its initial awaited save and does not clean up if that save fails. Export also still returns stored runtime bindings. Track retained fixes in COR-006/009 and [V1-04](project-roadmap.md#recommended-execution-order).
+
 Status: **FND-008 recorded 2026-11-05.** This defines the write, backup, import, lock, and restart contracts for the workspace file.
 
 [Release contract](release-contract.md) · [Durable schema](data-schema.md) · [Run lifecycle](run-lifecycle.md) · [Validation](validation.md) · [FND-008 task](project-roadmap.md#foundation-tasks)
@@ -30,7 +32,7 @@ If a write fails, the primary is unchanged. The next `save()` starts a fresh que
 
 ## Import transaction
 
-`StateStore.merge()` validates the import, clones the current state, applies only non-duplicate records, and writes the candidate before publishing it in memory. If the write fails, the previous in-memory state is restored. The API returns an error instead of a partially merged workspace.
+`StateStore.merge()` validates the import, clones current state, applies non-duplicate records, assigns the candidate in memory, then awaits its queued write. On failure it restores the previous in-memory state; this is not isolated from concurrent in-process readers/mutations. The API returns an error instead of a partially merged workspace.
 
 Imports still discard provider bindings/thread IDs via `validateImport()` and never import secrets. See [the durable schema](data-schema.md).
 
@@ -65,7 +67,7 @@ Existing tests also cover:
 - Lock rejection and stale-lock recovery (`backend.test.ts`).
 - Corrupt-primary recovery from backup (`backend.test.ts`, `schema-migration.test.ts`).
 - Version 1 → 2 migration and rollback generation (`schema-migration.test.ts`).
-- Import/export stripping of provider bindings and thread IDs (`schema-migration.test.ts`, `backend.test.ts`).
+- Import validation strips provider bindings/thread IDs (schema-migration/backend tests). Actual /api/export still returns them and needs COR-009 correction; those tests do not establish sanitized export.
 
 Commands run 2026-11-05:
 

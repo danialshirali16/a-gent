@@ -1,5 +1,7 @@
 # BEN-003 — Codex integration comparison
 
+**Personal-v1 reuse amendment, approved 2026-11-05:** Retain Codex discovery, external login, thread/turn routing, native approval, and confirmed Stop decisions. Managed login and custom effort are paused; one active run is the initial host policy. Follow the [active roadmap](../project-roadmap.md#recommended-execution-order), [contract/D-11 exception](../release-contract.md#d-11-benchmark-policy), and [task triage](../roadmaps/v1-triage.md). The dated comparison below is preserved, not rerun; reuse does not establish fresh runtime/package acceptance.
+
 Status: **Done — accepted for M2 execution on 2026-11-05.**
 
 [Benchmark process](README.md) · [Scope task](../roadmaps/benchmarking.md) · [Codex board](../roadmaps/providers.md#codex) · [Runtime baseline](../runtime-baselines.md)

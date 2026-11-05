@@ -1,5 +1,7 @@
 # BEN-010 — Questions, approvals, and elicitation
 
+**Personal-v1 reuse amendment, approved 2026-11-05:** Retain native approval/question correlation, genuine answers, cancellation/expiry, late/double-response, and accessibility decisions. MCP forms/URL connector completion are paused. Follow the [active roadmap](../project-roadmap.md#recommended-execution-order), [contract/D-11 exception](../release-contract.md#d-11-benchmark-policy), and [task triage](../roadmaps/v1-triage.md). The dated comparison below is preserved, not rerun; reuse does not establish fresh runtime/package acceptance.
+
 Status: **Done — accepted for M3 execution on 2026-11-05.**
 
 [Benchmark process](README.md) · [Scope task](../roadmaps/benchmarking.md) · [Connect Apps board](../roadmaps/connect-apps.md) · [Interactions](../interactions.md)
