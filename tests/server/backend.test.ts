@@ -639,6 +639,8 @@ test('authenticated API persists CRUD, streams real adapter lifecycle, approves,
     assert.equal((await api(`/interactions/${form.id}`, { action: 'accept', response: { calendar: 'work', days: 14 } })).status, 200);
     const formAnswered = await waitFor(async () => (await api('/bootstrap')).body, data => data.interactions?.some((item: any) => item.id === form.id && item.status === 'accepted') && data.runs.some((run: any) => run.id === formRun.id && run.status === 'completed'));
     assert.match(formAnswered.state.conversations.find((item: any) => item.id === conversation.id).messages.at(-1).content, /"calendar":"work"/);
+    assert.deepEqual(formAnswered.interactions.find((item: any) => item.id === form.id).response, { redacted: true }, 'accepted form values are not persisted in the interaction ledger');
+    assert.ok(!JSON.stringify(formAnswered.interactions).includes('"calendar":"work"'), 'form content never appears in the ledger');
 
     const slowRun = (await api(`/conversations/${conversation.id}/messages`, { content: '[slow]', mode: 'chat' })).body;
     assert.equal((await api(`/conversations/${conversation.id}/messages`, { content: 'Duplicate' })).status, 409);
