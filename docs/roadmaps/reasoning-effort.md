@@ -2,7 +2,7 @@
 
 Updated: 2026-11-05. [Active v1 path](../project-roadmap.md#recommended-execution-order) · [Every task's v1 decision](v1-triage.md) · [Current state](../current-state-review.md)
 
-**Personal macOS v1 amendment:** EFF-001–012 are PAUSE. Preserve existing metadata/controls/history while v1 uses provider-default dispatch. Codex enum discovery/mapping exists; migration, cross-surface consistency, and races remain partial.
+**Personal macOS v1 amendment:** EFF-001–012 are PAUSE. Preserve existing metadata/controls/history while v1 uses provider-default dispatch. Current source removes the Thinking controls, rejects new non-empty effort mutations, and sends no explicit effort; real Codex chat/Stop probes used the provider default. Codex enum discovery/mapping exists; migration, cross-surface consistency, and races remain partial for a later reasoning release.
 
 The tables retain original public R1/R2 targets, full acceptance criteria, and original dependencies for later work. Current implementation statuses are maintained here; v1 scope/effort is maintained only in the triage. A v1 subset can pass its support-matrix row without declaring the whole original task complete. Old M2/M3 continuation and broad feature gates do not govern the active path.
 

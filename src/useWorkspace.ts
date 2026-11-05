@@ -14,7 +14,7 @@ export function useWorkspace(connection: Connection) {
 
   useEffect(() => {
     if (!connection.url || !connection.token) return;
-    const controller = new AbortController();
+    let controller = new AbortController();
     let cancelled = false;
     let retry: ReturnType<typeof setTimeout>;
     setLoading(true); setError('');
@@ -32,14 +32,32 @@ export function useWorkspace(connection: Connection) {
       });
     };
     const listen = async () => {
-      try { await streamEvents(connection, controller.signal, apply); }
+      const signal = controller.signal;
+      try { await streamEvents(connection, signal, apply); }
       catch { if (cancelled) return; }
-      if (!cancelled) { setOnline(false); retry = setTimeout(async () => { try { await refresh(); } catch { /* retry stream below */ } void listen(); }, 2500); }
+      if (!cancelled) {
+        setOnline(false);
+        retry = setTimeout(async () => {
+          if (cancelled) return;
+          // A consumed/aborted controller cannot be reused for the next stream.
+          controller = new AbortController();
+          try { await refresh(); } catch { /* retry stream below */ }
+          if (!cancelled) void listen();
+        }, 2500);
+      }
     };
+    const offline = () => { if (!cancelled) setOnline(false); };
+    const online = () => { if (!cancelled) controller.abort(); };
+    window.addEventListener('offline', offline);
+    window.addEventListener('online', online);
     void request<Bootstrap>(connection, '/api/bootstrap').then(next => {
       if (cancelled) return; setData(next); setOnline(true); void listen();
     }).catch(reason => { if (!cancelled) { setError(reason.message || 'Could not connect to your A Gent host.'); setOnline(false); } }).finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; controller.abort(); clearTimeout(retry); };
+    return () => {
+      cancelled = true; controller.abort(); clearTimeout(retry);
+      window.removeEventListener('offline', offline);
+      window.removeEventListener('online', online);
+    };
   }, [connection.url, connection.token, refresh]);
 
   // A live event can advance the run before its initiating HTTP response arrives.

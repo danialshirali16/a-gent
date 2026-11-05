@@ -18,7 +18,6 @@ function ModelOptionsExample({ dataSet }: { dataSet: ModelOptionsDataSet }) {
   const fixture = modelOptionsFixtures[dataSet];
   const [providerId, setProviderId] = useState(fixture.providerId);
   const [modelId, setModelId] = useState(fixture.modelId);
-  const [effort, setEffort] = useState('medium');
   const [text, setText] = useState('');
   const [modelPicker, setModelPicker] = useState(false);
   const [disconnected, setDisconnected] = useState('');
@@ -46,15 +45,15 @@ function ModelOptionsExample({ dataSet }: { dataSet: ModelOptionsDataSet }) {
         text={text} setText={setText} attachments={[]}
         onAddFiles={() => {}} onRemoveAttachment={() => {}}
         onSend={() => setNotice('Messages stay in this preview.')} onStop={() => {}}
-        busy={false} canStop={false} sending={false}
-        providerId={providerId} modelId={modelId} effort={effort} mode="chat" workspacePath=""
+        busy={false} stopping={false} canStop={false} sending={false}
+        providerId={providerId} modelId={modelId} mode="chat" workspacePath=""
         providers={providers} currentProvider={currentProvider}
         currentModel={currentProvider?.models.find(model => model.id === modelId)}
         modelPicker={modelPicker} setModelPicker={setModelPicker}
         pickerRef={pickerRef} textareaRef={textareaRef} attachInputRef={attachInputRef}
         onChooseModel={(nextProvider, nextModel) => { setProviderId(nextProvider); setModelId(nextModel); }}
         onChooseFolder={() => {}} onOpenConnections={() => setNotice('Use the main app to manage connections.')}
-        onSetMode={() => {}} onSetEffort={setEffort} onComposerKey={() => {}}
+        onSetMode={() => {}} onComposerKey={() => {}}
       />
     </div>
   </>;

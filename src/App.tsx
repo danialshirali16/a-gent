@@ -17,9 +17,11 @@ import { TopBar } from './app/TopBar';
 import { SidePanel, type SidePanelTab } from './app/SidePanel';
 import { MessageList } from './chat/MessageList';
 import { Composer } from './composer/Composer';
+import { clearDraft, draftScopeForAgent, draftScopeForConversation, loadDraft, saveDraft } from './drafts';
 
 function saved(key: string, fallback = '') { try { return localStorage.getItem(key) || fallback; } catch { return fallback; } }
 function remember(key: string, value: string) { try { localStorage.setItem(key, value); } catch { /* storage is optional */ } }
+function draftStorage(): Storage | undefined { try { return window.localStorage; } catch { return undefined; } }
 
 export default function App() {
   const [connection, setConnection] = useState<Connection>(initialConnection);
@@ -33,41 +35,50 @@ export default function App() {
   const [dialog, setDialog] = useState<DialogKind | null>(null);
   const [text, setText] = useState(''); const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [providerId, setProviderId] = useState('codex'); const [modelId, setModelId] = useState('');
-  const [effort, setEffort] = useState(''); const [mode, setMode] = useState<'chat' | 'work'>('chat');
+  const [mode, setMode] = useState<'chat' | 'work'>('chat');
   const [workspacePath, setWorkspacePath] = useState(''); const [sending, setSending] = useState(false);
   const [modelPicker, setModelPicker] = useState(false); const [copied, setCopied] = useState('');
+  const draftHydrated = useRef(false);
   const composer = useRef<HTMLTextAreaElement>(null); const attachInput = useRef<HTMLInputElement>(null); const scroll = useRef<HTMLDivElement>(null); const pickerRef = useRef<HTMLDivElement>(null);
   const state = data?.state;
   const agents = state?.agents.filter(agent => !agent.archived) || [];
   const conversations = useMemo(() => [...(state?.conversations || [])].filter(chat => !chat.archived).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)), [state?.conversations]);
   const conversation = state?.conversations.find(chat => chat.id === activeConversationId && !chat.archived);
   const agent = agents.find(item => item.id === (conversation?.agentId || activeAgentId)) || agents[0];
-  const currentProvider = data?.providers.find(provider => provider.id === providerId);
+  const codexProviders = (data?.providers || []).filter(provider => provider.id === 'codex');
+  const currentProvider = codexProviders.find(provider => provider.id === providerId);
   const currentModel = currentProvider?.models.find(model => model.id === modelId);
-  const currentRun = [...(data?.runs || [])].reverse().find(run => run.conversationId === conversation?.id && ['running', 'waiting'].includes(run.status));
+  const activeRunAnywhere = [...(data?.runs || [])].reverse().find(run => ['running', 'waiting', 'stopping'].includes(run.status));
+  const otherActiveRun = activeRunAnywhere && activeRunAnywhere.conversationId !== conversation?.id ? activeRunAnywhere : undefined;
+  const currentRun = [...(data?.runs || [])].reverse().find(run => run.conversationId === conversation?.id && ['running', 'waiting', 'stopping'].includes(run.status));
   const lastRun = [...(data?.runs || [])].reverse().find(run => run.conversationId === conversation?.id);
   const runError = lastRun?.status === 'failed' ? lastRun.error : undefined;
   const toolStreamView = state?.settings.toolStreamView ?? (state?.settings.showActivity === false ? 'hidden' : 'compact');
   const busy = !!currentRun || sending;
+  const draftScope = conversation ? draftScopeForConversation(conversation.id) : agent ? draftScopeForAgent(agent.id) : '';
+  const draftScopeRef = useRef(draftScope);
+  draftScopeRef.current = draftScope;
 
   useEffect(() => {
-    if (!agent) return; const selectedProvider = conversation?.providerId || agent.providerId || 'codex'; if (selectedProvider !== 'codex') setMode('chat'); setProviderId(selectedProvider); setModelId(conversation?.modelId !== undefined ? conversation.modelId : agent.modelId || ''); setEffort(conversation?.reasoningEffort ?? agent.reasoningEffort ?? ''); setWorkspacePath(conversation?.workspacePath || agent.workspacePath || '');
-  }, [agent?.id, agent?.providerId, agent?.modelId, agent?.reasoningEffort, agent?.workspacePath, conversation?.id, conversation?.providerId, conversation?.modelId, conversation?.reasoningEffort, conversation?.workspacePath]);
+    if (!agent) return;
+    const savedProvider = conversation?.providerId || agent.providerId || 'codex';
+    setProviderId('codex');
+    setModelId(savedProvider === 'codex' ? (conversation?.modelId !== undefined ? conversation.modelId : agent.modelId || '') : '');
+    setWorkspacePath(conversation?.workspacePath || agent.workspacePath || '');
+  }, [agent?.id, agent?.providerId, agent?.modelId, agent?.workspacePath, conversation?.id, conversation?.providerId, conversation?.modelId, conversation?.workspacePath]);
   useEffect(() => {
-    if (!currentModel) return;
-    const reasoning = currentModel.reasoning;
-    if (reasoning?.kind === 'enum') {
-      if (reasoning.options.some(option => option.value === effort)) return;
-      const next = reasoning.default || '';
-      setEffort(next);
-      if (conversation) void api(`/api/conversations/${conversation.id}`, 'PATCH', { reasoningEffort: next }).catch(() => {});
-      else if (agent) void api(`/api/agents/${agent.id}`, 'PATCH', { reasoningEffort: next }).catch(() => {});
-    } else if (effort) {
-      setEffort('');
-      if (conversation) void api(`/api/conversations/${conversation.id}`, 'PATCH', { reasoningEffort: '' }).catch(() => {});
-      else if (agent) void api(`/api/agents/${agent.id}`, 'PATCH', { reasoningEffort: '' }).catch(() => {});
-    }
-  }, [currentModel?.id, currentModel?.reasoning, effort, conversation?.id, agent?.id]);
+    if (!data || draftHydrated.current) return;
+    draftHydrated.current = true;
+    const saved = data.state.conversations.find(chat => chat.id === activeConversationId && !chat.archived);
+    const scope = saved ? draftScopeForConversation(saved.id) : agent ? draftScopeForAgent(agent.id) : '';
+    const draft = loadDraft(draftStorage(), connection.url, scope);
+    if (draft) { setText(draft.text); setAttachments(draft.attachments); }
+  }, [data, activeConversationId, agent?.id, connection.url]);
+  useEffect(() => {
+    if (!draftHydrated.current || !draftScope) return;
+    const timer = setTimeout(() => saveDraft(draftStorage(), connection.url, draftScope, text, attachments), 300);
+    return () => clearTimeout(timer);
+  }, [text, attachments, draftScope, connection.url]);
   useEffect(() => {
     const theme = state?.settings.theme || 'dark';
     const media = window.matchMedia('(prefers-color-scheme: dark)');
@@ -102,24 +113,53 @@ export default function App() {
 
   function closeMobileSidebar() { if (window.innerWidth < 860) setSidebarOpen(false); }
   function closeMobilePanel() { if (window.innerWidth < 1180) setSidePanelOpen(false); }
-  function selectChat(chat: Conversation) { setActiveConversationId(chat.id); setActiveAgentId(chat.agentId); remember('aGent.conversation', chat.id); remember('aGent.agent', chat.agentId); setText(''); setAttachments([]); closeMobileSidebar(); closeMobilePanel(); }
-  function selectAgent(next: Agent) { const last = conversations.find(chat => chat.agentId === next.id); setActiveAgentId(next.id); setActiveConversationId(last?.id || null); remember('aGent.agent', next.id); remember('aGent.conversation', last?.id || ''); setText(''); setAttachments([]); closeMobileSidebar(); closeMobilePanel(); }
-  function newChat(selectedAgent?: Agent) { if (selectedAgent) { setActiveAgentId(selectedAgent.id); remember('aGent.agent', selectedAgent.id); } setActiveConversationId(null); remember('aGent.conversation', ''); setText(''); setAttachments([]); closeMobileSidebar(); closeMobilePanel(); setTimeout(() => composer.current?.focus(), 30); }
+  function persistDraft(scope = draftScopeRef.current) { if (scope) saveDraft(draftStorage(), connection.url, scope, text, attachments); }
+  function restoreDraft(scope: string) { const draft = scope ? loadDraft(draftStorage(), connection.url, scope) : undefined; setText(draft?.text || ''); setAttachments(draft?.attachments || []); }
+  function selectChat(chat: Conversation) {
+    persistDraft();
+    setActiveConversationId(chat.id); setActiveAgentId(chat.agentId); remember('aGent.conversation', chat.id); remember('aGent.agent', chat.agentId);
+    restoreDraft(draftScopeForConversation(chat.id));
+    closeMobileSidebar(); closeMobilePanel();
+  }
+  function selectAgent(next: Agent) {
+    persistDraft();
+    const last = conversations.find(chat => chat.agentId === next.id);
+    setActiveAgentId(next.id); setActiveConversationId(last?.id || null); remember('aGent.agent', next.id); remember('aGent.conversation', last?.id || '');
+    restoreDraft(last ? draftScopeForConversation(last.id) : draftScopeForAgent(next.id));
+    closeMobileSidebar(); closeMobilePanel();
+  }
+  function newChat(selectedAgent?: Agent) {
+    persistDraft();
+    const nextAgent = selectedAgent || agent;
+    if (selectedAgent) { setActiveAgentId(selectedAgent.id); remember('aGent.agent', selectedAgent.id); }
+    setActiveConversationId(null); remember('aGent.conversation', '');
+    restoreDraft(nextAgent ? draftScopeForAgent(nextAgent.id) : '');
+    closeMobileSidebar(); closeMobilePanel(); setTimeout(() => composer.current?.focus(), 30);
+  }
   function openSidePanel(tab: SidePanelTab = 'session') { if (window.innerWidth < 860) setSidebarOpen(false); setSidePanelTab(tab); setSidePanelOpen(true); }
   async function chooseFolder() {
-    if (window.aGentDesktop) { const chosen = await window.aGentDesktop.selectDirectory(); if (chosen) setWorkspacePath(chosen); }
-    else { const chosen = window.prompt('Project folder on the A Gent host', workspacePath); if (chosen !== null) setWorkspacePath(chosen.trim()); }
+    if (!window.aGentDesktop) { setError('Choose a project folder in the A Gent desktop app. Browser host-path entry is not part of this release.'); return; }
+    try { const chosen = await window.aGentDesktop.selectDirectory(); if (chosen) setWorkspacePath(chosen); }
+    catch (reason) { setError((reason as Error).message); }
   }
   async function send() {
     if (!agent || (!text.trim() && !attachments.length) || busy) return;
+    if (otherActiveRun) {
+      const otherChat = state?.conversations.find(chat => chat.id === otherActiveRun.conversationId);
+      setError(`“${otherChat?.title || 'Another chat'}” is still running. A Gent runs one task at a time in this release; stop it before sending here.`);
+      return;
+    }
     setSending(true); setError('');
     try {
       let selected = conversation;
-      if (!selected) { selected = await api<Conversation>('/api/conversations', 'POST', { agentId: agent.id, workspacePath: workspacePath || undefined, providerId, modelId, reasoningEffort: effort }); setActiveConversationId(selected.id); remember('aGent.conversation', selected.id); }
+      if (!selected) { selected = await api<Conversation>('/api/conversations', 'POST', { agentId: agent.id, workspacePath: workspacePath || undefined, providerId: 'codex', modelId }); setActiveConversationId(selected.id); remember('aGent.conversation', selected.id); }
       else if ((selected.workspacePath || '') !== workspacePath) await api(`/api/conversations/${selected.id}`, 'PATCH', { workspacePath: workspacePath || undefined });
-      const run = await api<Run>(`/api/conversations/${selected.id}/messages`, 'POST', { content: text.trim() || 'Please read the attached files.', attachments, providerId, modelId, mode });
-      updateRun(run); setText(''); setAttachments([]); setTimeout(() => scroll.current?.scrollTo({ top: scroll.current.scrollHeight, behavior: 'smooth' }), 50);
-    } catch (reason) { setError((reason as Error).message); } finally { setSending(false); }
+      const run = await api<Run>(`/api/conversations/${selected.id}/messages`, 'POST', { content: text.trim() || 'Please read the attached files.', attachments, providerId: 'codex', modelId, mode });
+      updateRun(run);
+      clearDraft(draftStorage(), connection.url, draftScopeForConversation(selected.id));
+      clearDraft(draftStorage(), connection.url, draftScopeForAgent(agent.id));
+      setText(''); setAttachments([]); setTimeout(() => scroll.current?.scrollTo({ top: scroll.current.scrollHeight, behavior: 'smooth' }), 50);
+    } catch (reason) { persistDraft(); setError((reason as Error).message); } finally { setSending(false); }
   }
   function onComposerKey(event: KeyboardEvent<HTMLTextAreaElement>) { if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); void send(); } }
   async function addFiles(files: FileList | File[]) {
@@ -140,37 +180,22 @@ export default function App() {
     catch (reason) { setError((reason as Error).message); }
   }
   async function chooseModel(nextProvider: string, nextModel: string) {
+    if (nextProvider !== 'codex') { setError('Codex is the only runtime available in this A Gent release.'); return; }
     const changed = nextProvider !== providerId || nextModel !== modelId;
     const provider = data?.providers.find(item => item.id === nextProvider);
     const model = provider?.models.find(item => item.id === nextModel);
-    const reasoning = model?.reasoning;
-    const nextEffort = reasoning?.kind === 'enum'
-      ? (reasoning.options.some(option => option.value === effort) ? effort : reasoning.default || '')
-      : '';
-    const previous = { providerId, modelId, effort };
-    setProviderId(nextProvider); setModelId(nextModel); setEffort(nextEffort); if (nextProvider !== 'codex') setMode('chat');
+    const previous = { providerId, modelId };
+    setProviderId(nextProvider); setModelId(nextModel); setMode(mode === 'work' ? 'work' : 'chat');
     try {
-      if (conversation) await api(`/api/conversations/${conversation.id}`, 'PATCH', { providerId: nextProvider, modelId: nextModel, reasoningEffort: nextEffort });
-      else if (agent) await api(`/api/agents/${agent.id}`, 'PATCH', { providerId: nextProvider, modelId: nextModel, reasoningEffort: nextEffort });
+      if (conversation) await api(`/api/conversations/${conversation.id}`, 'PATCH', { providerId: nextProvider, modelId: nextModel });
+      else if (agent) await api(`/api/agents/${agent.id}`, 'PATCH', { providerId: nextProvider, modelId: nextModel });
       if (changed) await appendSystemEvent(`Model changed to ${provider?.name || nextProvider}${model?.name ? ` · ${model.name}` : ' · Provider default'}`);
     } catch (reason) {
-      setProviderId(previous.providerId); setModelId(previous.modelId); setEffort(previous.effort);
+      setProviderId(previous.providerId); setModelId(previous.modelId);
       setError((reason as Error).message);
     }
   }
-  async function chooseEffort(next: string) {
-    const changed = next !== effort;
-    const model = currentProvider?.models.find(item => item.id === modelId);
-    const label = model?.reasoning?.kind === 'enum' ? model.reasoning.options.find(option => option.value === next)?.label || next : next;
-    const previous = effort;
-    setEffort(next);
-    try {
-      if (conversation) await api(`/api/conversations/${conversation.id}`, 'PATCH', { reasoningEffort: next });
-      else if (agent) await api(`/api/agents/${agent.id}`, 'PATCH', { reasoningEffort: next });
-      if (changed) await appendSystemEvent(`Reasoning effort set to ${label || 'Provider default'}`);
-    } catch (reason) { setEffort(previous); setError((reason as Error).message); }
-  }
-  async function connect(next: Connection) { await request(next, '/api/bootstrap'); remember('aGent.host', next.url); try { sessionStorage.setItem('aGent.token', next.token); } catch { /* session-only fallback */ } setConnection(next); setActiveConversationId(null); setActiveAgentId('primary'); }
+  async function connect(next: Connection) { await request(next, '/api/bootstrap'); remember('aGent.host', next.url); try { sessionStorage.setItem('aGent.token', next.token); } catch { /* session-only fallback */ } draftHydrated.current = false; setConnection(next); setActiveConversationId(null); setActiveAgentId('primary'); setText(''); setAttachments([]); }
   function updateDeviceToken(token: string) { setConnection(previous => ({ ...previous, token })); try { sessionStorage.setItem('aGent.token', token); } catch { /* session-only fallback */ } }
   function handleDeviceRevoked() { try { sessionStorage.removeItem('aGent.token'); } catch { /* session-only fallback */ } window.location.reload(); }
   async function copyMessage(content: string, id: string) { try { await navigator.clipboard.writeText(content); setCopied(id); setTimeout(() => setCopied(''), 1500); toast({ title: 'Message copied', tone: 'success' }); } catch { toast({ title: 'Clipboard unavailable', description: 'Copying is blocked in this environment.', tone: 'danger' }); } }
@@ -180,7 +205,7 @@ export default function App() {
     catch (reason) { setError((reason as Error).message); throw reason; }
   }
   const pendingInteractions = (data?.interactions || []).filter(item => item.status === 'pending' && item.conversationId === conversation?.id);
-  async function stopRun() { if (!currentRun) return; try { updateRun(await api<Run>(`/api/runs/${currentRun.id}/interrupt`, 'POST')); } catch (reason) { setError((reason as Error).message); } }
+  async function stopRun() { if (!currentRun || currentRun.status === 'stopping') return; try { updateRun(await api<Run>(`/api/runs/${currentRun.id}/interrupt`, 'POST')); } catch (reason) { setError((reason as Error).message); } }
   function openConversationDetails(chat: Conversation) { setDialog({ kind: 'conversation', conversation: chat }); }
 
   const label = agent?.name || 'A Gent';
@@ -269,14 +294,15 @@ export default function App() {
             onSend={() => void send()}
             onStop={() => void stopRun()}
             busy={busy}
-            canStop={!!currentRun}
+            stopping={currentRun?.status === 'stopping'}
+            canStop={!!currentRun && currentRun.status !== 'stopping'}
+            blockedByOtherRun={otherActiveRun ? 'Another chat is running' : undefined}
             sending={sending}
             providerId={providerId}
             modelId={modelId}
-            effort={effort}
             mode={mode}
             workspacePath={workspacePath}
-            providers={data.providers}
+            providers={codexProviders}
             currentProvider={currentProvider}
             currentModel={currentModel}
             modelPicker={modelPicker}
@@ -288,7 +314,6 @@ export default function App() {
             onChooseFolder={() => void chooseFolder()}
             onOpenConnections={() => setDialog({ kind: 'connections' })}
             onSetMode={setMode}
-            onSetEffort={value => void chooseEffort(value)}
             onComposerKey={onComposerKey}
           />
         </div>}
@@ -304,6 +329,10 @@ export default function App() {
       conversations={conversations}
       groups={state?.groups || []}
       currentRun={currentRun}
+      effectiveProviderName={currentProvider?.name || 'Codex'}
+      effectiveModelId={currentModel?.name || modelId || ''}
+      mode={mode}
+      stopping={currentRun?.status === 'stopping'}
       onSelectConversation={selectChat}
       onNewChat={() => newChat()}
       onCreateGroup={() => setDialog({ kind: 'group' })}
@@ -312,11 +341,11 @@ export default function App() {
       onApproval={handleApproval}
     />}
     {dialog?.kind === 'connection' && <ConnectionDialog connection={connection} onConnect={connect} onClose={() => setDialog(null)} />}
-    {data && dialog?.kind === 'settings' && <SettingsDialog state={data.state} providers={data.providers} api={api} connection={connection} onError={setError} onRefresh={refresh} onClose={() => setDialog(null)} onOpenConnections={() => setDialog({ kind: 'connections' })} onDeviceToken={updateDeviceToken} onDeviceRevoked={handleDeviceRevoked} />}
-    {data && dialog?.kind === 'connections' && <ConnectionsDialog providers={data.providers} api={api} onRefresh={refresh} connection={connection} onHost={() => setDialog({ kind: 'connection' })} onClose={() => setDialog(null)} />}
+    {data && dialog?.kind === 'settings' && <SettingsDialog state={data.state} providers={codexProviders} api={api} connection={connection} onError={setError} onRefresh={refresh} onClose={() => setDialog(null)} onOpenConnections={() => setDialog({ kind: 'connections' })} onDeviceToken={updateDeviceToken} onDeviceRevoked={handleDeviceRevoked} />}
+    {data && dialog?.kind === 'connections' && <ConnectionsDialog providers={codexProviders} api={api} onRefresh={refresh} connection={connection} onHost={() => setDialog({ kind: 'connection' })} onClose={() => setDialog(null)} />}
     {data && dialog?.kind === 'agents' && <AgentsDialog agents={agents} onCreate={() => setDialog({ kind: 'agent' })} onEdit={value => setDialog({ kind: 'agent', agent: value })} onChat={value => { newChat(value); setDialog(null); }} onClose={() => setDialog(null)} />}
     {data && dialog?.kind === 'schedules' && <SchedulesDialog state={data.state} api={api} onCreate={() => setDialog({ kind: 'schedule' })} onOpen={id => { const chat = state?.conversations.find(item => item.id === id); if (chat) selectChat(chat); setDialog(null); }} onError={setError} onClose={() => setDialog(null)} />}
-    {data && dialog?.kind === 'agent' && <AgentDialog agent={dialog.agent} agentGroups={data.state.agentGroups} providers={data.providers} api={api} onClose={() => setDialog(null)} onSaved={value => { setActiveAgentId(value.archived ? 'primary' : value.id); setActiveConversationId(null); }} />}
+    {data && dialog?.kind === 'agent' && <AgentDialog agent={dialog.agent} agentGroups={data.state.agentGroups} providers={codexProviders} api={api} onClose={() => setDialog(null)} onSaved={value => { setActiveAgentId(value.archived ? 'primary' : value.id); setActiveConversationId(null); }} />}
     {data && dialog?.kind === 'group' && <GroupDialog api={api} onClose={() => setDialog(null)} />}
     {data && dialog?.kind === 'agent-group' && <AgentGroupDialog group={dialog.group} api={api} onClose={() => setDialog(null)} />}
     {data && dialog?.kind === 'conversation' && <ConversationDialog conversation={dialog.conversation} state={data.state} api={api} onClose={() => setDialog(null)} onArchived={() => { if (activeConversationId === dialog.conversation.id) newChat(); }} />}

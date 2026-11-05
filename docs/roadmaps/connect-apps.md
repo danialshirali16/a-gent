@@ -4,6 +4,8 @@ Updated: 2026-11-05. [Active v1 path](../project-roadmap.md#recommended-executio
 
 **Personal macOS v1 amendment:** MCP-001–022 and APP-001–012 are PAUSE. HIL-001/002/005/006 are CONTINUE only for native runtime approvals/questions and their recovery; HIL-003/004 MCP forms/URL handoff are PAUSE.
 
+**Current source note (2026-11-05):** Connected Apps management is removed from the v1 UI; app-record/auth/reload mutations return 409 while saved records remain. Each Codex session disables configured external MCP servers and withholds skill instructions without rewriting global config. A real elevated command approval declined then accepted correctly; native question live acceptance remains open.
+
 The tables retain original public R1/R2 targets, full acceptance criteria, and original dependencies for later work. Current implementation statuses are maintained here; v1 scope/effort is maintained only in the triage. A v1 subset can pass its support-matrix row without declaring the whole original task complete. Old M2/M3 continuation and broad feature gates do not govern the active path.
 
 The [approved D-11 exception](../release-contract.md#d-11-benchmark-policy) permits CONTINUE correction/QA/packaging without new peer comparisons. Compatibility research, tests, real Codex checks, and actual Mac package evidence remain required. Deferred full-scope work retains applicable benchmarks on resumption. Owner labels remain suggested roles; Danial is the acting accountable owner.

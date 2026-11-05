@@ -1,5 +1,5 @@
 export type ProviderKind = 'codex' | 'opencode' | 'ollama' | 'openai-compatible';
-export type RunStatus = 'running' | 'waiting' | 'completed' | 'failed' | 'interrupted';
+export type RunStatus = 'running' | 'waiting' | 'stopping' | 'completed' | 'failed' | 'interrupted';
 export type IconName = 'spark' | 'code' | 'design' | 'search' | 'custom';
 import type { AgentAvatarType } from './agentAvatars';
 

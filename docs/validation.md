@@ -1,8 +1,62 @@
 # A Gent — Validation Record
 
-Updated: 2026-11-05. Latest assessment source: fc634674f45bb578c68f8963758eef786aec82ac. The latest audit used Linux x64; earlier macOS/Windows results below retain their original scope. Documentation changes do not certify a new application build.
+Updated: 2026-11-05. Latest implementation source: branch `codex/v1-macos-release` from `be7b52e`. The latest command/runtime checks used Windows x64; the prior assessment used Linux x64. Earlier macOS/Windows results below retain their original scope. No current Mac package exists, and source/browser/real-runtime results do not certify one.
 
 [Active v1 path](project-roadmap.md#recommended-execution-order) · [Contract](release-contract.md) · [Candidate matrix](support-matrix.md) · [Current state](current-state-review.md)
+
+## Personal v1 implementation pass 2026-11-05
+
+Scope: V1-02 baseline plus the V1-03/V1-04/V1-05 source path on branch `codex/v1-macos-release`, created from `be7b52e` (current `main`). This record distinguishes commands that ran on the Windows development host from the still-required Mac package/V1-08 evidence. It does not accept a release candidate.
+
+### Environment and clean baseline
+
+| Check | Result and scope |
+| --- | --- |
+| Host | Windows 11 x64 (10.0.26300), Node v26.12.1, npm 11.20.0, Codex CLI 0.166.0, OpenCode 2.2.5. Electron 45.2.2 installed through `npm run desktop:runtime`. This is a development host, not the owner Mac. |
+| Registry reachability | `npm ping` returned PONG from registry.npmjs.org. The prior Linux 403 was not reproduced here. |
+| `npm ci --no-audit --no-fund` | Pass; 535 packages installed from the lockfile. `npm ls --depth=0` resolved the pinned dependency set. |
+| `npm run typecheck` | Pass. |
+| `npm test` | 73/73 pass, including the new core-failure and draft regressions. |
+| `npm run build` | Pass; the existing Vite >500 kB chunk advisory remains. |
+| `node scripts/runtime-baseline.mjs --strict` | Pass on this host: Codex 0.166.0 and OpenCode 2.2.5 matched fixture versions; required Codex methods and selected schema hashes passed. OpenCode OpenAPI was not probed (`fetch failed`). |
+| `npm run test:ui` | 22/22 browser smoke tests pass in Windows Chrome against the fixture host. |
+| `npm run test:e2e` | 7/7 browser E2E workflows pass. |
+| `npm run test:a11y` | 7/7 axe scans pass with 0 violations and 0 serious/critical findings. |
+| `npm run test:visual` | Not run. Checked-in baselines are macOS `darwin`; a Windows screenshot comparison cannot certify the Mac candidate. |
+| `npm run desktop:pack` | Windows x64 unpacked package built at `release/win-unpacked`. `app.asar` contains `dist/`, `dist-server/`, `electron/`, docs, README, and package version 1.0.0; no workspace state, `.token`, `.data`, or provider secret was found. This is a packaging-content check, not a Mac artifact or Finder/Gatekeeper test. |
+| `npm run desktop:mac` | Not run: this host is Windows x64. No current `.app`, DMG, ZIP, checksum, or Mac install result exists. |
+
+### Real Codex probes and source behavior
+
+All live checks used the signed-in external Codex CLI and isolated temporary data directories. No account token was copied into the workspace or repository. They are real-runtime evidence, separate from the deterministic fixtures.
+
+| Scenario | Result |
+| --- | --- |
+| CLI/account discovery | `CodexBridge.info()` returned authenticated with 8 models; first catalog ID `gpt-6.1-sol`. |
+| Runtime policy | A real app-server thread with the source policy config reported all four configured external MCP servers as `disabled`: `chrome-devtools`, `codebase-memory-mcp`, `node_repl`, `open-design`. Features `apps`, `plugins`, `hooks`, and `multi_agent` were disabled, and skill instructions were withheld. `codex debug prompt-input` with the same policy flags produced zero skill entries. |
+| First real chat | `gpt-6.1-sol`, prompt “Reply with exactly OK. Do not use tools.” completed with `OK`; a provider thread was persisted. |
+| Continuation | Second prompt “Reply with exactly DONE. Do not use tools.” completed with `DONE` on the same provider thread. |
+| Restart/continue | Host closed and restarted against the same isolated data directory; the next prompt completed with `TWO` on the same persisted provider thread (`ONE` before restart). |
+| Real Stop | A long answer in Chat mode returned `stopping` immediately; an attempted send while stopping returned 409; the run settled as `interrupted`; the next prompt completed with `AFTER`. |
+| Real Work mode | A disposable workspace write completed and produced `work-check.txt` containing `hello`. |
+| Real Chat read-only | A request to create a file in Chat mode completed without creating it; the model explained that Chat mode is read-only. |
+| Real approval decline | A `require_escalated` PowerShell write outside the workspace raised one native command approval. Declining completed the run and left the target file absent. |
+| Real approval accept | Repeating the same request and accepting the approval created only the requested file with `hello`; the temporary directory was then removed. |
+| Real native question | Not exercised. The supported QA question path is covered by deterministic HIL fixtures; Codex's live request-user-input path was not reachable in the retained Chat/Work mode test. This remains a V1-06/manual-package check. |
+
+The live probes did not exercise VoiceOver, actual Mac zoom/reflow, Finder launch, native folder dialog, Quit/relaunch, Gatekeeper, or the packaged Mac app. Machine-readable evidence: [2026-11-05 implementation probe](benchmarks/evidence/2026-11-05-v1-implementation.json).
+
+### Source changes verified by this pass
+
+- Initial persistence failure now rolls back the reservation and both messages; a retry is not permanently 409 (`tests/server/v1-regressions.test.ts`).
+- Forget invalidates in-flight probes, so a late Codex result cannot restore readiness.
+- Stop reports `stopping` until provider cleanup, rejects concurrent sends, and only then exposes `interrupted`; shutdown waits for active-run finalizers before saving.
+- Export strips `providerThreadId`, `providerBinding`, and app `credentialRef`; import already strips runtime bindings.
+- v1 dispatch ignores saved reasoning metadata and sends provider-default reasoning; custom reasoning API/UI paths are gated while saved values remain.
+- Only Codex is accepted at provider/agent/conversation/default settings boundaries; paused provider, app-record, app-sign-in, and app-reload mutations return 409 while saved data remains.
+- Drafts are device-local (Electron/browser local storage), scoped by host and chat/agent; navigation, failed send, offline/reconnect, and reload preserve them. They are not part of workspace export.
+- Codex compatibility accepts the verified 0.166.x line and rejects prerelease/other minors with actionable install guidance.
+- The browser suite verifies model selection/effective state, Stop, offline stream reconnect/resynchronization, and draft retention.
 
 ## Personal v1 readiness assessment
 

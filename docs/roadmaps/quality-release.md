@@ -4,6 +4,8 @@ Updated: 2026-11-05. [Active v1 path](../project-roadmap.md#recommended-executio
 
 **Personal macOS v1 amendment:** Retained source/runtime/data/accessibility tests and actual Mac packaging/pilot are CONTINUE. Fleet-scale budgets, signing/notarization, public terms/publication infrastructure, and public publication are PAUSE.
 
+**Current source note (2026-11-05):** Fresh Windows x64 `npm ci`/typecheck/build, 73 server tests, 22 smoke, 7 E2E, 7 axe, real Codex probes, and a Windows unpacked content check are recorded in [validation](../validation.md#personal-v1-implementation-pass-2026-11-05). macOS visual/VoiceOver/package/clean-Mac and V1-08 owner acceptance remain open; QA-012 is not signed off.
+
 The tables retain original public R1/R2 targets, full acceptance criteria, and original dependencies for later work. Current implementation statuses are maintained here; v1 scope/effort is maintained only in the triage. A v1 subset can pass its support-matrix row without declaring the whole original task complete. Old M2/M3 continuation and broad feature gates do not govern the active path.
 
 The [approved D-11 exception](../release-contract.md#d-11-benchmark-policy) permits CONTINUE correction/QA/packaging without new peer comparisons. Compatibility research, tests, real Codex checks, and actual Mac package evidence remain required. Deferred full-scope work retains applicable benchmarks on resumption. Owner labels remain suggested roles; Danial is the acting accountable owner.

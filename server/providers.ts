@@ -95,8 +95,10 @@ export class ProviderManager {
         if (!saved[providerId]) continue;
         const data = object(saved[providerId]);
         const savedBase = typeof data.baseUrl === 'string' ? data.baseUrl : '';
-        if (savedBase) this.connections[providerId] = { baseUrl: baseUrl(savedBase, providerId), ...(typeof data.modelId === 'string' ? { modelId: data.modelId.slice(0, MODEL_ID_LIMIT) } : {}) };
-        else if (providerId === 'cloud') this.connections[providerId] = { ...this.connections[providerId], ...(typeof data.modelId === 'string' ? { modelId: data.modelId.slice(0, MODEL_ID_LIMIT) } : {}) };
+        // Preserve an exact saved ID or reject it; never silently truncate it into a different model.
+        const savedModel = typeof data.modelId === 'string' && data.modelId.length > 0 && data.modelId.length <= MODEL_ID_LIMIT ? data.modelId : undefined;
+        if (savedBase) this.connections[providerId] = { baseUrl: baseUrl(savedBase, providerId), ...(savedModel ? { modelId: savedModel } : {}) };
+        else if (providerId === 'cloud') this.connections[providerId] = { ...this.connections[providerId], ...(savedModel ? { modelId: savedModel } : {}) };
       }
     } catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') console.warn('A Gent could not restore provider endpoints:', (error as Error).message); }
     for (const provider of this.providers) {
@@ -286,6 +288,9 @@ export class ProviderManager {
 
   async disconnect(providerId: string): Promise<ProviderInfo> {
     const provider = this.get(providerId);
+    // Invalidate any in-flight probe before changing readiness. A late result
+    // must never turn a forgotten provider back into a ready connection.
+    this.startProbe(providerId);
     if (providerId === 'codex' || providerId === 'opencode') {
       provider.status = 'available'; provider.readiness = 'configured'; provider.models = [];
       provider.detail = providerId === 'codex' ? 'Codex sign-in is external. Check the connection to reconnect.' : 'OpenCode sign-in is external. Check the connection to reconnect.';

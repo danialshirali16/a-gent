@@ -53,7 +53,7 @@ test('settings dialog passes axe', async ({ page }, testInfo) => {
 test('connections dialog passes axe', async ({ page }, testInfo) => {
   await home(page);
   await setTheme(page, 'light');
-  await page.getByRole('button', { name: 'Connect apps' }).click();
+  await page.getByRole('button', { name: 'Connections' }).click();
   await expect(page.getByRole('dialog', { name: 'Connections' })).toBeVisible();
   await audit(page, testInfo, 'connections', 'dialog[open]');
 });

@@ -4,6 +4,8 @@ Updated: 2026-11-05. [Active v1 path](../project-roadmap.md#recommended-executio
 
 **Personal macOS v1 amendment:** The triage selects core onboarding/defaults/drafts/streaming/recovery/import-export and retained UI checks. Schedules, uploads/content expansion, regenerate, broad mobile/reflow work, notifications, and speech/skills/custom reasoning are paused.
 
+**Current source note (2026-11-05):** The v1 subsets of COR-001/002/004/005/006/009 and UX-001/002/006/007 are implemented with source/browser/real-Codex evidence recorded in [validation](../validation.md#personal-v1-implementation-pass-2026-11-05). Native/visual/VoiceOver/Mac package evidence and the broader original criteria remain open; no full task is relabeled Done.
+
 The tables retain original public R1/R2 targets, full acceptance criteria, and original dependencies for later work. Current implementation statuses are maintained here; v1 scope/effort is maintained only in the triage. A v1 subset can pass its support-matrix row without declaring the whole original task complete. Old M2/M3 continuation and broad feature gates do not govern the active path.
 
 The [approved D-11 exception](../release-contract.md#d-11-benchmark-policy) permits CONTINUE correction/QA/packaging without new peer comparisons. Compatibility research, tests, real Codex checks, and actual Mac package evidence remain required. Deferred full-scope work retains applicable benchmarks on resumption. Owner labels remain suggested roles; Danial is the acting accountable owner.

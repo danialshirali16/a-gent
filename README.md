@@ -4,7 +4,7 @@ A local workspace for connected AI agents, with its own React interface, Node ho
 
 [Source repository](https://github.com/danialshirali16/a-gent)
 
-> Approved target: **personal macOS v1.0, Codex only**. The current source is still 0.1.0 and has not yet been restricted or verified to that target. The installable candidate remains pending; Windows/Android and broader product work are paused.
+> Approved target: **personal macOS v1.0, Codex only**. Current source is 1.0.0, Codex-only, provider-default reasoning, with one active run per host. The Windows source baseline and fixture/browser/real-Codex checks pass; a current macOS package and the owner's Finder acceptance remain pending. Windows/Android and broader product work are paused.
 
 ## Project documentation
 
@@ -12,36 +12,43 @@ Start with the [documentation index](docs/README.md), then follow the [ordered v
 
 [All 237 original tasks](docs/roadmaps/v1-triage.md) are classified once: **69 CONTINUE, 163 PAUSE, 5 CUT/RETHINK**. The release needs Codex chat/project work, persistence, drafts, approvals/Stop, recovery, current checks, and an actual Mac package pass. New two-peer benchmark prerequisites are [waived for that corrective release scope](docs/release-contract.md#d-11-benchmark-policy); implementation/runtime/package verification remains required.
 
-The [current state](docs/current-state-review.md) distinguishes implemented source from partial workflows. The 18-component pass is historical; picker normalization and Unicode search now exist, while [remaining picker gaps](docs/model-options-stress-test.md#current-status-after-provider-changes) and main-flow failures remain. Earlier suite/artifact records do not certify this source.
+The [current state](docs/current-state-review.md) and [validation](docs/validation.md#personal-v1-implementation-pass-2026-11-05) distinguish fixture, browser, real-Codex, and packaged-Mac evidence. The documented core failures (initial-save phantom run, stale Forget probe, premature Stop, export bindings, draft loss) have source regressions. The 18-component pass and old artifacts do not certify a Mac package.
 
 ## Run on this Mac
 
-The personal v1 candidate must launch A Gent.app from Finder, start its bundled loopback host, pair automatically, and retain data in Electron's userData/workspace location. Current package acceptance is pending. Expected Mac data location and backup/token details are in the [test guide](docs/macos-v1-testing.md#data-location-and-backup).
+The personal v1 candidate must launch A Gent.app from Finder, start its bundled loopback host, pair automatically, and retain data in Electron's userData/workspace location. No current Mac artifact exists yet; confirm the Mac chip/macOS version, build on a Mac, and follow the [test guide](docs/macos-v1-testing.md) before accepting it.
 
 For source development, use Node 24.x and the lockfile:
 
     npm ci
+    npm run typecheck
+    npm test
     npm run build
     npm start
 
-Open http://127.0.0.1:4317 and pair with the source host's administrator token in .data/.token, or opt into AGENT_ALLOW_LOCAL_TOKEN_INJECTION=1 for local browser convenience. The packaged app uses automatic cookie/device pairing. Development server: npm run dev.
+Open http://127.0.0.1:4317 and pair with the source host's administrator token in `.data/.token`, or opt into `AGENT_ALLOW_LOCAL_TOKEN_INJECTION=1` for local browser convenience. The packaged app uses automatic cookie/device pairing. Development server: `npm run dev`.
 
 Desktop development additionally needs the pinned Electron runtime:
 
     npm run desktop:runtime
     npm run desktop:dev
 
-Electron downloading must be explicit when npm install-script policy skips it. Finder discovery must be tested with GUI PATH; developer-specific Homebrew paths are not universal setup instructions.
+For the Mac candidate:
 
-## Connect models and apps
+    npm run desktop:runtime
+    npm run desktop:mac
 
-The approved personal v1 runtime is **Codex**. Install the supported CLI independently, run codex login in a terminal if needed, then Check connection in A Gent. The adapter uses the local runtime's account state without copying account tokens. Startup compatibility and full missing-runtime/login recovery remain required work.
+Expected data: `~/Library/Application Support/A Gent/workspace` (conversations/state/backup/token) and the app's local storage for unsent drafts. Drafts survive normal relaunch but are not in workspace export. Electron downloading must be explicit when npm install-script policy skips it. Finder discovery must be tested with GUI PATH; developer-specific Homebrew paths are not universal setup instructions.
 
-Codex Chat requests a read-only sandbox; Work in project uses a selected folder and workspace-write policy. A Gent renders supported command/file/access approval requests and native questions. A permitted workspace write may not request approval; genuine permission requests need their own acceptance test.
+## Connect Codex
 
-**Deferred source integrations:** OpenCode currently uses --auto and does not enforce an equivalent Chat/Work contract; its auth/session/event/process cleanup remains incomplete. Cloud/OpenAI-compatible, Ollama, and the Gemini endpoint labeled Antigravity remain experimental/deferred source adapters, not personal-v1 launch support. macOS API keys currently default to Keychain through the security CLI, with AGENT_SECRET_STORAGE=session for memory-only mode; existing session-only form copy is stale.
+The approved personal v1 runtime is **Codex**. Install the supported 0.166.x CLI independently, run `codex login` in a terminal if needed, then **Check connection** in A Gent. The adapter uses the local runtime's account state without copying account tokens. A missing or unsupported CLI reports install/upgrade guidance; a signed-out account reports `codex login` guidance.
 
-MCP/Connected Apps inventory, inspection, Codex OAuth start/status, reload, and supported forms exist. Full add/adopt/scope/enable/remove and real connector acceptance remain incomplete and paused. Custom reasoning controls, Agent skill management, and ElevenLabs STT are also deferred; the v1 path uses provider-default reasoning and reviews inherited runtime tools before acceptance.
+Codex Chat requests a read-only sandbox; Work in project uses the selected native folder and workspace-write policy. A Gent renders command/file/access approvals and supported native questions. The real-source approval check declined an outside-workspace write (no file) and accepted a repeated request (only the requested file). A permitted workspace write alone does not prove approval handling.
+
+**Scope gates:** Only Codex is exposed in v1. OpenCode, Cloud/OpenAI-compatible, Ollama, and the Antigravity/Gemini entry are paused adapters; their connect/test/agent/conversation routes return 409 while saved records remain. Connected Apps management, app-record/auth/reload mutations, custom reasoning controls, Agent skill management, ElevenLabs STT, and remote-device creation are not advertised. Saved settings/data and the external Codex config are preserved.
+
+A Gent withholds inherited skill instructions, disables configured MCP servers per Codex session, and disables plugin/app/hook/multi-agent features without rewriting `~/.codex/config.toml`. The real probe reported all configured external MCP servers `disabled` in the A Gent thread.
 
 Official runtime references: [Codex app-server](https://learn.chatgpt.com/docs/app-server), [OpenCode CLI](https://opencode.ai/docs/cli). See [validation](docs/validation.md) for the distinction between source, fixtures, real services, and actual packages.
 
@@ -64,7 +71,7 @@ The host address is remembered on the device. The device token remains in the cu
 
 For source runs, the token in `.data/.token` (or `AGENT_TOKEN`) is the host administrator token. The packaged app uses its resolved workspace directory; see [data location](docs/macos-v1-testing.md#data-location-and-backup). It can create, rotate, and revoke per-device tokens. Device tokens are stored as SHA-256 hashes in `devices.json`; the plaintext token is returned only when it is created or rotated.
 
-In the desktop app, open **Settings → Devices**. An administrator session can create tokens for other devices. A device session can rotate or revoke its own token.
+In the desktop app, open **Settings → Devices**. This Mac pairs automatically and can rotate or revoke its own device token. Remote-device creation is not advertised in the personal-v1 UI; the administrator API remains available for later work but is not a v1 launch promise.
 
 ```sh
 TOKEN=$(cat .data/.token)
@@ -122,9 +129,9 @@ npm run test:e2e
 npm run desktop:mac
 ```
 
-Windows and Android build commands remain available in `package.json` for the paused cross-platform work, but were not run in the current macOS-only pass.
+Windows and Android build commands remain available in `package.json` for the paused cross-platform work. CI runs macOS desktop packaging by default; Windows/Android are opt-in via the workflow dispatch input.
 
-Historical component-pass validation recorded 17/17 backend tests, 18/18 smoke tests, 10/10 visual baselines, 7/7 axe scans, and 7/7 E2E workflows passing. Those results predate current foundation/provider/MCP changes. See [validation](docs/validation.md) for the blocked fresh baseline, supplementary tests, current findings, and required package checks.
+Current source evidence (Windows x64 development host, not a Mac package result): `npm ci`, typecheck, and build pass; 73/73 server tests, 22/22 browser smoke, 7/7 E2E, and 7/7 axe scans pass. Real Codex chat/continuation/host-restart/Stop/Work/approval probes passed with an isolated workspace. Visual baselines are macOS-only and were not rerun; VoiceOver/actual zoom, Finder launch, native dialog, and the packaged Mac pass remain open. See [validation](docs/validation.md#personal-v1-implementation-pass-2026-11-05).
 
 `dist/THIRD_PARTY_NOTICES.txt` includes bundled dependency licenses, including `bot-avatars@0.2.2` under MIT.
 
@@ -136,7 +143,7 @@ Android builds require JDK 21, the Android SDK and its accepted licenses. The pr
 
 ## What this version covers
 
-This is a functional independent implementation of the core personal-agent workspace. It uses the local Codex and OpenCode tool ecosystems and model endpoints. Reason’s private cloud service, billing, proprietary agent network, native computer-control system, browser extension, voice calls, and signed automatic updates are not reproduced. Schedules run once while the host is open; there is no hosted scheduler.
+This is a functional independent implementation of the personal-agent workspace. The active v1 path uses the local Codex CLI and its external account; OpenCode and additional model endpoints remain paused source adapters. Reason’s private cloud service, billing, proprietary agent network, native computer-control system, browser extension, voice calls, and signed automatic updates are not reproduced. One-time schedules run while the host is open; there is no hosted scheduler. Scheduling expansion, uploads, branches, skills management, speech, and connected-app management are deferred.
 
 See [the reverse-engineering findings](docs/reverse-engineering.md) for the inspected artifact identity, evidence references, and limits, and [validation](docs/validation.md) for the checks performed on this build.
 

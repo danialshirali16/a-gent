@@ -35,10 +35,11 @@ export function Sidebar(props: SidebarProps) {
   const unassigned = props.agents.filter(agent => agent.id !== primary?.id && (!agent.agentGroupId || !props.agentGroups.some(group => group.id === agent.agentGroupId)));
 
   const renderAgent = (agent: Agent) => {
-    const running = props.runs.some(run => run.agentId === agent.id && (run.status === 'running' || run.status === 'waiting'));
+    const active = props.runs.find(run => run.agentId === agent.id && ['running', 'waiting', 'stopping'].includes(run.status));
+    const running = Boolean(active);
     const latest = props.conversations.find(chat => chat.agentId === agent.id && !chat.archived);
     const message = latest?.messages.slice().reverse().find(item => item.role !== 'system' && item.content.trim());
-    const preview = running ? 'Working…' : (message?.content || agent.description).replace(/[*_`#>]/g, '').replace(/\s+/g, ' ').trim();
+    const preview = active?.status === 'stopping' ? 'Stopping…' : running ? 'Working…' : (message?.content || agent.description).replace(/[*_`#>]/g, '').replace(/\s+/g, ' ').trim();
     return <button key={agent.id} className={`reason-agent-row ${props.activeAgentId === agent.id ? 'is-active' : ''}`} aria-current={props.activeAgentId === agent.id ? 'page' : undefined} onClick={() => props.onSelectAgent(agent)}>
       <AgentGlyph agent={agent} size={28} />
       <span className="reason-agent-copy"><strong>{agent.name}</strong><small id={`agent-preview-${agent.id}`} aria-hidden="true">{preview ? `${preview.slice(0, 160)}${preview.length > 160 ? '…' : ''}` : 'Start a conversation'}</small></span>
@@ -99,7 +100,7 @@ export function Sidebar(props: SidebarProps) {
         </button>
         <button className="reason-connect-apps" onClick={props.onOpenConnections}>
           <span className="reason-connection-icons" aria-hidden="true"><Plug size={14} /><UsersRound size={13} /></span>
-          <span>Connect apps</span>
+          <span>Connections</span>
           <StatusDot label={connected ? 'A model is connected' : 'No model is connected'} tone={connected ? 'success' : 'neutral'} className="reason-connect-status" />
         </button>
         <div className="reason-more-anchor">

@@ -1,6 +1,6 @@
 # Atomic persistence and recovery
 
-**Personal-v1 audit limit (2026-11-05):** the storage primitives below have fixture evidence; application-level recovery remains open because RunManager reserves a run before its initial awaited save and does not clean up if that save fails. Export also still returns stored runtime bindings. Track retained fixes in COR-006/009 and [V1-04](project-roadmap.md#recommended-execution-order).
+**Personal-v1 implementation update (2026-11-05):** RunManager now rolls back its reservation/messages when the initial awaited save fails, and shutdown waits for active-run finalizers before saving interrupted state. `/api/export` strips provider thread IDs, bindings, and app credential references; import already strips them. Regressions pass in the [implementation record](validation.md#personal-v1-implementation-pass-2026-11-05). Mac package persistence/failure evidence remains open.
 
 Status: **FND-008 recorded 2026-11-05.** This defines the write, backup, import, lock, and restart contracts for the workspace file.
 
@@ -67,7 +67,7 @@ Existing tests also cover:
 - Lock rejection and stale-lock recovery (`backend.test.ts`).
 - Corrupt-primary recovery from backup (`backend.test.ts`, `schema-migration.test.ts`).
 - Version 1 → 2 migration and rollback generation (`schema-migration.test.ts`).
-- Import validation strips provider bindings/thread IDs (schema-migration/backend tests). Actual /api/export still returns them and needs COR-009 correction; those tests do not establish sanitized export.
+- Import validation strips provider bindings/thread IDs, and `/api/export` now strips them along with app credential references (HTTP/regression tests). Drafts are device-local app storage, not workspace state/export.
 
 Commands run 2026-11-05:
 

@@ -6,6 +6,7 @@ const { pathToFileURL } = require('node:url');
 const { randomUUID } = require('node:crypto');
 
 app.setName('A Gent');
+app.setAboutPanelOptions({ applicationName: 'A Gent', applicationVersion: app.getVersion(), version: app.getVersion(), copyright: 'Personal macOS build' });
 const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) app.quit();
 let mainWindow;
@@ -144,7 +145,9 @@ app.on('before-quit', event => {
     event.preventDefault();
     quitPending = true;
     const stop = backend.close();
-    const deadline = new Promise(resolve => setTimeout(resolve, 5000));
+    // The host's shutdown budget is six seconds plus termination escalation.
+    // Do not cut off the final interrupted-state save before it can finish.
+    const deadline = new Promise(resolve => setTimeout(resolve, 10000));
     Promise.race([stop, deadline]).catch(() => {}).finally(() => { backend = null; app.quit(); });
   }
 });

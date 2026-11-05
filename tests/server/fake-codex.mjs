@@ -1,6 +1,12 @@
 // A deterministic protocol fixture. It never calls a model or executes a command.
 import { createInterface } from 'node:readline';
 import { appendFileSync, writeFileSync } from 'node:fs';
+// The bridge reads configured server names through a separate read-only CLI
+// call so it never starts an inherited MCP server just to disable it.
+if (process.argv.includes('mcp') && process.argv.includes('list')) {
+  process.stdout.write(JSON.stringify([{ name: 'Calendar' }, { name: 'Files' }]) + '\n');
+  process.exit(0);
+}
 const lines = createInterface({ input: process.stdin });
 if (process.argv.includes('--ignore-shutdown')) { process.on('SIGTERM', () => {}); setInterval(() => {}, 1000); }
 const pidFileIndex = process.argv.indexOf('--pid-file');
@@ -35,7 +41,7 @@ lines.on('line', line => {
   }
   const respond = result => write({ id: message.id, result });
   switch (message.method) {
-    case 'initialize': respond({ userAgent: 'a-gent-test' }); break;
+    case 'initialize': respond({ userAgent: 'a-gent-test/0.166.0 (Windows fixture; x86_64)' }); break;
     case 'initialized': break;
     case 'account/read': respond({ account: { type: 'chatgpt' }, requiresOpenaiAuth: true }); break;
     case 'model/list': respond({ data: [
@@ -79,19 +85,24 @@ lines.on('line', line => {
       respond({ data, nextCursor: null }); break;
     }
     case 'thread/start': {
-      if (p.approvalPolicy !== 'on-request' || p.approvalsReviewer !== 'user' || !['read-only', 'workspace-write'].includes(p.sandbox)) throw new Error('Unsafe or missing thread controls.');
+      const granular = p.approvalPolicy && typeof p.approvalPolicy === 'object' && p.approvalPolicy.granular;
+      if (!(p.approvalPolicy === 'on-request' || granular) || p.approvalsReviewer !== 'user' || !['read-only', 'workspace-write'].includes(p.sandbox)) throw new Error('Unsafe or missing thread controls.');
+      if (process.env.AGENT_TEST_CODEX_TRACE) appendFileSync(process.env.AGENT_TEST_CODEX_TRACE, JSON.stringify({ method: 'thread/start', approvalPolicy: p.approvalPolicy, config: p.config }) + '\n');
       const threadId = `test-thread-${++sequence}`; threads.set(threadId, { turns: 0 }); respond({ thread: { id: threadId } }); break;
     }
     case 'thread/resume': {
+      if (process.env.AGENT_TEST_CODEX_TRACE) appendFileSync(process.env.AGENT_TEST_CODEX_TRACE, JSON.stringify({ method: 'thread/resume', approvalPolicy: p.approvalPolicy, config: p.config }) + '\n');
       if (!threads.has(p.threadId)) threads.set(p.threadId, { turns: 1 });
       respond({ thread: { id: p.threadId } }); break;
     }
     case 'turn/start': {
-      if (p.approvalPolicy !== 'on-request' || p.sandboxPolicy?.type === 'dangerFullAccess') throw new Error('Unsafe turn controls.');
+      const granular = p.approvalPolicy && typeof p.approvalPolicy === 'object' && p.approvalPolicy.granular;
+      if (!(p.approvalPolicy === 'on-request' || granular) || p.sandboxPolicy?.type === 'dangerFullAccess') throw new Error('Unsafe turn controls.');
       const thread = threads.get(p.threadId); thread.turns++;
       const turnId = `turn-${++sequence}`;
       const text = p.input[0].text;
-      if (process.env.AGENT_TEST_CODEX_TRACE) appendFileSync(process.env.AGENT_TEST_CODEX_TRACE, JSON.stringify({ method: 'turn/start', text, turnId }) + '\n');
+      thread.lastText = text;
+      if (process.env.AGENT_TEST_CODEX_TRACE) appendFileSync(process.env.AGENT_TEST_CODEX_TRACE, JSON.stringify({ method: 'turn/start', text, turnId, model: p.model, effort: p.effort, approvalPolicy: p.approvalPolicy }) + '\n');
       if (text.includes('[start-pending]')) {
         setTimeout(() => respond({ turn: { id: turnId, status: 'inProgress' } }), 150);
         break;
@@ -130,7 +141,7 @@ lines.on('line', line => {
             required: ['calendar'],
           },
         } }), 10);
-      } else if (text.includes('[slow]')) {
+      } else if (text.includes('[slow]') || text.includes('[stop-slow]')) {
         thread.timer = setTimeout(() => finish(p.threadId, turnId, 'Slow task completed.'), 5000);
       } else setTimeout(() => finish(p.threadId, turnId, `A Gent test response ${thread.turns}.`), 10);
       break;
@@ -138,7 +149,8 @@ lines.on('line', line => {
     case 'turn/interrupt': {
       const thread = threads.get(p.threadId); clearTimeout(thread?.timer); if (thread) thread.previousTurnId = p.turnId;
       respond({});
-      setTimeout(() => write({ method: 'turn/completed', params: { threadId: p.threadId, turn: { id: p.turnId, status: 'interrupted' } } }), 100); break;
+      const delay = thread?.lastText?.includes('[stop-slow]') ? 600 : 100;
+      setTimeout(() => write({ method: 'turn/completed', params: { threadId: p.threadId, turn: { id: p.turnId, status: 'interrupted' } } }), delay); break;
     }
     default: write({ id: message.id, error: { code: -32601, message: 'Unknown fixture method.' } });
   }

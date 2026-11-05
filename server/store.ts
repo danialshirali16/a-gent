@@ -293,6 +293,21 @@ export function validateImport(value: unknown): WorkspaceState {
   };
 }
 
+/**
+ * Produce the portable workspace export. Runtime thread identifiers and
+ * credential references are local bindings, not user data; import already
+ * strips them, and export must not disclose them in the first place.
+ */
+export function exportWorkspace(state: WorkspaceState): WorkspaceState {
+  const exported = structuredClone(state);
+  for (const conversation of exported.conversations) {
+    delete conversation.providerThreadId;
+    delete conversation.providerBinding;
+  }
+  for (const app of exported.apps) delete app.credentialRef;
+  return exported;
+}
+
 export class StateStore {
   state: WorkspaceState = initialState();
   private writes: Promise<void> = Promise.resolve();

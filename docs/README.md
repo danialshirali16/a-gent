@@ -1,6 +1,6 @@
 # A Gent documentation
 
-Updated: 2026-11-05. **Approved focus: personal macOS v1.0 with Codex.** The contract/path is approved; the application still needs implementation and current packaged acceptance.
+Updated: 2026-11-05. **Approved focus: personal macOS v1.0 with Codex.** The V1-02 baseline and V1-03/V1-04/V1-05 source path are implemented; fixture, browser, and real Codex checks pass. A current packaged Mac candidate and V1-08 acceptance remain open.
 
 ## Start here
 
@@ -21,9 +21,9 @@ Updated: 2026-11-05. **Approved focus: personal macOS v1.0 with Codex.** The con
 
 ## Active release path
 
-Start V1-02 after recording/validating this scope: clean installation/runtime/build baseline → scope enforcement → core correctness → recovery/onboarding → fresh source and real Codex acceptance → Mac candidate → Danial's actual packaged-app pass.
+V1-02 baseline → V1-03 scope enforcement → V1-04 core correctness → V1-05 daily-use recovery are complete in current source. Next: finish V1-06 Mac/manual checks and real-runtime/native gaps, build/inspect the V1-07 Mac candidate, then Danial's V1-08 packaged-app pass.
 
-OpenCode, full MCP/Connected Apps, custom reasoning, Agent skill management, ElevenLabs STT, other inference providers, scheduling/content expansion, Windows/Android, and public distribution are paused. Existing source has not yet been gated to this scope. The expected macOS 13+ arm64 baseline still needs confirmation against Danial's chip/OS.
+OpenCode, full MCP/Connected Apps, custom reasoning, Agent skill management, ElevenLabs STT, other inference providers, scheduling/content expansion, Windows/Android, and public distribution are paused. The retained UI/API is now gated to Codex, provider-default reasoning, and one active run per host. The expected macOS 13+ arm64 baseline still needs confirmation against Danial's chip/OS.
 
 The [D-11 exception](release-contract.md#d-11-benchmark-policy) waives new two-peer prerequisites for CONTINUE fixes, QA, and local packaging. It does not waive implementation, compatibility, regression, real-runtime, or package tests. Old public R1 targets/dependencies are traceability metadata, not the personal release gate.
 
@@ -46,7 +46,7 @@ The [D-11 exception](release-contract.md#d-11-benchmark-policy) waives new two-p
 
 ## Evidence and history
 
-- [Validation](validation.md): latest audit had blocked npm installation and 40 supplementary existing tests, not a fresh full app/package pass.
+- [Validation](validation.md): latest implementation pass has fresh npm ci, 73 server tests, 22 browser smoke, 7 E2E, 7 axe, real Codex chat/Stop/Work/approval probes, and a Windows unpacked content check; no Mac artifact exists.
 - [Screenshots](screenshots/README.md): historical scoped visual evidence.
 - [Reverse-engineering findings](reverse-engineering.md): inspected reference and limits.
 - [Original public R1 roadmap](archive/project-roadmap-public-r1-2026-11-05.md), [contract](archive/release-contract-public-r1-2026-11-05.md), and [support matrix](archive/support-matrix-public-r1-2026-11-05.md): preserved previous scope and gates.

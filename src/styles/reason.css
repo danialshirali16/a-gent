@@ -1350,9 +1350,11 @@
   padding: 7px 10px;
   border: 1px solid var(--ui-border);
   border-radius: var(--ui-radius-pill);
-  color: var(--ui-text-2);
+  color: var(--ui-ink);
   font-size: 11px;
 }
+
+.reason-starters button > span { color: inherit; }
 
 .reason-starters button:hover {
   background: color-mix(in srgb, var(--ui-ink) 7%, transparent);

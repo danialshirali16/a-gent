@@ -60,7 +60,7 @@ export function avatarActivityForRuns(runs: Run[]): Map<string, AgentAvatarState
   }
   const states = new Map<string, AgentAvatarState>();
   for (const [agentId, run] of latest) {
-    if (run.status === 'running') states.set(agentId, 'working');
+    if (run.status === 'running' || run.status === 'stopping') states.set(agentId, 'working');
     else if (run.status === 'waiting') states.set(agentId, 'default');
   }
   return states;

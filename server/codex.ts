@@ -2,12 +2,32 @@ import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { EventEmitter } from 'node:events';
 import { createInterface } from 'node:readline';
 import type { Activity, Agent, AppCapabilities, AppConnection, AppInventory, AppLoginStart, AppLoginState, AppResourceCapability, AppToolCapability, Approval, Conversation, InteractionField, InteractionQuestion, ModelOption } from '../shared/types.js';
+import { APP_VERSION } from '../shared/version.js';
 import { BUDGETS } from './budgets.js';
 import { redact } from './diagnostics.js';
 import { parseElicitation, parseQuestions, validateElicitationValues, validateQuestionAnswers } from './hil.js';
 import { id, now } from './store.js';
-import { locateCodex, type CodexLaunch } from './codex-discovery.js';
+import { codexCompatibility, locateCodex, parseCodexVersion, type CodexLaunch } from './codex-discovery.js';
 export { locateCodex } from './codex-discovery.js';
+
+/**
+ * Keep the inherited Codex runtime inside the personal-v1 tool policy. Feature
+ * flags are invocation overrides, not writes to the user's global config.
+ */
+const POLICY_LAUNCH_ARGS = [
+  '-c', 'features.apps=false',
+  '-c', 'features.plugins=false',
+  '-c', 'features.hooks=false',
+  '-c', 'features.multi_agent=false',
+  '-c', 'features.skip_host_skill_discovery=true',
+  '-c', 'skills.include_instructions=false',
+  '-c', 'skills.bundled.enabled=false',
+];
+/** Generated/plugin-owned servers cannot be disabled through mcp_servers config overrides. */
+const GENERATED_MCP_SERVERS = new Set(['codex_app', 'codex_apps', 'cua_repl']);
+const POLICY_APPROVAL = {
+  granular: { mcp_elicitations: true, rules: true, sandbox_approval: true, skill_approval: true, request_permissions: true },
+} as const;
 
 interface RpcMessage { id?: number | string; method?: string; params?: any; result?: any; error?: { message: string; code?: number }; }
 export interface ProviderInteractionRequest {
@@ -49,6 +69,9 @@ export class CodexBridge {
   private events = new EventEmitter();
   private nextId = 0;
   private stderr = '';
+  private version?: string;
+  private policy?: Promise<Record<string, unknown>>;
+  private resolvedLaunch?: CodexLaunch;
   constructor(private launch?: CodexLaunch) { this.events.setMaxListeners(100); }
   private send(message: RpcMessage) {
     if (!this.process || this.process.stdin.destroyed) throw new Error('Codex connection closed. Reconnect and try again.');
@@ -88,7 +111,8 @@ export class CodexBridge {
   }
   private async open(): Promise<void> {
     const launch = this.launch ?? await locateCodex();
-    const args = [...(launch.args ?? []), 'app-server', '--listen', 'stdio://'];
+    this.resolvedLaunch = launch;
+    const args = [...(launch.args ?? []), ...POLICY_LAUNCH_ARGS, 'app-server', '--listen', 'stdio://'];
     const child = spawn(launch.command, args, { stdio: 'pipe', windowsHide: true, env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' } });
     this.process = child;
     this.lastThreadId = undefined;
@@ -128,16 +152,91 @@ export class CodexBridge {
       // A late exit from an older child must never reject a newer child's requests.
       if (this.process !== child) return;
       this.process = undefined; this.connecting = undefined; this.shutdownError = undefined;
+      this.version = undefined; this.policy = undefined;
       for (const [requestId, pending] of this.requests) { clearTimeout(pending.timer); pending.reject(new Error(message)); this.requests.delete(requestId); }
       this.events.emit('closed', new Error(message));
     };
     child.once('error', error => stop(`Could not launch Codex: ${error.message}`));
     child.once('exit', (code, signal) => stop(redact(`Codex stopped${signal ? ` (${signal})` : ` (exit ${code ?? 'unknown'})`}. ${this.stderr.trim().slice(-1000)}`)));
     try {
-      await this.request('initialize', { clientInfo: { name: 'a_gent', title: 'A Gent', version: '0.1.0' }, capabilities: { experimentalApi: true } }, BUDGETS.startup);
+      const initialized = await this.request('initialize', { clientInfo: { name: 'a_gent', title: 'A Gent', version: APP_VERSION }, capabilities: { experimentalApi: true } }, BUDGETS.startup);
+      this.version = parseCodexVersion(initialized?.userAgent);
+      const compatibility = codexCompatibility(this.version);
+      if (!compatibility.supported) throw new Error(compatibility.detail);
       this.send({ method: 'initialized', params: {} });
     } catch (error) { if (this.process === child) await this.close(); throw error; }
   }
+  /**
+   * Resolve session-level overrides that keep inherited MCP servers, plugin
+   * tools, hooks, multi-agent tools, and skill instructions out of A Gent runs.
+   * The user's Codex configuration is never rewritten.
+   */
+  private async policyConfig(): Promise<Record<string, unknown>> {
+    if (!this.policy) {
+      const operation = this.readPolicyConfig();
+      this.policy = operation;
+      operation.catch(() => { if (this.policy === operation) this.policy = undefined; });
+    }
+    return this.policy;
+  }
+
+  private async readPolicyConfig(): Promise<Record<string, unknown>> {
+    await this.connect();
+    let serverNames: string[];
+    try {
+      serverNames = await this.configuredMcpServers();
+    } catch {
+      // A custom launcher may not support `mcp list`; the app-server inventory
+      // is the fallback, but it must still produce the same explicit disable list.
+      const servers = new Set<string>();
+      let cursor: string | null = null;
+      for (let page = 0; page < 10; page++) {
+        const result = await this.request('mcpServerStatus/list', { cursor, limit: 50, detail: 'toolsAndAuthOnly' }, BUDGETS.tool);
+        for (const server of result?.data ?? []) {
+          if (typeof server?.name !== 'string' || server.pluginId || GENERATED_MCP_SERVERS.has(server.name)) continue;
+          servers.add(server.name);
+        }
+        cursor = result?.nextCursor ?? null;
+        if (!cursor) break;
+      }
+      serverNames = [...servers];
+    }
+    const servers = new Set(serverNames.filter(name => !GENERATED_MCP_SERVERS.has(name)));
+    return {
+      features: { apps: false, plugins: false, hooks: false, multi_agent: false, skip_host_skill_discovery: true },
+      skills: { include_instructions: false, bundled: { enabled: false } },
+      ...(servers.size ? { mcp_servers: Object.fromEntries([...servers].map(name => [name, { enabled: false }])) } : {}),
+    };
+  }
+
+  /** Read configured external server names without starting them or editing config.toml. */
+  private async configuredMcpServers(): Promise<string[]> {
+    const launch = this.resolvedLaunch ?? this.launch ?? await locateCodex();
+    return new Promise((resolve, reject) => {
+      const child = spawn(launch.command, [...(launch.args ?? []), ...POLICY_LAUNCH_ARGS, 'mcp', 'list', '--json'], {
+        stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true, env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
+      });
+      let output = '', error = '';
+      const timer = setTimeout(() => { child.kill('SIGKILL'); reject(new Error('Codex MCP configuration listing timed out.')); }, BUDGETS.catalog);
+      child.stdout.on('data', chunk => { if (output.length < 2 * 1024 * 1024) output += String(chunk); });
+      child.stderr.on('data', chunk => { if (error.length < 4000) error += String(chunk); });
+      child.once('error', reason => { clearTimeout(timer); reject(reason); });
+      child.once('close', code => {
+        clearTimeout(timer);
+        if (code !== 0) { reject(new Error(redact(error || `Codex MCP configuration listing exited ${code}.`))); return; }
+        try {
+          const rows = JSON.parse(output) as Array<Record<string, unknown>>;
+          if (!Array.isArray(rows)) throw new Error('Unexpected MCP configuration output.');
+          resolve(rows.flatMap(row => {
+            if (typeof row?.name !== 'string' || row.name.length > 200) return [];
+            if (typeof row.pluginId === 'string' && row.pluginId) return [];
+            return GENERATED_MCP_SERVERS.has(row.name) ? [] : [row.name];
+          }));
+        } catch (reason) { reject(reason instanceof Error ? reason : new Error('Unexpected MCP configuration output.')); }
+      });
+    });
+  }
+
   async info(): Promise<{ authenticated: boolean; models: ModelOption[] }> {
     await this.connect();
     const account = await this.request('account/read', { refreshToken: false }, BUDGETS.auth);
@@ -287,12 +386,14 @@ export class CodexBridge {
     await this.connect();
     const { agent, conversation, callbacks, signal, mode, workspace } = request;
     if (signal.aborted) throw new Error('Run interrupted.');
+    const config = await this.policyConfig();
     const params: Record<string, unknown> = {
       cwd: workspace,
-      approvalPolicy: 'on-request',
+      approvalPolicy: POLICY_APPROVAL,
       approvalsReviewer: 'user',
       sandbox: mode === 'work' ? 'workspace-write' : 'read-only',
-      developerInstructions: `${agent.instructions}\n\nYou are running inside A Gent. ${mode === 'work' ? 'The user selected Work mode. Make requested changes inside the selected workspace and use the approval flow when additional access is needed.' : 'The user selected Chat mode. Answer questions and inspect relevant context. Do not modify files or perform external side effects in this mode.'}`,
+      config,
+      developerInstructions: `${agent.instructions}\n\nYou are running inside A Gent. ${mode === 'work' ? 'The user selected Work mode. Make requested changes inside the selected workspace and use the approval flow when additional access is needed.' : 'The user selected Chat mode. Answer questions and inspect relevant context. Do not modify files or perform external side effects in this mode.'}\n\nManaged connectors, MCP servers, and skills are outside this release. Do not attempt to use them, and do not ask for broader access than the selected workspace requires.`,
     };
     if (request.modelId) params.model = request.modelId;
     let threadId: string;
@@ -492,9 +593,8 @@ export class CodexBridge {
         } else if (message.method === 'error' && p.willRetry !== true) finish(new Error(p.error?.message ?? p.message ?? 'Codex reported an error.'));
       };
       this.events.on('message', onMessage); this.events.on('closed', onClose); signal.addEventListener('abort', onAbort, { once: true });
-      const turnParams: Record<string, unknown> = { threadId, input: [{ type: 'text', text, text_elements: [] }], approvalPolicy: 'on-request', approvalsReviewer: 'user', cwd: workspace, sandboxPolicy: mode === 'work' ? { type: 'workspaceWrite', writableRoots: [workspace], networkAccess: false, excludeTmpdirEnvVar: false, excludeSlashTmp: false } : { type: 'readOnly', networkAccess: false } };
+      const turnParams: Record<string, unknown> = { threadId, input: [{ type: 'text', text, text_elements: [] }], approvalPolicy: POLICY_APPROVAL, approvalsReviewer: 'user', cwd: workspace, sandboxPolicy: mode === 'work' ? { type: 'workspaceWrite', writableRoots: [workspace], networkAccess: false, excludeTmpdirEnvVar: false, excludeSlashTmp: false } : { type: 'readOnly', networkAccess: false } };
       if (request.modelId) turnParams.model = request.modelId;
-      if (request.reasoning?.kind === 'enum' && request.reasoning.options.some(option => option.value === agent.reasoningEffort)) turnParams.effort = agent.reasoningEffort;
       void this.request('turn/start', turnParams, BUDGETS.session).then(result => {
         turnId = result.turn?.id ?? '';
         if (!turnId) { finish(new Error('Codex did not return a turn ID.')); return; }
