@@ -1,11 +1,12 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { CalendarClock, ChevronDown, FolderPlus, MoreHorizontal, PanelLeftClose, Pencil, Plug, Plus, Search, Settings2, Trash2, UsersRound } from 'lucide-react';
-import type { Agent, Group, ProviderInfo, Run } from '../../shared/types';
-import { AgentGlyph, IconButton, Mark } from '../components';
-import { moveFocus } from '../keyboard';
-
+import type { Agent, Conversation, Group, ProviderInfo, Run } from '../../shared/types';
+import { AgentGlyph, IconButton } from '../components';
+import { Menu } from '../ui/Menu';
+import { StatusDot } from '../ui/Badge';
 export interface SidebarProps {
   agents: Agent[];
+  conversations: Conversation[];
   agentGroups: Group[];
   activeAgentId?: string;
   runs: Run[];
@@ -25,61 +26,42 @@ export interface SidebarProps {
 }
 
 export function Sidebar(props: SidebarProps) {
-  const [moreOpen, setMoreOpen] = useState(false);
-  const [groupMenu, setGroupMenu] = useState<string | null>(null);
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
-  const moreRef = useRef<HTMLDivElement>(null);
-  const groupMenuRef = useRef<HTMLDivElement>(null);
   const primary = props.agents.find(agent => agent.id === 'primary') || props.agents[0];
   const connected = props.providers.some(provider => provider.status === 'connected');
+  const primaryIsGrouped = primary && props.agentGroups.some(group => group.id === primary.agentGroupId);
   const groupedAgents = props.agentGroups.map(group => ({ group, agents: props.agents.filter(agent => agent.agentGroupId === group.id) }));
-  const unassigned = props.agents.filter(agent => !agent.agentGroupId || !props.agentGroups.some(group => group.id === agent.agentGroupId));
+  const unassigned = props.agents.filter(agent => agent.id !== primary?.id && (!agent.agentGroupId || !props.agentGroups.some(group => group.id === agent.agentGroupId)));
 
-  useEffect(() => {
-    if (!moreOpen) return;
-    moreRef.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus();
-    const close = (event: PointerEvent) => { if (!moreRef.current?.contains(event.target as Node)) setMoreOpen(false); };
-    window.addEventListener('pointerdown', close);
-    return () => window.removeEventListener('pointerdown', close);
-  }, [moreOpen]);
-  useEffect(() => {
-    if (!groupMenu) return;
-    groupMenuRef.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus();
-    const close = (event: PointerEvent) => { if (!groupMenuRef.current?.contains(event.target as Node)) setGroupMenu(null); };
-    window.addEventListener('pointerdown', close);
-    return () => window.removeEventListener('pointerdown', close);
-  }, [groupMenu]);
-
-  const action = (run: () => void) => { setMoreOpen(false); run(); };
   const renderAgent = (agent: Agent) => {
     const running = props.runs.some(run => run.agentId === agent.id && (run.status === 'running' || run.status === 'waiting'));
+    const latest = props.conversations.find(chat => chat.agentId === agent.id && !chat.archived);
+    const message = latest?.messages.slice().reverse().find(item => item.role !== 'system' && item.content.trim());
+    const preview = running ? 'Working…' : (message?.content || agent.description).replace(/[*_`#>]/g, '').replace(/\s+/g, ' ').trim();
     return <button key={agent.id} className={`reason-agent-row ${props.activeAgentId === agent.id ? 'is-active' : ''}`} aria-current={props.activeAgentId === agent.id ? 'page' : undefined} onClick={() => props.onSelectAgent(agent)}>
-      <AgentGlyph agent={agent} size={24} />
-      <span>{agent.name}</span>
-      {running && <span className="reason-running-dot" aria-label="Working" />}
+      <AgentGlyph agent={agent} size={28} />
+      <span className="reason-agent-copy"><strong>{agent.name}</strong><small id={`agent-preview-${agent.id}`} aria-hidden="true">{preview ? `${preview.slice(0, 160)}${preview.length > 160 ? '…' : ''}` : 'Start a conversation'}</small></span>
+      {running && <StatusDot label="Working" tone="info" pulse className="reason-running-dot" />}
     </button>;
   };
 
   return <aside className="reason-sidebar" aria-label="Workspace navigation" aria-hidden={!props.open} inert={!props.open}>
     <div className="reason-sidebar-top">
-      <IconButton label="Collapse sidebar" onClick={props.onClose}><PanelLeftClose size={18} /></IconButton>
+      <IconButton label="Collapse sidebar" className="reason-sidebar-collapse" onClick={props.onClose}><PanelLeftClose size={18} /></IconButton>
+      <button className="reason-teammates" onClick={props.onOpenAgents} title="Manage agents"><span>Teammates</span><ChevronDown size={12} /></button>
       <IconButton label="Search conversations (⌘K)" onClick={props.onSearch}><Search size={18} /></IconButton>
       <IconButton label="New conversation (⌘N)" onClick={() => props.onNewChat()}><Plus size={18} /></IconButton>
     </div>
 
-    <button className="reason-home" onClick={() => props.onNewChat(primary)}>
-      <Mark size={24} />
-      <span>A Gent</span>
-    </button>
-
+    <nav className="reason-agent-navigation" aria-label="Agents">
+    {primary && !primaryIsGrouped && <div className="reason-primary-agent">{renderAgent(primary)}</div>}
     <div className="reason-section-label">
-      <span>Agents</span>
+      <button className="reason-new-group" onClick={props.onCreateAgentGroup}><FolderPlus size={14} /><span>New group</span></button>
       <div className="reason-section-label-actions">
-        <IconButton label="Create an agent group" onClick={props.onCreateAgentGroup}><FolderPlus size={14} /></IconButton>
         <IconButton label="Create an agent" onClick={props.onCreateAgent}><Plus size={14} /></IconButton>
       </div>
     </div>
-    <nav className="reason-agent-list" aria-label="Agents">
+    <div className="reason-agent-list">
       {props.agentGroups.length ? <>
         {groupedAgents.map(({ group, agents }) => <div className="reason-agent-group" key={group.id}>
           <div className="reason-agent-group-head">
@@ -87,15 +69,16 @@ export function Sidebar(props: SidebarProps) {
               <ChevronDown size={12} className={collapsedGroups[group.id] ? 'is-collapsed' : undefined} />
               <span>{group.name}</span>
             </button>
-            <div className="reason-group-menu-anchor" ref={groupMenu === group.id ? groupMenuRef : undefined}>
-              <IconButton label={`Options for ${group.name}`} onClick={() => setGroupMenu(groupMenu === group.id ? null : group.id)}><MoreHorizontal size={14} /></IconButton>
-              {groupMenu === group.id && <div className="reason-group-menu" role="menu" aria-label={`${group.name} options`} onKeyDown={event => {
-                if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); setGroupMenu(null); groupMenuRef.current?.querySelector<HTMLButtonElement>('button')?.focus(); }
-                else moveFocus(event, '[role="menuitem"]:not([disabled])');
-              }}>
-                <button role="menuitem" onClick={() => { setGroupMenu(null); props.onEditAgentGroup(group); }}><Pencil size={13} />Rename group</button>
-                <button role="menuitem" onClick={() => { setGroupMenu(null); props.onEditAgentGroup(group); }}><Trash2 size={13} />Delete group</button>
-              </div>}
+            <div className="reason-group-menu-anchor">
+              <Menu
+                trigger={<IconButton label={`Options for ${group.name}`}><MoreHorizontal size={14} /></IconButton>}
+                label={`${group.name} options`}
+                align="end"
+                items={[
+                  { id: 'rename', label: 'Rename group', icon: <Pencil size={13} />, onSelect: () => props.onEditAgentGroup(group) },
+                  { id: 'delete', label: 'Delete group', icon: <Trash2 size={13} />, danger: true, onSelect: () => props.onEditAgentGroup(group) },
+                ]}
+              />
             </div>
           </div>
           {!collapsedGroups[group.id] && <div className="reason-agent-list is-nested">{agents.map(renderAgent)}</div>}
@@ -104,34 +87,36 @@ export function Sidebar(props: SidebarProps) {
           <div className="reason-agent-group-head"><span className="reason-agent-group-label">Unassigned</span></div>
           <div className="reason-agent-list is-nested">{unassigned.map(renderAgent)}</div>
         </div>}
-      </> : props.agents.map(renderAgent)}
+      </> : unassigned.map(renderAgent)}
+    </div>
     </nav>
 
     <div className="reason-sidebar-bottom">
       <div className="reason-account-row">
-        <button className="reason-account" onClick={props.onOpenSettings}>
+        <button className="reason-account" aria-label="Personal workspace settings" title="Personal workspace settings" onClick={props.onOpenSettings}>
           <span className="reason-account-avatar">A</span>
-          <span><strong>Personal workspace</strong><small>A Gent</small></span>
-          <Settings2 size={15} />
         </button>
-        <div className="reason-more-anchor" ref={moreRef}>
-          <IconButton label="More workspace options" onClick={() => setMoreOpen(value => !value)}><MoreHorizontal size={18} /></IconButton>
-          {moreOpen && <div className="reason-more-menu" role="menu" aria-label="Workspace options" onKeyDown={event => {
-            if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); setMoreOpen(false); moreRef.current?.querySelector<HTMLButtonElement>('button')?.focus(); }
-            else moveFocus(event, '[role="menuitem"]:not([disabled])');
-          }}>
-            <button role="menuitem" onClick={() => action(props.onOpenAgents)}><UsersRound size={15} />All agents</button>
-            <button role="menuitem" onClick={() => action(props.onOpenScheduled)}><CalendarClock size={15} />Scheduled</button>
-            <button role="menuitem" onClick={() => action(props.onOpenConnections)}><Plug size={15} />Connections</button>
-            <button role="menuitem" onClick={() => action(props.onOpenSettings)}><Settings2 size={15} />Settings</button>
-          </div>}
+        <button className="reason-connect-apps" onClick={props.onOpenConnections}>
+          <span className="reason-connection-icons" aria-hidden="true"><Plug size={14} /><UsersRound size={13} /></span>
+          <span>Connect apps</span>
+          <StatusDot label={connected ? 'A model is connected' : 'No model is connected'} tone={connected ? 'success' : 'neutral'} className="reason-connect-status" />
+        </button>
+        <div className="reason-more-anchor">
+          <Menu
+            trigger={<IconButton label="More workspace options"><Settings2 size={17} /></IconButton>}
+            label="Workspace options"
+            align="end"
+            side="top"
+            items={[
+              { id: 'agents', label: 'All agents', icon: <UsersRound size={15} />, onSelect: props.onOpenAgents },
+              { id: 'scheduled', label: 'Scheduled', icon: <CalendarClock size={15} />, onSelect: props.onOpenScheduled },
+              { id: 'connections', label: 'Connections', icon: <Plug size={15} />, onSelect: props.onOpenConnections },
+              { id: 'settings', label: 'Settings', icon: <Settings2 size={15} />, onSelect: props.onOpenSettings },
+              { id: 'collapse', label: 'Collapse sidebar', icon: <PanelLeftClose size={15} />, separatorBefore: true, onSelect: props.onClose },
+            ]}
+          />
         </div>
       </div>
-      <button className="reason-connect-apps" onClick={props.onOpenConnections}>
-        <Plug size={15} />
-        <span>Connect apps</span>
-        <i className={connected ? 'is-connected' : ''} aria-hidden="true" />
-      </button>
     </div>
   </aside>;
 }

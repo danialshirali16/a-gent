@@ -1,4 +1,4 @@
-/* Reason-style design tokens extracted from the Reason 0.1.119 UI. */
+/* Shared tokens for the Reason-inspired A Gent interface. */
 :root {
   --ui-page: #fcfcfc;
   --ui-sidebar: #f5f5f5;
@@ -39,10 +39,10 @@
 
   --ui-sidebar-width: 280px;
   --ui-detail-width: 480px;
-  --ui-reading-width: 960px;
-  --ui-composer-width: 700px;
-  --ui-bubble-max: 486px;
-  --ui-topbar-height: 56px;
+  --ui-reading-width: 1200px;
+  --ui-composer-width: 1200px;
+  --ui-bubble-max: 760px;
+  --ui-topbar-height: 60px;
 
   --ui-shadow-panel: 0 2px 8px #00000014, 0 1px 2px #0000000a;
   --ui-shadow-menu: 0 8px 22px #00000014;
@@ -57,9 +57,9 @@
 
 :root[data-theme='dark'] {
   --ui-page: #121212;
-  --ui-sidebar: #0e0e0e;
+  --ui-sidebar: #121212;
   --ui-raised: #1f1f1f;
-  --ui-composer: #1f1f1f;
+  --ui-composer: #242424;
   --ui-highlight: #1f1f1f;
   --ui-ink: #f5f5f5;
   --ui-text-2: #f5f5f5a8;

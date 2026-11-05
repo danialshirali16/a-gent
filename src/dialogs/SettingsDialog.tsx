@@ -1,6 +1,15 @@
+import { Input } from '../ui/Input';
+import { Field } from '../ui/Field';
+import { Switch } from '../ui/Checkbox';
+import { SegmentedControl } from '../ui/Tabs';
+import { ConfirmDialog } from '../ui/Dialog';
+import { Badge } from '../ui/Badge';
+import { Alert, useToast } from '../ui/Alert';
+import { SearchField } from '../ui/Search';
+import { Button } from '../ui/Button';
 import { useEffect, useRef, useState } from 'react';
-import { Check, Copy, Database, Download, Keyboard, KeyRound, Laptop, Moon, Palette, Plug, Plus, RefreshCw, RotateCcw, Search, Sparkles, Sun, Trash2, Upload } from 'lucide-react';
-import type { DeviceInfo, Settings, WorkspaceState } from '../../shared/types';
+import { Check, Copy, Database, Download, Keyboard, KeyRound, Laptop, Moon, Palette, Plug, Plus, RefreshCw, RotateCcw, Sparkles, Sun, Trash2, Upload } from 'lucide-react';
+import type { DeviceInfo, ProviderInfo, Settings, WorkspaceState } from '../../shared/types';
 import type { Connection } from '../api';
 import type { Api } from '../dialogs';
 import { Mark, Modal, Spinner, downloadJson, formatDate } from '../components';
@@ -16,8 +25,9 @@ const sections: Array<{ id: SettingsSection; label: string; icon: typeof Palette
   { id: 'about', label: 'About', icon: Sparkles, keywords: 'version license local' },
 ];
 
-export function SettingsDialog({ state, api, connection, onError, onRefresh, onClose, onOpenConnections, onDeviceToken, onDeviceRevoked }: {
+export function SettingsDialog({ state, providers, api, connection, onError, onRefresh, onClose, onOpenConnections, onDeviceToken, onDeviceRevoked }: {
   state: WorkspaceState;
+  providers: ProviderInfo[];
   api: Api;
   connection: Connection;
   onError: (error: string) => void;
@@ -28,12 +38,14 @@ export function SettingsDialog({ state, api, connection, onError, onRefresh, onC
   onDeviceRevoked: () => void;
 }) {
   const [section, setSection] = useState<SettingsSection>('appearance');
+  const toast = useToast();
   const [query, setQuery] = useState('');
   const [busy, setBusy] = useState(false);
   const [devices, setDevices] = useState<DeviceInfo[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [devicesLoading, setDevicesLoading] = useState(false);
   const [deviceBusy, setDeviceBusy] = useState('');
+  const [deviceAction, setDeviceAction] = useState<'rotate' | 'revoke' | null>(null);
   const [deviceError, setDeviceError] = useState('');
   const [deviceName, setDeviceName] = useState('');
   const [newToken, setNewToken] = useState<{ name: string; token: string } | null>(null);
@@ -75,84 +87,94 @@ export function SettingsDialog({ state, api, connection, onError, onRefresh, onC
       setDevices(previous => [...previous, created.device]);
       setNewToken({ name: created.device.name, token: created.token });
       setDeviceName('');
+      toast({ title: 'Pairing token created', description: `Copy it now for ${created.device.name}.`, tone: 'success' });
     } catch (reason) { setDeviceError((reason as Error).message); }
     finally { setDeviceBusy(''); }
   }
 
   async function rotateDevice(device: DeviceInfo) {
-    setDeviceBusy(device.id); setDeviceError('');
+    setDeviceBusy(device.id); setDeviceAction('rotate'); setDeviceError('');
     try {
       const rotated = await api<{ device: DeviceInfo; token: string }>(`/api/devices/${device.id}/rotate`, 'POST', {});
       setDevices(previous => previous.map(item => item.id === device.id ? { ...item, ...rotated.device, current: item.current } : item));
       setNewToken({ name: rotated.device.name, token: rotated.token });
       if (device.current) onDeviceToken(rotated.token);
+      toast({ title: 'Device token rotated', description: `${device.name} has a new pairing token.`, tone: 'success' });
     } catch (reason) { setDeviceError((reason as Error).message); }
-    finally { setDeviceBusy(''); }
+    finally { setDeviceBusy(''); setDeviceAction(null); }
   }
 
   async function revokeDevice(device: DeviceInfo) {
-    setDeviceBusy(device.id); setDeviceError('');
+    setDeviceBusy(device.id); setDeviceAction('revoke'); setDeviceError('');
     try {
       const revoked = await api<DeviceInfo>(`/api/devices/${device.id}`, 'DELETE');
       if (device.current) { onDeviceRevoked(); return; }
       setDevices(previous => previous.map(item => item.id === device.id ? { ...item, ...revoked, current: item.current } : item));
       setConfirmRevoke(null);
-    } catch (reason) { setDeviceError((reason as Error).message); }
-    finally { setDeviceBusy(''); }
+      toast({ title: 'Device revoked', description: `${device.name} can no longer connect.`, tone: 'success' });
+    } catch (reason) { setDeviceError((reason as Error).message); setConfirmRevoke(null); }
+    finally { setDeviceBusy(''); setDeviceAction(null); }
   }
 
   async function copyDeviceToken() {
     if (!newToken) return;
-    try { await navigator.clipboard.writeText(newToken.token); setTokenCopied(true); setTimeout(() => setTokenCopied(false), 1500); } catch { /* clipboard optional */ }
+    try { await navigator.clipboard.writeText(newToken.token); setTokenCopied(true); setTimeout(() => setTokenCopied(false), 1500); toast({ title: 'Pairing token copied', tone: 'success' }); } catch { toast({ title: 'Clipboard unavailable', tone: 'danger' }); }
   }
 
-  return <Modal title="Settings" onClose={onClose} className="modal-settings">
+  return <Modal title="Settings" onClose={onClose} className="modal-settings" backLabel="Back to app">
     <div className="settings-shell">
       <aside className="settings-nav">
-        <label className="settings-search"><Search size={14} /><input value={query} onChange={event => setQuery(event.target.value)} placeholder="Search settings…" aria-label="Search settings" /></label>
-        {visible.map(({ id, label, icon: Icon }) => <button key={id} className={section === id ? 'is-active' : ''} onClick={() => setSection(id)}><Icon size={15} />{label}</button>)}
+        <SearchField className="settings-search" size="sm" value={query} onChange={setQuery} label="Search settings" placeholder="Search settings…" />
+        <p className="settings-nav-label">Personal workspace</p>
+        {visible.map(({ id, label, icon: Icon }) => <button key={id} className={section === id ? 'is-active' : ''} aria-current={section === id ? 'page' : undefined} onClick={() => setSection(id)}><Icon size={16} />{label}</button>)}
         {!visible.length && <p className="settings-nav-empty">No settings match.</p>}
       </aside>
       <div className="settings-body">
         {section === 'appearance' && <>
           <h2>Appearance</h2>
-          <p className="settings-lead">Theme, density, and how much agent activity appears in conversations.</p>
-          <div className="settings-group">
-            <h3>Theme</h3>
-            <div className="theme-options">{([{ id: 'dark', label: 'Dark', Icon: Moon }, { id: 'light', label: 'Light', Icon: Sun }, { id: 'system', label: 'System', Icon: Laptop }] as const).map(({ id, label, Icon }) => <button key={id} aria-pressed={state.settings.theme === id} className={state.settings.theme === id ? 'selected' : ''} onClick={() => void update({ theme: id })}><Icon size={18} /><span>{label}</span>{state.settings.theme === id && <Check size={13} />}</button>)}</div>
-          </div>
-          <div className="settings-group">
-            <h3>Tool stream</h3>
-            <div className="theme-options tool-stream-options">{(['compact', 'verbose', 'hidden'] as const).map(value => <button key={value} aria-pressed={toolStreamView === value} className={toolStreamView === value ? 'selected' : ''} onClick={() => void update({ toolStreamView: value })}><span>{value === 'compact' ? 'Compact' : value === 'verbose' ? 'Verbose' : 'Hidden'}</span>{toolStreamView === value && <Check size={13} />}</button>)}</div>
-            <p className="settings-hint">Compact shows a summary, verbose opens every step, and hidden removes tool activity from conversations.</p>
-          </div>
+          <p className="settings-lead">Make A Gent feel at home.</p>
+          <h3 className="settings-section-label">Preferences</h3>
+          <section className="settings-group settings-preferences" aria-label="Appearance preferences">
+            <div className="setting-row">
+              <span><strong>Theme</strong><small>Choose a look, or follow your device.</small></span>
+              <SegmentedControl options={([{ id: 'dark', label: 'Dark', icon: <Moon size={15} /> }, { id: 'light', label: 'Light', icon: <Sun size={15} /> }, { id: 'system', label: 'System', icon: <Laptop size={15} /> }])} value={state.settings.theme} onChange={id => void update({ theme: id as Settings['theme'] })} ariaLabel="Theme" />
+            </div>
+            <div className="setting-row">
+              <Switch label="Show agent activity" description="See commands, file changes, and progress in conversations." checked={toolStreamView !== 'hidden'} onChange={event => void update({ showActivity: event.target.checked, toolStreamView: event.target.checked ? (toolStreamView === 'hidden' ? 'compact' : toolStreamView) : 'hidden' })} />
+            </div>
+            <div className="setting-row">
+              <span><strong>Tool stream detail</strong><small>Choose how much detail appears when activity is shown.</small></span>
+              <SegmentedControl options={[{ id: 'compact', label: 'Compact' }, { id: 'verbose', label: 'Verbose' }]} value={toolStreamView === 'hidden' ? '' : toolStreamView} onChange={id => void update({ toolStreamView: id as 'compact' | 'verbose' })} ariaLabel="Tool stream detail" disabled={toolStreamView === 'hidden'} />
+            </div>
+          </section>
+          <p className="settings-hint">Compact keeps a summary of each step. Verbose opens the details.</p>
         </>}
 
         {section === 'models' && <>
           <h2>Models</h2>
-          <p className="settings-lead">A Gent uses the Codex installation on this computer and any OpenAI-compatible endpoint you add.</p>
+          <p className="settings-lead">Use the agents and model connections available on this host.</p>
           <div className="settings-group">
-            <div className="settings-model-row"><div><strong>Codex</strong><small>Local Codex account and models</small></div><span className="settings-model-status">Connected on this host</span></div>
+            {providers.map(provider => <div className="settings-model-row" key={provider.id}><div><strong>{provider.name}</strong><small>{provider.detail}</small></div><Badge tone={provider.status === 'connected' ? 'success' : provider.status === 'error' ? 'danger' : provider.status === 'available' ? 'info' : 'neutral'} dot>{provider.status === 'connected' ? 'Connected' : provider.status === 'available' ? 'Available' : provider.status === 'error' ? 'Connection error' : 'Not connected'}</Badge></div>)}
             <div className="settings-model-row"><div><strong>Default model</strong><small>{state.settings.defaultProviderId} · {state.settings.defaultModelId || 'Provider default'}</small></div></div>
-            <button className="button secondary small" onClick={onOpenConnections}><Plug size={14} />Manage models and connections</button>
+            <Button variant="secondary" size="sm" onClick={onOpenConnections}><Plug size={14} />Manage models and connections</Button>
           </div>
         </>}
 
         {section === 'devices' && <>
           <h2>Devices</h2>
           <p className="settings-lead">Pairing tokens let another computer or phone reach this host. Each token can be rotated or revoked independently.</p>
-          {deviceError && <p className="form-error" role="alert">{deviceError}</p>}
+          {deviceError && <Alert tone="danger">{deviceError}</Alert>}
           {newToken && <div className="settings-group device-token-reveal">
             <h3>New token for {newToken.name}</h3>
             <p className="settings-hint">Copy it now. A Gent will not show this token again.</p>
-            <div className="device-token-value"><code>{newToken.token}</code><button className="button secondary small" onClick={() => void copyDeviceToken()}>{tokenCopied ? <Check size={13} /> : <Copy size={13} />}{tokenCopied ? 'Copied' : 'Copy'}</button></div>
-            <button className="button quiet small" onClick={() => setNewToken(null)}>Done</button>
+            <div className="device-token-value"><code>{newToken.token}</code><Button variant="secondary" size="sm" onClick={() => void copyDeviceToken()}>{tokenCopied ? <Check size={13} /> : <Copy size={13} />}{tokenCopied ? 'Copied' : 'Copy'}</Button></div>
+            <Button variant="quiet" size="sm" onClick={() => setNewToken(null)}>Done</Button>
           </div>}
           {isAdmin && <div className="settings-group">
             <h3>Create a pairing token</h3>
             <div className="device-create-row">
-              <input value={deviceName} onChange={event => setDeviceName(event.target.value)} placeholder="Device name" aria-label="Device name" onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); void createDevice(); } }} />
-              <button className="button secondary small" disabled={!deviceName.trim() || deviceBusy === 'create'} onClick={() => void createDevice()}>{deviceBusy === 'create' ? <Spinner size={13} /> : <Plus size={13} />}Create</button>
+              <Field label="Device name" labelHidden className="device-create-field"><Input value={deviceName} onChange={event => setDeviceName(event.target.value)} placeholder="Device name" onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); void createDevice(); } }} /></Field>
+              <Button variant="secondary" size="sm" loading={deviceBusy === 'create'} disabled={!deviceName.trim()} onClick={() => void createDevice()}><Plus size={13} />Create</Button>
             </div>
             <p className="settings-hint">Give each phone or computer its own token so it can be revoked separately.</p>
           </div>}
@@ -160,15 +182,12 @@ export function SettingsDialog({ state, api, connection, onError, onRefresh, onC
             <h3>{isAdmin ? 'All devices' : 'This device'}</h3>
             {devicesLoading ? <div className="device-loading"><Spinner size={14} />Loading devices…</div> : !devices.length ? <p className="settings-hint">No device tokens yet.</p> : <div className="device-list">{devices.map(device => <div className={`device-row ${device.revokedAt ? 'is-revoked' : ''}`} key={device.id}>
               <div className="device-row-main">
-                <strong>{device.name}{device.current && <span className="device-badge is-current">Current</span>}{device.revokedAt && <span className="device-badge is-revoked">Revoked</span>}</strong>
+                <strong>{device.name}{device.current && <Badge tone="info">Current</Badge>}{device.revokedAt && <Badge tone="danger">Revoked</Badge>}</strong>
                 <small>Created {formatDate(device.createdAt)}{device.lastUsedAt ? ` · Last used ${formatDate(device.lastUsedAt)}` : ''}</small>
               </div>
               {!device.revokedAt && <div className="device-actions">
-                <button className="button quiet small" disabled={!!deviceBusy} onClick={() => void rotateDevice(device)}>{deviceBusy === device.id ? <Spinner size={12} /> : <RefreshCw size={12} />}Rotate</button>
-                {confirmRevoke === device.id ? <>
-                  <button className="button danger small" disabled={!!deviceBusy} onClick={() => void revokeDevice(device)}>{deviceBusy === device.id ? <Spinner size={12} /> : <Trash2 size={12} />}Confirm revoke</button>
-                  <button className="button quiet small" onClick={() => setConfirmRevoke(null)}>Cancel</button>
-                </> : <button className="button quiet small" disabled={!!deviceBusy} onClick={() => setConfirmRevoke(device.id)}><Trash2 size={12} />Revoke</button>}
+                <Button variant="quiet" size="sm" loading={deviceBusy === device.id && deviceAction === 'rotate'} disabled={!!deviceBusy} onClick={() => void rotateDevice(device)}><RefreshCw size={12} />Rotate</Button>
+                <Button variant="quiet" size="sm" disabled={!!deviceBusy} onClick={() => setConfirmRevoke(device.id)}><Trash2 size={12} />Revoke</Button>
               </div>}
             </div>)}</div>}
           </div>
@@ -183,12 +202,12 @@ export function SettingsDialog({ state, api, connection, onError, onRefresh, onC
           <h2>Your data</h2>
           <p className="settings-lead">Everything is stored on this host. Export a copy or merge a previous workspace.</p>
           <div className="settings-group">
-            <div className="setting-row"><span><strong>Export workspace</strong><small>Save agents, conversations, groups, and schedules as JSON.</small></span><button className="button secondary small" onClick={async () => { try { downloadJson(await api('/api/export'), 'a-gent-workspace.json'); } catch (reason) { onError((reason as Error).message); } }}><Download size={14} />Export</button></div>
-            <div className="setting-row"><span><strong>Import workspace</strong><small>Merge a previous A Gent export into this workspace.</small></span><button className="button secondary small" disabled={busy} onClick={() => input.current?.click()}>{busy ? <Spinner size={14} /> : <Upload size={14} />}Import</button><input ref={input} type="file" accept="application/json,.json" hidden onChange={async event => { const file = event.target.files?.[0]; if (!file) return; setBusy(true); try { if (file.size > 32 * 1024 * 1024) throw new Error('Choose an export smaller than 32 MB.'); await api('/api/import', 'POST', JSON.parse(await file.text())); await onRefresh(); } catch (reason) { onError((reason as Error).message); } finally { setBusy(false); event.target.value = ''; } }} /></div>
+            <div className="setting-row"><span><strong>Export workspace</strong><small>Save agents, conversations, groups, and schedules as JSON.</small></span><Button variant="secondary" size="sm" onClick={async () => { try { downloadJson(await api('/api/export'), 'a-gent-workspace.json'); } catch (reason) { onError((reason as Error).message); } }}><Download size={14} />Export</Button></div>
+            <div className="setting-row"><span><strong>Import workspace</strong><small>Merge a previous A Gent export into this workspace.</small></span><Button variant="secondary" size="sm" loading={busy} onClick={() => input.current?.click()}><Upload size={14} />Import</Button><input ref={input} type="file" accept="application/json,.json" hidden onChange={async event => { const file = event.target.files?.[0]; if (!file) return; setBusy(true); try { if (file.size > 32 * 1024 * 1024) throw new Error('Choose an export smaller than 32 MB.'); await api('/api/import', 'POST', JSON.parse(await file.text())); await onRefresh(); } catch (reason) { onError((reason as Error).message); } finally { setBusy(false); event.target.value = ''; } }} /></div>
           </div>
           {archived.length > 0 && <div className="settings-group">
             <h3>Archived conversations</h3>
-            {archived.map(chat => <div className="setting-row" key={chat.id}><span><strong>{chat.title}</strong><small>{formatDate(chat.updatedAt)}</small></span><button className="button quiet small" onClick={async () => { try { await api(`/api/conversations/${chat.id}`, 'PATCH', { archived: false }); } catch (reason) { onError((reason as Error).message); } }}><RotateCcw size={14} />Restore</button></div>)}
+            {archived.map(chat => <div className="setting-row" key={chat.id}><span><strong>{chat.title}</strong><small>{formatDate(chat.updatedAt)}</small></span><Button variant="quiet" size="sm" onClick={async () => { try { await api(`/api/conversations/${chat.id}`, 'PATCH', { archived: false }); } catch (reason) { onError((reason as Error).message); } }}><RotateCcw size={14} />Restore</Button></div>)}
           </div>}
         </>}
 
@@ -212,5 +231,19 @@ export function SettingsDialog({ state, api, connection, onError, onRefresh, onC
         </>}
       </div>
     </div>
+    {confirmRevoke && (() => {
+      const device = devices.find(item => item.id === confirmRevoke);
+      if (!device) return null;
+      return <ConfirmDialog
+        title={device.current ? 'Revoke this device?' : `Revoke ${device.name}?`}
+        description={device.current
+          ? 'This device will return to the connection screen. The next launch creates a fresh device token.'
+          : <>The token for <strong>{device.name}</strong> stops working immediately. You can create a new one at any time.</>}
+        confirmLabel="Revoke device"
+        busy={deviceBusy === device.id && deviceAction === 'revoke'}
+        onClose={() => setConfirmRevoke(null)}
+        onConfirm={() => void revokeDevice(device)}
+      />;
+    })()}
   </Modal>;
 }

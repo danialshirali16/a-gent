@@ -1,0 +1,13 @@
+.tooltip-preview-bar { display: flex; align-items: center; gap: 8px; padding: 14px 16px; }
+.tooltip-preview-bar .icon-button { border: 1px solid var(--ui-border); background: var(--ui-raised); }
+.tooltip-preview-note { margin-top: 10px; color: var(--ui-text-3); font-size: 12px; }
+.tooltip-preview-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.tooltip-preview-card { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; padding: 18px; min-height: 104px; }
+.tooltip-preview-label { color: var(--ui-text-3); font-size: 10px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; }
+.tooltip-preview-usage { display: grid; gap: 10px; padding: 20px 24px; }
+.tooltip-preview-usage p { color: var(--ui-text-2); font-size: 13px; line-height: 20px; }
+.tooltip-preview-usage strong { color: var(--ui-ink); font-weight: 550; }
+
+@media (max-width: 720px) {
+  .tooltip-preview-grid { grid-template-columns: 1fr; }
+}

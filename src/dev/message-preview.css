@@ -1,0 +1,10 @@
+.message-preview-stage { width: min(100%, 820px); margin: 0 auto; padding: 22px; border: 1px solid var(--ui-border); border-radius: 16px; background: var(--ui-page); }
+.message-preview-stage .reason-messages { padding: 0; }
+.message-preview-note { margin-top: 10px; color: var(--ui-text-3); font-size: 12px; text-align: center; }
+.message-preview-tools { display: flex; flex-direction: column; gap: 18px; }
+.message-preview-tools > div { display: flex; flex-direction: column; gap: 7px; }
+.message-preview-label { color: var(--ui-text-3); font-size: 10px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; }
+
+@media (max-width: 720px) {
+  .message-preview-stage { padding: 14px; }
+}

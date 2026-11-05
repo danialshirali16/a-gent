@@ -1,0 +1,13 @@
+.select-preview-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.select-preview-combobox { display: grid; grid-template-columns: minmax(0, 1fr) minmax(220px, .7fr); gap: 28px; align-items: start; }
+.select-preview-selection { display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; border: 1px solid var(--ui-border); border-radius: 10px; background: color-mix(in srgb, var(--ui-ink) 3%, transparent); }
+.select-preview-selection > span { color: var(--ui-text-3); font-size: 10px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; }
+.select-preview-selection strong { font-size: 13px; font-weight: 500; }
+.select-preview-selection small { color: var(--ui-text-2); font-size: 12px; line-height: 18px; }
+.select-preview-form-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; }
+
+@media (max-width: 720px) {
+  .select-preview-grid,
+  .select-preview-combobox,
+  .select-preview-form-grid { grid-template-columns: 1fr; }
+}

@@ -1,3 +1,4 @@
+import { Button } from '../ui/Button';
 import { Fragment, useEffect, useState } from 'react';
 import { ChevronLeft, ChevronRight, FileText, Folder, Link2, RefreshCw } from 'lucide-react';
 import type { WorkspaceFiles } from '../../shared/types';
@@ -53,7 +54,7 @@ export function FilesPanel({ api, conversationId, agentId }: { api: Api; convers
       </div>
       <button className="reason-files-icon" aria-label="Refresh files" disabled={loading} onClick={() => void load(path)}><RefreshCw size={13} className={loading ? 'spin' : undefined} /></button>
     </div>
-    {loading && !data ? <div className="reason-files-loading"><Spinner size={14} />Reading workspace…</div> : error ? <div className="reason-files-error"><p>{error}</p><button className="button quiet small" onClick={() => void load(path)}>Try again</button></div> : !data?.entries.length ? <div className="reason-sidepanel-empty">This folder is empty.</div> : <div className="reason-file-list">
+    {loading && !data ? <div className="reason-files-loading"><Spinner size={14} />Reading workspace…</div> : error ? <div className="reason-files-error"><p>{error}</p><Button variant="quiet" size="sm" onClick={() => void load(path)}>Try again</Button></div> : !data?.entries.length ? <div className="reason-sidepanel-empty">This folder is empty.</div> : <div className="reason-file-list">
       {data.entries.map(entry => entry.type === 'directory'
         ? <button key={entry.name} className="reason-file-row is-directory" onClick={() => void load([path, entry.name].filter(Boolean).join('/'))}><Folder size={14} /><span>{entry.name}</span><ChevronRight size={12} /></button>
         : <div key={entry.name} className="reason-file-row"><FileText size={14} /><span>{entry.name}</span>{entry.type === 'symlink' && <Link2 size={11} aria-label="Symbolic link" />}{entry.size !== undefined && <small>{formatSize(entry.size)}</small>}</div>)}

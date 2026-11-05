@@ -37,10 +37,38 @@ test('agents can be created and customized', async ({ page }) => {
 
   await page.getByRole('button', { name: 'More workspace options' }).click();
   await page.getByRole('menuitem', { name: 'All agents' }).click();
-  await page.getByRole('button', { name: 'Customize E2E Agent' }).click();
+  await page.getByRole('button', { name: 'Actions for E2E Agent' }).click();
+  await page.getByRole('menuitem', { name: 'Customize agent' }).click();
   await page.getByLabel('Name').fill('E2E Agent Updated');
   await page.getByRole('button', { name: 'Save agent' }).click();
   await expect(page.getByRole('button', { name: 'E2E Agent Updated', exact: true })).toBeVisible();
+});
+
+test('agent avatar shapes can be chosen, saved, and persist', async ({ page }) => {
+  await home(page);
+  await page.getByRole('button', { name: 'Create an agent', exact: true }).click();
+  await page.getByLabel('Name').fill('Avatar Shape Agent');
+  const trigger = page.locator('.avatar-picker-trigger');
+  await trigger.click();
+  await page.getByRole('radio', { name: 'Cat' }).check({ force: true });
+  await page.keyboard.press('Enter');
+  await expect(trigger).toBeFocused();
+  await page.getByRole('button', { name: 'Create agent' }).click();
+  const row = page.getByRole('button', { name: 'Avatar Shape Agent', exact: true });
+  await expect(row).toBeVisible();
+  await expect(row.locator('[data-avatar-type="cat"]')).toHaveCount(1);
+
+  await page.reload();
+  await expect(row).toBeVisible();
+  await expect(row.locator('[data-avatar-type="cat"]')).toHaveCount(1);
+
+  await page.getByRole('button', { name: 'Create an agent', exact: true }).click();
+  await page.locator('.avatar-picker-trigger').click();
+  await page.getByRole('radio', { name: 'Puddle' }).check({ force: true });
+  await page.getByRole('button', { name: 'Cancel' }).click();
+  await page.getByRole('button', { name: 'Create an agent', exact: true }).click();
+  await expect(page.locator('.avatar-picker-trigger-copy strong')).toHaveText('Droid');
+  await page.getByRole('button', { name: 'Cancel' }).click();
 });
 
 test('chat approvals, terminal activity, and files work end to end', async ({ page }) => {
@@ -57,7 +85,7 @@ test('chat approvals, terminal activity, and files work end to end', async ({ pa
   const panelApproval = page.locator('.reason-sidepanel-approvals');
   await expect(panelApproval).toBeVisible();
   await panelApproval.getByRole('button', { name: 'Allow this action' }).click();
-  await expect(page.getByText('Approved task completed.')).toBeVisible({ timeout: 15000 });
+  await expect(page.getByRole('main').getByText('Approved task completed.')).toBeVisible({ timeout: 15000 });
 
   await page.getByRole('tab', { name: 'Terminal' }).click();
   await expect(page.locator('.reason-terminal-panel').getByText('Connecting to your model')).toBeVisible();
@@ -82,7 +110,7 @@ test('schedules can be created and listed', async ({ page }) => {
   await page.getByRole('button', { name: 'More workspace options' }).click();
   await page.getByRole('menuitem', { name: 'Scheduled' }).click();
   await expect(page.getByText('E2E weekly review')).toBeVisible();
-  await expect(page.locator('.status-pill', { hasText: 'Scheduled' })).toBeVisible();
+  await expect(page.locator('.ui-badge', { hasText: 'Scheduled' })).toBeVisible();
 });
 
 test('workspace export and import round-trip', async ({ page }) => {
@@ -129,7 +157,8 @@ test('device tokens can be created, rotated, and revoked', async ({ page }) => {
   expect(rotated).not.toBe(token);
   await page.getByRole('button', { name: 'Done' }).click();
   await row.getByRole('button', { name: 'Revoke' }).click();
-  await page.getByRole('button', { name: 'Confirm revoke' }).click();
+  await expect(page.getByRole('dialog', { name: 'Revoke E2E Phone?' })).toBeVisible();
+  await page.getByRole('dialog', { name: 'Revoke E2E Phone?' }).getByRole('button', { name: 'Revoke device' }).click();
   await expect(row.getByText('Revoked', { exact: true })).toBeVisible();
 });
 

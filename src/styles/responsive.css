@@ -1,0 +1,27 @@
+/* Mobile safe-area and touch adjustments layered on the Reason shell. */
+@media (max-width: 767px) {
+  .reason-topbar {
+    height: calc(52px + env(safe-area-inset-top));
+    flex-basis: calc(52px + env(safe-area-inset-top));
+    padding-top: env(safe-area-inset-top);
+    padding-left: max(8px, env(safe-area-inset-left));
+    padding-right: max(8px, env(safe-area-inset-right));
+  }
+
+  .reason-sidebar {
+    padding-top: max(8px, env(safe-area-inset-top));
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+    padding-left: max(10px, env(safe-area-inset-left));
+    padding-right: max(10px, env(safe-area-inset-right));
+  }
+
+  .reason-sidepanel {
+    margin-bottom: max(8px, env(safe-area-inset-bottom));
+  }
+}
+
+@media (pointer: coarse) {
+  .reason-starters button { min-height: 44px; }
+  .reason-agent-row { min-height: 56px; }
+  .reason-session-item { min-height: 44px; }
+}

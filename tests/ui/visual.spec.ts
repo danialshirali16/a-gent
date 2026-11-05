@@ -24,6 +24,11 @@ async function openHome(page: Page, theme: (typeof themes)[number]) {
   }, theme);
   await expect.poll(() => page.evaluate(() => document.documentElement.dataset.theme)).toBe(theme);
   await page.evaluate(() => document.fonts.ready);
+  await expect.poll(() => page.evaluate(() => {
+    const canvases = Array.from(document.querySelectorAll<HTMLCanvasElement>('.ui-agent-avatar canvas'));
+    return canvases.length > 0 && canvases.every(canvas => Number(getComputedStyle(canvas).opacity) === 1);
+  }), { timeout: 10000 }).toBe(true);
+  await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
 }
 
 for (const theme of themes) {

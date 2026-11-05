@@ -2,6 +2,7 @@ import { copyFile, mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { join } from 'node:path';
 import type { Activity, Agent, Conversation, Group, Schedule, Settings, WorkspaceState } from '../shared/types.js';
+import { isAgentAvatarType } from '../shared/agentAvatars.js';
 import { acquireDataLock, type DataLock } from './lock.js';
 
 export class InputError extends Error {
@@ -39,6 +40,10 @@ export function agentPatch(value: unknown): Partial<Agent> {
   if ('icon' in data) {
     if (!['spark', 'code', 'design', 'search', 'custom'].includes(String(data.icon))) throw new InputError('Choose a supported agent icon.');
     out.icon = data.icon;
+  }
+  if ('avatarType' in data) {
+    if (!isAgentAvatarType(data.avatarType)) throw new InputError('Choose a supported agent avatar shape.');
+    out.avatarType = data.avatarType;
   }
   if ('agentGroupId' in data) out.agentGroupId = data.agentGroupId === null ? null : string(data.agentGroupId, 'Agent group ID', 100);
   if ('archived' in data) out.archived = bool(data.archived, 'archived');
@@ -85,10 +90,10 @@ export function initialState(): WorkspaceState {
   return {
     version: 1,
     agents: [
-      { ...shared, id: 'primary', name: 'A Gent', description: 'Your general-purpose thinking and doing partner.', instructions: 'You are A Gent, a thoughtful, practical assistant. Help the user get work done. Explain uncertainty clearly. Ask before consequential actions outside the requested scope.', icon: 'spark', color: '#f39161' },
-      { ...shared, id: 'designer', name: 'Product Designer', description: 'Flows, interfaces, and the details that make them work.', instructions: 'You are an experienced product designer. Help with research, user flows, interface design, accessibility, and practical prototypes. Explain the choices that affect usability.', icon: 'design', color: '#9393ed' },
-      { ...shared, id: 'engineer', name: 'Software Engineer', description: 'Build, debug, and understand your code.', instructions: 'You are a careful software engineer. Inspect relevant code, implement complete changes, and verify important behavior. Respect the selected workspace and user approvals.', icon: 'code', color: '#5ab9a0' },
-      { ...shared, id: 'researcher', name: 'Research Partner', description: 'Turn questions into supported answers.', instructions: 'You are a research partner. Separate observations, inferences, and uncertainty. Cite sources when available. Never invent a source or pretend an unperformed action succeeded.', icon: 'search', color: '#d5a35f' },
+      { ...shared, id: 'primary', name: 'A Gent', description: 'Your general-purpose thinking and doing partner.', instructions: 'You are A Gent, a thoughtful, practical assistant. Help the user get work done. Explain uncertainty clearly. Ask before consequential actions outside the requested scope.', icon: 'spark', avatarType: 'star', color: '#f39161' },
+      { ...shared, id: 'designer', name: 'Product Designer', description: 'Flows, interfaces, and the details that make them work.', instructions: 'You are an experienced product designer. Help with research, user flows, interface design, accessibility, and practical prototypes. Explain the choices that affect usability.', icon: 'design', avatarType: 'flower', color: '#9393ed' },
+      { ...shared, id: 'engineer', name: 'Software Engineer', description: 'Build, debug, and understand your code.', instructions: 'You are a careful software engineer. Inspect relevant code, implement complete changes, and verify important behavior. Respect the selected workspace and user approvals.', icon: 'code', avatarType: 'mech', color: '#5ab9a0' },
+      { ...shared, id: 'researcher', name: 'Research Partner', description: 'Turn questions into supported answers.', instructions: 'You are a research partner. Separate observations, inferences, and uncertainty. Cite sources when available. Never invent a source or pretend an unperformed action succeeded.', icon: 'search', avatarType: 'clover', color: '#d5a35f' },
     ],
     conversations: [], groups: [], agentGroups: [], schedules: [],
     settings: { theme: 'dark', defaultProviderId: 'codex', defaultModelId: '', showActivity: true, toolStreamView: 'compact' },
@@ -107,9 +112,15 @@ export function validateImport(value: unknown): WorkspaceState {
     return { id: string(g.id, 'Agent group ID', 100), name: string(g.name, 'Agent group name', 100), createdAt: typeof g.createdAt === 'string' ? g.createdAt : now() } as Group;
   });
   const agentGroupIds = new Set(agentGroups.map(g => g.id));
+  const template = { ...initialState().agents[0] } as Record<string, unknown>;
+  // Never inherit the primary agent's shape into every imported agent.
+  delete template.avatarType;
   const agents = list(data.agents, 'Agents', 500).map((value) => {
-    const a = object(value), patch = agentPatch(a);
-    return { ...initialState().agents[0], ...patch, id: string(a.id, 'Agent ID', 100), createdAt: typeof a.createdAt === 'string' ? a.createdAt : now() } as Agent;
+    const a = object(value);
+    const sanitized = { ...a };
+    if ('avatarType' in sanitized && !isAgentAvatarType(sanitized.avatarType)) delete sanitized.avatarType;
+    const patch = agentPatch(sanitized);
+    return { ...template, ...patch, id: string(a.id, 'Agent ID', 100), createdAt: typeof a.createdAt === 'string' ? a.createdAt : now() } as Agent;
   });
   for (const agent of agents) if (agent.agentGroupId && !agentGroupIds.has(agent.agentGroupId)) agent.agentGroupId = null;
   const agentIds = new Set(agents.map(a => a.id));

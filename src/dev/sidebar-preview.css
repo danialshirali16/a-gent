@@ -1,0 +1,17 @@
+.sidebar-preview-stage { display: flex; align-items: flex-start; gap: 28px; }
+.sidebar-preview-frame { width: 280px; height: 620px; flex-shrink: 0; overflow: hidden; border: 1px solid var(--ui-border); border-radius: 14px; background: var(--ui-sidebar); }
+.sidebar-preview-frame.is-rail { width: 64px; }
+.sidebar-preview-frame .reason-sidebar,
+.sidebar-preview-frame .reason-rail { height: 100%; }
+.sidebar-preview-frame .reason-sidebar { position: relative; transform: none; width: 100%; box-shadow: none; transition: none; }
+.sidebar-preview-frame .reason-rail { display: flex; width: 100%; }
+.sidebar-preview-copy { display: flex; flex-direction: column; gap: 18px; max-width: 420px; padding-top: 4px; }
+.sidebar-preview-copy > div { display: flex; flex-direction: column; gap: 3px; }
+.sidebar-preview-copy strong { font-size: 12px; font-weight: 550; }
+.sidebar-preview-copy span { color: var(--ui-text-3); font-size: 12px; line-height: 18px; }
+
+@media (max-width: 720px) {
+  .sidebar-preview-stage { flex-direction: column; }
+  .sidebar-preview-frame { width: 100%; max-width: 340px; }
+  .sidebar-preview-frame.is-rail { width: 64px; }
+}

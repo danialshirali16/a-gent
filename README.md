@@ -2,9 +2,19 @@
 
 A personal workspace for AI agents, built independently from the visible workflows of the installed Reason app. A Gent has its own code, branding, data store, and model connections.
 
+[Public source repository](https://github.com/danialshirali16/a-gent)
+
 > Current development scope: **macOS**. Windows and Android sections describe the earlier cross-platform build; those artifacts were not rebuilt or tested in the current macOS-only pass.
 
 The app includes persistent conversations, custom agents, agent groups, conversation groups, search, streamed model replies, project folders, visible tool activity, read-only workspace file browsing, terminal activity, action approvals, interruption, one-time scheduled tasks, and workspace import/export. Codex and OpenCode provide local agent execution. Antigravity, Cloud, Ollama, and OpenAI-compatible endpoints provide additional chat models.
+
+## Project documentation
+
+Start with the [documentation index](docs/README.md). It links the [current state](docs/current-state-review.md), [project roadmap](docs/project-roadmap.md), [UI Roadmap](docs/ui-roadmap.md), component references, and [dated validation evidence](docs/validation.md).
+
+As of 2026-11-05, the initial 18-component pass is complete. The source model picker follows the provider-rail reference and shows connected catalogs only. Its [modelOptions stress test](docs/model-options-stress-test.md) found seven open issues. Earlier normal-fixture and packaged-app results do not cover those cases; the latest picker source awaits a new packaged release check.
+
+Provider and MCP/Connect Apps lifecycles remain partial. The [source-based integration review](docs/integration-review.md) and [237-task completion/release roadmap](docs/project-roadmap.md) define the remaining work, including [ElevenLabs Speech-to-Text](docs/roadmaps/speech-to-text.md), [model-specific reasoning controls](docs/roadmaps/reasoning-effort.md), and [Agent skill management](docs/roadmaps/skills.md). Every delivery scope must complete its [benchmark prerequisite](docs/roadmaps/benchmarking.md) before development. Task dependencies and acceptance criteria are maintained in [the workstream boards](docs/roadmaps/README.md); the newly planned features are not implemented yet.
 
 ## Run on this Mac
 
@@ -124,7 +134,11 @@ npm run desktop:mac
 
 Windows and Android build commands remain available in `package.json` for the paused cross-platform work, but were not run in the current macOS-only pass.
 
-Current macOS validation: 12/12 backend tests, 17/17 smoke tests, 10/10 visual baselines, 6/6 axe scans, and 6/6 E2E workflows pass.
+Historical component-pass validation recorded 17/17 backend tests, 18/18 smoke tests, 10/10 visual baselines, 7/7 axe scans, and 7/7 E2E workflows passing. Those results predate the latest picker work. See [validation](docs/validation.md) for current focused results, open stress-test findings, and checks still required for the next package.
+
+`dist/THIRD_PARTY_NOTICES.txt` includes bundled dependency licenses, including `bot-avatars@0.2.2` under MIT.
+
+All 18 component families have shared implementations and development previews; [the UI Roadmap](docs/ui-roadmap.md#component-progress) owns their checklist and follow-up work. Agent avatars use pinned `bot-avatars@0.2.2` with an inline 18-shape picker, saved preferences, full motion, lazy fallback, and live reduced-motion handling. Run `npm run dev` and open `/?component=field` or another preview ID. The catalog stress harness is `/?component=composer&stress=model-options&data=worst`; these previews are development-only. See [component notes](docs/component-notes.md) and [the Search review](docs/search-component.md).
 
 Visual baselines live in `tests/ui/visual.spec.ts-snapshots/` and are generated on macOS arm64 with Chrome. Refresh them with `npm run test:visual:update` after an intentional UI change.
 

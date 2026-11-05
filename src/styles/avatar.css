@@ -1,0 +1,132 @@
+/* Bot avatars, fallbacks, and the inline shape picker. */
+.ui-agent-avatar {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  overflow: visible;
+  vertical-align: middle;
+}
+
+.ui-agent-avatar-fallback {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.ui-agent-avatar-canvas {
+  position: relative;
+  z-index: 1;
+  max-width: none;
+}
+
+.ui-agent-avatar.has-status .ui-avatar-status {
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  width: 8px;
+  height: 8px;
+  border: 2px solid var(--ui-page);
+  border-radius: 50%;
+  background: var(--ui-success);
+  z-index: 2;
+}
+.ui-agent-avatar.has-status .ui-avatar-status.is-working { background: var(--ui-accent); animation: avatar-working 1.6s ease-in-out infinite; }
+.ui-agent-avatar.has-status .ui-avatar-status.is-ready { background: var(--ui-success); }
+.ui-agent-avatar.has-status .ui-avatar-status.is-offline { background: var(--ui-text-3); }
+
+@keyframes avatar-working {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .5; }
+}
+
+/* Avatar field and shape picker */
+.avatar-field { gap: 7px; }
+
+.avatar-picker-trigger {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  min-height: 56px;
+  padding: 6px 10px 6px 6px;
+  border: 1px solid var(--ui-border);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--ui-ink) 4%, transparent);
+  color: var(--ui-ink);
+  text-align: left;
+}
+.avatar-picker-trigger:hover { border-color: var(--ui-border-strong); }
+.avatar-picker-trigger:focus-visible { outline: 2px solid var(--ui-accent); outline-offset: 2px; }
+.avatar-picker-preview { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; flex: none; }
+.avatar-picker-trigger-copy { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.avatar-picker-trigger-copy strong { font-size: 13px; font-weight: 500; line-height: 18px; }
+.avatar-picker-trigger-copy small { color: var(--ui-text-3); font-size: 11px; line-height: 16px; }
+.avatar-picker-chevron { flex: none; color: var(--ui-text-3); transition: transform var(--ui-dur-fast) var(--ui-ease-out); }
+.avatar-picker-trigger.is-open .avatar-picker-chevron { transform: rotate(180deg); }
+
+.avatar-picker-panel {
+  display: flex;
+  flex-direction: column;
+  max-height: 240px;
+  overflow: hidden;
+  padding: 6px;
+  border: 1px solid var(--ui-border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--ui-ink) 3%, transparent);
+}
+.avatar-picker-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 4px; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.avatar-picker-option {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  min-width: 0;
+  min-height: 58px;
+  padding: 5px 3px 4px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  color: var(--ui-text-2);
+  font-size: 10px;
+  line-height: 14px;
+  text-align: center;
+  cursor: pointer;
+}
+.avatar-picker-option:hover { background: color-mix(in srgb, var(--ui-ink) 7%, transparent); }
+.avatar-picker-option.is-selected { border-color: var(--ui-accent); background: color-mix(in srgb, var(--ui-accent) 7%, transparent); color: var(--ui-ink); }
+.avatar-picker-option input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.avatar-picker-option:has(input:focus-visible) { outline: 2px solid var(--ui-accent); outline-offset: 1px; }
+.avatar-picker-option > span:last-of-type { flex: none; overflow: hidden; max-width: 100%; text-overflow: ellipsis; white-space: nowrap; }
+
+/* The legacy form label rule is broader than the picker option. */
+.form-stack .avatar-picker-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  font-size: 10px;
+  line-height: 14px;
+  color: var(--ui-text-2);
+}
+.form-stack .ui-choice { display: flex; flex-direction: row; align-items: flex-start; gap: 10px; font-size: 13px; color: var(--ui-ink); }
+.form-stack .ui-switch { align-items: center; gap: 14px; }
+.avatar-picker-check { position: absolute; top: 5px; right: 5px; color: var(--ui-accent); }
+.avatar-picker-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex: none; margin-top: 5px; padding: 7px 3px 1px; border-top: 1px solid var(--ui-border); background: var(--ui-raised); }
+.avatar-picker-footer > span { color: var(--ui-text-3); font-size: 11px; line-height: 16px; }
+
+@media (pointer: coarse), (max-width: 599px) {
+  .avatar-picker-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .avatar-picker-option { min-height: 72px; font-size: 12px; line-height: 16px; }
+  .avatar-picker-trigger { min-height: 64px; }
+  .avatar-picker-trigger-copy strong { font-size: 14px; }
+  .avatar-picker-trigger-copy small { font-size: 12px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .avatar-picker-chevron { transition: none; }
+  .ui-agent-avatar.has-status .ui-avatar-status.is-working { animation: none; }
+}

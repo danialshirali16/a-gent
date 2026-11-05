@@ -1,6 +1,7 @@
 export type ProviderKind = 'codex' | 'opencode' | 'ollama' | 'openai-compatible';
 export type RunStatus = 'running' | 'waiting' | 'completed' | 'failed' | 'interrupted';
 export type IconName = 'spark' | 'code' | 'design' | 'search' | 'custom';
+import type { AgentAvatarType } from './agentAvatars';
 
 export interface Agent {
   id: string;
@@ -9,6 +10,8 @@ export interface Agent {
   instructions: string;
   color: string;
   icon: IconName;
+  /** Bot-avatars shape. Missing means resolve from the legacy icon. */
+  avatarType?: AgentAvatarType;
   providerId: string;
   modelId: string;
   reasoningEffort: string;

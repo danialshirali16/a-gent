@@ -17,7 +17,7 @@ test('Reason-style shell, rail, settings, and connections', async ({ page }) => 
 
   await page.getByRole('button', { name: 'Connect apps' }).click();
   await expect(page.getByRole('heading', { name: 'Connections' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Models' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Models' })).toBeVisible();
   await page.getByRole('button', { name: 'Close dialog' }).click();
 });
 
@@ -37,7 +37,7 @@ test('chat streams a reply through the fake Codex adapter', async ({ page }) => 
 
   await page.getByRole('textbox', { name: 'Message A Gent' }).fill('Hello from Playwright');
   await page.getByRole('button', { name: 'Send message' }).click();
-  await expect(page.getByText('A Gent test response 1.')).toBeVisible({ timeout: 15000 });
+  await expect(page.getByRole('main').getByText('A Gent test response 1.')).toBeVisible({ timeout: 15000 });
 
   await page.getByRole('button', { name: 'Open side panel' }).click();
   await page.getByRole('tab', { name: 'Terminal' }).click();
@@ -120,6 +120,13 @@ test('side panel exposes an approvals tab', async ({ page }) => {
 
 
 test('side panel approvals can complete a waiting run', async ({ page }) => {
+  let releaseResponse!: () => void;
+  const responseGate = new Promise<void>(resolve => { releaseResponse = resolve; });
+  await page.route('**/api/conversations/*/messages', async route => {
+    const response = await route.fetch();
+    await responseGate;
+    await route.fulfill({ response });
+  });
   await page.goto('/');
   const token = await page.evaluate(() => (window as any).__AGENT_CONFIG__?.token as string | undefined);
   expect(token).toBeTruthy();
@@ -144,20 +151,23 @@ test('side panel approvals can complete a waiting run', async ({ page }) => {
   await page.getByRole('textbox', { name: 'Message A Gent' }).fill('[approval]');
   await page.getByRole('button', { name: 'Send message' }).click();
   await expect(page.locator('.reason-approval').first()).toBeVisible({ timeout: 15000 });
+  releaseResponse();
+  await expect(page.getByRole('textbox', { name: 'Message A Gent' })).toBeEnabled();
+  await expect(page.locator('.reason-approval').first()).toBeVisible();
 
   await page.getByRole('button', { name: 'Open side panel' }).click();
   await page.getByRole('tab', { name: 'Approvals' }).click();
   const panelApproval = page.locator('.reason-sidepanel-approvals');
   await expect(panelApproval).toBeVisible();
   await panelApproval.getByRole('button', { name: 'Allow this action' }).click();
-  await expect(page.getByText('Approved task completed.')).toBeVisible({ timeout: 15000 });
+  await expect(page.getByRole('main').getByText('Approved task completed.')).toBeVisible({ timeout: 15000 });
   await expect(page.getByText('No approvals are waiting.')).toBeVisible();
 });
 
 
 test('agent groups create, assign, rename, and delete from the sidebar', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('button', { name: 'Create an agent group' }).click();
+  await page.getByRole('button', { name: 'New group', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'New agent group' })).toBeVisible();
   await page.getByLabel('Group name').fill('Product');
   await page.getByRole('button', { name: 'Create group' }).click();
@@ -173,7 +183,8 @@ test('agent groups create, assign, rename, and delete from the sidebar', async (
 
   await page.getByRole('button', { name: 'More workspace options' }).click();
   await page.getByRole('menuitem', { name: 'All agents' }).click();
-  await page.getByRole('button', { name: 'Customize Product Designer' }).click();
+  await page.getByRole('button', { name: 'Actions for Product Designer' }).click();
+  await page.getByRole('menuitem', { name: 'Customize agent' }).click();
   await page.getByRole('combobox', { name: 'Agent group', exact: true }).selectOption({ label: 'Product' });
   await page.getByRole('button', { name: 'Save agent' }).click();
 
@@ -191,8 +202,8 @@ test('agent groups create, assign, rename, and delete from the sidebar', async (
   await page.getByRole('menuitem', { name: 'Delete group' }).click();
   await expect(page.getByRole('heading', { name: 'Agent group' })).toBeVisible();
   await page.getByRole('button', { name: 'Delete group' }).click();
-  await expect(page.getByText('Agents in this group move to Unassigned.')).toBeVisible();
-  await page.getByRole('button', { name: 'Confirm delete' }).click();
+  await expect(page.getByRole('heading', { name: 'Delete this group?' })).toBeVisible();
+  await page.getByRole('dialog', { name: 'Delete this group?' }).getByRole('button', { name: 'Delete group' }).click();
   await expect(page.getByRole('button', { name: 'Options for Design' })).not.toBeVisible();
   await expect(page.getByRole('button', { name: 'Product Designer', exact: true })).toBeVisible();
 });
@@ -271,7 +282,7 @@ test('model picker supports keyboard navigation', async ({ page }) => {
   await trigger.focus();
   await page.keyboard.press('ArrowDown');
   await expect(page.getByRole('dialog', { name: 'Choose a model' })).toBeVisible();
-  await expect(page.locator('.reason-model-group button').first()).toBeFocused();
+  await expect(page.getByRole('searchbox', { name: 'Search connected models' })).toBeFocused();
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog', { name: 'Choose a model' })).not.toBeVisible();
   await expect(trigger).toBeFocused();
@@ -287,6 +298,18 @@ test('dialogs keep keyboard focus inside', async ({ page }) => {
   expect(inside).toBe(true);
 });
 
+
+test('reduced motion pauses live bot avatars', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.goto('/');
+  await expect(page.getByRole('textbox', { name: 'Message A Gent' })).toBeVisible();
+  const avatar = page.locator('.reason-agent-row .ui-agent-avatar').first();
+  await expect(avatar).toHaveAttribute('data-avatar-motion', 'full');
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await expect(avatar).toHaveAttribute('data-avatar-motion', 'static');
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await expect(avatar).toHaveAttribute('data-avatar-motion', 'full');
+});
 
 test('loads the Inter Latin variable font only', async ({ page }) => {
   await page.goto('/');

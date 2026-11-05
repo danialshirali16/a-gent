@@ -1,0 +1,10 @@
+/* Sidebar refinements layered on the Reason-style shell. */
+.reason-connect-status {
+  width: 6px;
+  height: 6px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.reason-rail-agent.ui-avatar,
+.reason-rail-agent .ui-avatar { pointer-events: none; }
