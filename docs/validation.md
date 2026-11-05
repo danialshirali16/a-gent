@@ -8,6 +8,337 @@ Electron: 45.2.2
 
 Records below are scoped to their review. The latest focused source commands use Node 24; historical full-suite counts and artifact checksums were not recomputed by the documentation update. Start with [the documentation index](README.md) for current state and continuation.
 
+## M0 foundation acceptance
+
+Date: 2026-11-05. Scope: BEN-001, FND-001, and FND-002; release contract, runtime/capability baseline, and initial QA-001 support matrix. This was a research/contract pass, not a provider, MCP, speech, skills, UI, package, or publication verification.
+
+| Check | Result |
+| --- | --- |
+| `node scripts/runtime-baseline.mjs --strict` | Pass on the probe host: Codex 0.166.0, OpenCode 2.2.5, Electron 45.2.2 expected; Codex required methods/model metadata and 26 fixture files match. |
+| Codex schema generation | `codex app-server generate-json-schema --out <temp>`: 106 client methods, 10 server-request methods; generated 2026-11-05. |
+| OpenCode OpenAPI capture | `opencode api GET /openapi.json`: OpenAPI 3.1.0, 138 paths, 169 operations; captured 2026-11-05. |
+| Fixture parse | Codex and OpenCode manifests and selected schema files parse as JSON; checked-in sizes are recorded in the manifests. |
+| Release decisions | D-01–D-11, R1/exclusions, launch support summary, and owner acceptance recorded in [the release contract](release-contract.md). |
+| Benchmark record | [BEN-001](benchmarks/BEN-001-foundations.md) covers FND-001–012 with Reason, Codex, and OpenCode comparisons and explicit limitations. |
+| Support matrix | Initial [QA-001 matrix](support-matrix.md) maps R1 surfaces and negative states to owner/test/evidence and gate; QA-001 remains To do pending BEN-013. |
+| Documentation links | 633 repo-relative links checked across `docs/**/*.md` and `README.md`; 0 missing. One pre-existing host-absolute skill link was skipped. |
+| `git diff --check` | Pass. |
+| Live provider/MCP/OAuth/STT/skill calls, package/signing/clean-Mac checks, VoiceOver/zoom, performance | Not performed in this pass; listed as limitations in the records. |
+
+The runtime probe used Node 26.12.1 on Windows x64. Release packaging remains Node 24.x per FND-001; the probe does not certify a macOS package or a real provider account.
+
+## FND-003 durable schema v2
+
+Date: 2026-11-05. Scope: workspace schema, v1 migration, backup recovery, export/import stripping, scoped app/skill records, chat effort, and non-secret speech settings. UI behavior and provider integration were not changed.
+
+| Check | Result |
+| --- | --- |
+| `npm run typecheck` | Pass. |
+| `npm test` | 21/21 pass, including 4 new schema-migration tests and the updated v2 import case. |
+| `npm run build` | Pass; existing main-chunk size advisory remains. |
+| v1 migration | Adds `apps`/`skills`, sets version 2, preserves agents/chats/messages/schedules/settings, promotes legacy `providerThreadId` to `providerBinding`. |
+| Backup rollback | After save, primary is v2 and `.bak` is v1; corrupting the primary recovers the v1 backup, migrates it, and preserves the conversation. |
+| v2 round-trip | Preserves provider binding, chat effort, scoped apps/skills, and speech settings; `validateImport` strips provider binding/thread IDs. |
+| Validation negatives | Unsupported version, unknown scope, invalid ownership, invalid speech credentials, and duplicate app/skill IDs are rejected. |
+| Merge | Imported apps/skills are added without replacing existing records. |
+
+Record: [durable workspace schema](data-schema.md). Code: `shared/types.ts`, `server/store.ts`; tests: `tests/server/schema-migration.test.ts`. The two pre-existing cross-platform test assumptions (Windows workspace path separator and version-2 import rejection) were corrected so the suite runs on this host; neither changes product behavior.
+
+## FND-004 host/device authority
+
+Date: 2026-11-05. Scope: API-boundary roles for host-level credentials/configuration versus ordinary workspace use. The implemented policy distinguishes the administrator token, a host-local desktop device, and a remote paired device.
+
+| Check | Result |
+| --- | --- |
+| `npm run typecheck` | Pass. |
+| `npm test` | 22/22 pass at the FND-004 step (23/23 after FND-005), including the new host-authority test. |
+| `npm run build` | Pass; existing main-chunk size advisory remains. |
+| Host desktop device | Can export the workspace, change default provider/model, change speech settings, connect providers, and use ordinary workspace routes. |
+| Remote device | Can read bootstrap/auth, use chats/schedules/approvals/files, and change ordinary UI preferences; host defaults, speech, provider connect, export, and import return 403. |
+| Administrator | Can perform host-level operations even with forwarding headers; device creation remains administrator-only. |
+| Device self-management | Device self-rotation/revocation remains allowed; managing another device remains denied. |
+
+Record: [authority model](authority-model.md). Code: `server/index.ts`; test: `tests/server/backend.test.ts` (`host authority separates desktop devices from remote devices for credentials and workspace data`). This is transport-locality enforcement; explicit persistent device roles remain future work if multi-user/remote-admin behavior is required.
+
+## FND-005 device-bound event streams
+
+Date: 2026-11-05. Scope: bind SSE clients to the authenticated device and close only the affected streams on rotation/revocation.
+
+| Check | Result |
+| --- | --- |
+| `npm run typecheck` | Pass. |
+| `npm test` | 23/23 pass, including the new event-stream binding test. |
+| `npm run build` | Pass; existing main-chunk size advisory remains. |
+| Affected stream | Rotating or revoking a device closes its open SSE stream; the old token returns 401. |
+| Unrelated stream | A second device's stream stays open and receives the next state event after another device is rotated. |
+| Administrator stream | Administrator SSE clients have no device ID and are not closed by device rotation/revocation. |
+
+Record: [authority model](authority-model.md#event-stream-binding-fnd-005). Code: `server/index.ts`; test: `tests/server/backend.test.ts` (`device rotation and revocation close that device event stream`).
+
+## FND-007 provider session binding
+
+Date: 2026-11-05. Scope: reuse a provider thread/session only when the stored binding matches the current run; rebuild deliberately on provider/profile/workspace/model changes or legacy data.
+
+| Check | Result |
+| --- | --- |
+| `npm run typecheck` | Pass. |
+| `npm test` | 26/26 pass, including 2 unit tests and 1 end-to-end binding test. |
+| `npm run build` | Pass; existing main-chunk size advisory remains. |
+| Same binding | Second message reuses `test-thread-1`; the binding retains provider, kind, model, and workspace. |
+| Model change | Third message rebuilds to a new provider thread and stores the new model in the binding. |
+| Legacy/mismatch | A legacy `providerThreadId` without a complete binding is cleared; provider/profile/workspace/model mismatches clear both fields. |
+| Fresh chat | Starts without a provider thread until the adapter reports one. |
+
+Record: [durable workspace schema](data-schema.md#runtime-session-reuse-fnd-007). Code: `server/session-binding.ts`, `server/runs.ts`; tests: `tests/server/session-binding.test.ts`, `tests/server/backend.test.ts` (`provider sessions are reused only for a matching binding and rebuilt when the model changes`).
+
+## FND-006 run lifecycle and confirmed termination
+
+Date: 2026-11-05. Scope: reservation release, Stop/termination confirmation, OpenCode child cleanup, and shutdown recovery.
+
+| Check | Result |
+| --- | --- |
+| `npm run typecheck` | Pass. |
+| `npm test` | 29/29 pass, including 3 new OpenCode lifecycle tests. |
+| `npm run build` | Pass; existing main-chunk size advisory remains. |
+| OpenCode shutdown | `run()` rejects only after the child exits; the PID is gone. |
+| OpenCode Stop | The chat stays `409` while the child terminates, then accepts a new message only after exit. |
+| Host shutdown | An active OpenCode child is terminated and `state.json` stores the assistant message as `interrupted`. |
+| Codex | Existing test still observes child exit after an ignored graceful stop. |
+
+Record: [run lifecycle](run-lifecycle.md). Code: `server/opencode.ts`, `server/runs.ts`; fixture: `tests/server/fake-opencode.mjs`; tests: `tests/server/backend.test.ts` (`OpenCode shutdown…`, `OpenCode Stop…`, `host shutdown…`).
+
+The Windows host terminates OpenCode on SIGTERM immediately; the 2-second escalation path is exercised by code and the POSIX fixture behavior, not measured on this host. QA-004 should reproduce the historical "OpenCode continues after Stop" finding on macOS.
+
+## FND-008 atomic persistence and recovery
+
+Date: 2026-11-05. Scope: save queue/atomic replacement, backup retention, failed-write recovery, failed-import rollback, lock/restart behavior, and migration compatibility.
+
+| Check | Result |
+| --- | --- |
+| `npm run typecheck` | Pass. |
+| `npm test` | 32/32 pass, including 3 new persistence tests. |
+| `npm run build` | Pass; existing main-chunk size advisory remains. |
+| Concurrent saves | Final primary is the later snapshot; backup is a valid previous snapshot; no `.tmp` remains. |
+| Failed write | Primary remains byte-identical; a later save succeeds and reloads correctly. |
+| Failed import | Candidate state rolls back in memory; a later save/reload contains no imported record. |
+| Existing recovery | Lock rejection/stale-lock recovery, corrupt-primary backup recovery, v1→v2 migration, and import/export stripping remain green. |
+
+Record: [persistence](persistence.md). Code: `server/store.ts`; tests: `tests/server/persistence.test.ts`, `tests/server/schema-migration.test.ts`, `tests/server/backend.test.ts`.
+
+## FND-009 correlated pending interactions
+
+Date: 2026-11-05. Scope: durable approval/question/form/URL correlation, decision persistence, restart expiry, and host isolation.
+
+| Check | Result |
+| --- | --- |
+| `npm run typecheck` | Pass. |
+| `npm test` | 35/35 pass, including 3 new interaction-store tests and approval correlation assertions. |
+| `npm run build` | Pass; existing main-chunk size advisory remains. |
+| Approval correlation | A live approval writes `hostId`, `runId`, `conversationId`, `providerId`, `threadId`, `kind: approval`, and `status: pending`. |
+| Decision persistence | Accepting the approval persists `status: accepted` before the run completes. |
+| Restart | A pending record becomes `expired` on the next host load and cannot remain actionable. |
+| Host switch | Separate data directories/host IDs keep independent records. |
+| Corrupt file | Damaged interactions are renamed to `interactions.json.corrupt-*` and replaced with a clean store. |
+| Unsupported question/form | Codex elicitation/user-input/unknown requests are recorded as cancelled notices; no answer is fabricated. |
+
+Record: [interactions](interactions.md). Code: `server/interactions.ts`, `server/runs.ts`, `server/codex.ts`, `server/index.ts`; tests: `tests/server/interactions.test.ts`, `tests/server/backend.test.ts`.
+
+## FND-010 shared timeout budgets and cancellation
+
+Date: 2026-11-05. Scope: centralize timeout policy, bounded cancellation helpers, adapter application, interaction expiry, SSE heartbeat/buffer, and a total-run stream safety net.
+
+| Check | Result |
+| --- | --- |
+| `npm run typecheck` | Pass. |
+| `npm test` | 38/38 pass, including 3 new budget tests and interaction expiry assertion. |
+| `npm run build` | Pass; existing main-chunk size advisory remains. |
+| Budget categories | startup, catalog, auth, tool, session, interrupt, stream, interaction, shutdown, termination grace/kill, heartbeat, response/SSE caps are defined and ordered. |
+| Cancellation primitives | `budgetSignal`, `combineBudget`, and `withBudget` abort on timeout, preserve parent abort, and clear timers. |
+| Adapter application | Codex RPC/close, OpenCode capture/run/termination/close, HTTP catalog/stream, SSE heartbeat/buffer, and RunManager total-run cap use shared budgets. |
+| Interaction expiry | New pending interactions receive `expiresAt`; restart still expires pending records immediately. |
+
+Record: [timeouts](timeouts.md). Code: `server/budgets.ts` plus `server/codex.ts`, `server/opencode.ts`, `server/providers.ts`, `server/runs.ts`, `server/index.ts`, `server/interactions.ts`; tests: `tests/server/budgets.test.ts`.
+
+## FND-011 diagnostics and redacted errors
+
+Date: 2026-11-05. Scope: request/run/provider correlation, structured API/SSE errors, credential redaction, and user recovery copy.
+
+| Check | Result |
+| --- | --- |
+| `npm run typecheck` | Pass. |
+| `npm test` | 40/40 pass, including 2 new diagnostics tests. |
+| `npm run build` | Pass; existing main-chunk size advisory remains. |
+| Request IDs | Supplied or generated IDs appear in `X-Request-Id` and error bodies; auth failures include them. |
+| Redaction | Bearer tokens, prefixed tokens, token/api-key/password/secret/cookie assignments, JSON credentials, and truncated text are redacted. |
+| Provider text | HTTP bodies, Codex stderr, and OpenCode stderr pass through redaction before errors/details are exposed. |
+| User recovery | 413 and 500 return bounded generic messages plus a request ID; validation errors stay actionable. |
+| SSE errors | Error events may carry requestId/runId/providerId/appId/code; run save/approval failures include run/provider IDs. |
+
+Record: [diagnostics](diagnostics.md). Code: `server/diagnostics.ts`, `server/index.ts`, `server/runs.ts`, `server/providers.ts`, `server/codex.ts`, `server/opencode.ts`; tests: `tests/server/diagnostics.test.ts`.
+
+## FND-012 config and secret storage interfaces
+
+Date: 2026-11-05. Scope: owner-scoped typed config, credential references, encryption at rest, atomic updates/rollback, migration, and export exclusion.
+
+| Check | Result |
+| --- | --- |
+| `npm run typecheck` | Pass. |
+| `npm test` | 45/45 pass, including 5 new config/secret tests. |
+| `npm run build` | Pass; existing main-chunk size advisory remains. |
+| Typed config | Owner/version checks, validation, legacy migration, backup recovery, and owner-mismatch rejection pass. |
+| Config rollback | A failed write leaves the previous in-memory value intact. |
+| Memory secrets | Owner-separated set/get/list/delete pass. |
+| File secrets | AES-256-GCM ciphertext, key file, reload, owner separation, delete, and no plaintext in `secrets.json` pass. |
+| Export exclusion | Workspace state/export does not contain the stored secret value. |
+| Secret recovery | Backup recovery and failed-write rollback pass. |
+
+Record: [config and secrets](config-secrets.md). Code: `server/config-store.ts`, `server/secrets.ts`; tests: `tests/server/config-secrets.test.ts`. ProviderManager still uses its existing connections file and session-only key map; PVD-003/PVD-004/STT-002 adopt these interfaces.
+
+## BEN-002 shared provider lifecycle comparison
+
+Date: 2026-11-05. Scope: research/design comparison, not provider implementation. Compared Codex 0.166.0, OpenCode 2.2.5, LM Studio current docs/CLI, Jan Desktop current docs, and the A Gent source baseline.
+
+| Check | Result |
+| --- | --- |
+| Codex evidence | Generated 0.166.0 schema (106 client methods/10 server requests) and official App Server docs. |
+| OpenCode evidence | Generated 2.2.5 OpenAPI (138 paths/169 operations) and official Server docs. |
+| LM Studio evidence | `lms` CLI commit `1b7181b` installed; `lms server status` reported not running; `lms ls --json` woke the service and exceeded the 30s probe timeout; official server/auth/models/settings docs read. |
+| Jan evidence | Jan not installed; official quickstart, Local API Server, and custom-endpoint docs read. |
+| Live inference/auth/MCP/OAuth | Not performed; PVD-017/QA-008 remain the real-service gates. |
+| Contract output | [BEN-002](../docs/benchmarks/BEN-002-provider-lifecycle.md) records lifecycle states, discovery-vs-inference proof, identity/presentation, credentials, edit/remove, recovery, and error contracts mapped to PVD-001–018. |
+| Documentation links | Repo-relative link check passed after the update; no runtime code changed. |
+
+BEN-002 is a design/benchmark acceptance only. It does not mark any provider implementation task Done.
+
+## BEN-003 Codex integration comparison
+
+Date: 2026-11-05. Scope: research plus direct app-server observation. Compared Codex CLI/TUI, app-server schema/docs, and a live ChatGPT account.
+
+| Check | Result |
+| --- | --- |
+| `codex login status` | `Logged in using ChatGPT` |
+| `account/read` | Authenticated; `requiresOpenaiAuth: true` |
+| Visible models | 8 |
+| `gpt-6.1-sol` metadata | default `low`; supported `low/medium/high/xhigh/max/ultra`; text/image modalities |
+| Real turn | `turn/completed` status `completed`; response `OK` |
+| Real Stop | Second turn interrupted; `turn/completed` status `interrupted` |
+| Thread/turn correlation | Opaque thread/turn IDs observed in events and completion |
+| Approvals/questions/elicitation | Schema/docs/fixtures only; not live-exercised |
+| Current gap | A Gent discards effort metadata and uses a global effort allowlist |
+
+Record: [BEN-003](../docs/benchmarks/BEN-003-codex-integration.md). This is a benchmark/design acceptance; it does not close CDX-001–006.
+
+## BEN-004 OpenCode integration comparison
+
+Date: 2026-11-05. Scope: research plus direct CLI/server observation and one live model turn.
+
+| Check | Result |
+| --- | --- |
+| `opencode auth list` | Stored OpenAI and OpenCode Console credentials |
+| Model catalog | 26 models |
+| Real turn | `opencode-go/deepseek-v4.1-flash` completed through A Gent |
+| Alternate models | `openai/gpt-5.5` unsupported for ChatGPT account; `opencode/deepseek-v4.1-flash` insufficient funds |
+| v2 API | OpenAPI 3.1.0, 138 paths/169 operations; session/event/permission/form/MCP/skill routes present |
+| Current adapter | CLI `run --format json --auto`; model count treated as readiness; undocumented event format |
+| Live Stop/permission prompts | Not exercised; process cleanup and fixtures cover escalation |
+
+Record: [BEN-004](../docs/benchmarks/BEN-004-opencode-integration.md). This is a benchmark/design acceptance; it does not close OPC-001–006.
+
+## BEN-021/BEN-022 reasoning and Thinking controls
+
+Date: 2026-11-05. Scope: model-specific reasoning capability contract and picker/cross-surface controls.
+
+| Check | Result |
+| --- | --- |
+| Codex live metadata | `gpt-6.1-sol` default `low`; options `low/medium/high/xhigh/max/ultra`; text/image input |
+| OpenCode evidence | Model variants/settings in v2 OpenAPI; no uniform effort enum |
+| Ollama evidence | `think` boolean/string/null, discovery via `/api/show`; deferred provider |
+| Capability contract | Enum/budget/boolean/unsupported/unknown, source/precedence/freshness, native mapping, migration, dispatch validation mapped to EFF-001–006 |
+| Thinking controls | Supplied picker layout retained; per-model options/default, no-reasoning/unknown states, cross-surface/race/accessibility mapped to EFF-007–012 |
+| Implementation | Not yet done; current UI still has fixed Light/Balanced/Deep and global `medium` |
+
+Records: [BEN-021](../docs/benchmarks/BEN-021-reasoning-capability.md), [BEN-022](../docs/benchmarks/BEN-022-thinking-controls.md). These are benchmark/design acceptances; they do not close EFF-001–012.
+
+### Reasoning implementation slice
+
+Date: 2026-11-05. Scope: typed model capability metadata, Codex discovery preservation, dynamic picker options/default, and dispatch validation.
+
+| Check | Result |
+| --- | --- |
+| `npm run typecheck` | Pass. |
+| `npm test` | 51/51 pass in the current suite (49 at the reasoning step). |
+| `npm run build` | Pass; existing chunk-size advisory remains. |
+| Live Codex metadata | 8 models returned with enum options/defaults; `gpt-6.1-sol` default `low`, `gpt-6-sol` default `medium`, `gpt-6-luna` excludes `ultra`. |
+| Metadata preservation | Codex `supportedReasoningEfforts`/`defaultReasoningEffort` survive into `ModelOption.reasoning`. |
+| Picker | Footer renders only the selected model's enum options/default; unsupported/unknown show no-control/provider-default states. |
+| Dispatch | Explicit unavailable model or unsupported enum effort is rejected before a streaming message; unknown metadata omits the wire parameter. |
+| Gaps | OpenCode variants are not mapped; no dedicated EFF UI/axe tests; EFF-005/008–012 remain open. |
+| EFF status | EFF-001–EFF-007/EFF-011 Done; EFF-008–EFF-010/EFF-012 open. |
+
+## M3 MCP/Connect Apps/HIL benchmarks
+
+Date: 2026-11-05. Compared Codex/OpenCode MCP surfaces, MCP 2026-07-28 transports/elicitation, Reason/Claude Desktop/OpenCode connection UX, and A Gent inventory.
+
+| Record | Result |
+| --- | --- |
+| BEN-008 | Runtime-owned MCP execution/auth, A Gent records/scope, stdio/HTTP/OAuth, reload/teardown, capability snapshots, MCP-001–022 mapping. |
+| BEN-009 | Connect Apps IA/add/auth/access/inspect/enable/disable/remove and catalog-honesty decisions. |
+| BEN-010 | Correlated HIL approvals/questions/forms/URL, decline/timeout, sensitive values, concurrency, accessibility. |
+
+Records: [BEN-008](../docs/benchmarks/BEN-008-mcp-runtime.md), [BEN-009](../docs/benchmarks/BEN-009-connect-apps-ux.md), [BEN-010](../docs/benchmarks/BEN-010-hil.md). MCP-002 runtime/protocol baseline is recorded in [mcp-runtime-baseline.md](../docs/mcp-runtime-baseline.md). MCP-001 app-record fields, MCP-005 managed app-record CRUD, MCP-003 conversation-scoped Codex inventory, and HIL-001 interaction routing/response API are implemented; MCP-004 OpenCode inventory is a Review item. No live OAuth connector or form journey was exercised.
+
+## M2 shared provider lifecycle slice
+
+Date: 2026-11-05. Scope: provider readiness states, capability typing, catalog normalization, model-ID limits, connected-only filtering, and API readiness guard. Provider-specific journeys are not included.
+
+| Check | Result |
+| --- | --- |
+| `npm run typecheck` | Pass. |
+| `npm test` | 51/51 pass, including provider-contract and credential-store coverage. |
+| `npm run build` | Pass; existing main-chunk size advisory remains. |
+| Readiness | Legacy `connected` maps to `ready`; new states (`checking`, `needs-auth`, `ready`, `degraded`, `error`, `disabled`, etc.) are exposed; UI filters use `isProviderReady`. |
+| Capabilities | Codex/OpenCode agent capabilities and HTTP/Ollama text-only capabilities are typed. |
+| Catalog normalization | Empty/overlong IDs rejected, duplicates removed, blank names fall back to IDs, description/catalog bounds enforced. |
+| Model identity | One 200-character limit used across discovery, connect, persistence, import, dispatch, and the model-ID form. |
+| API guard | A non-ready provider is rejected with 409 before a streaming message is created; tests connect providers first. |
+| Capability contract | Codex/OpenCode/Ollama/HTTP kinds carry typed chat/stream/tools/approvals/skills/attachments/reasoning/MCP/discovery/auth/cancellation fields; STT is separate. |
+| Credentials | Session-only + macOS Keychain policy, provider refs, restore, clear/disconnect, and export exclusion implemented; Keychain not live-tested on this Windows host. |
+| Inference test | `POST /api/providers/:id/test` requires `confirm:true`, sends one live minimal turn, returns latency/network/cost intent, and sets `verifiedBy: inference` on success. |
+| Endpoint policy | Local Ollama loopback allowed; private/metadata hosts, remote HTTP, redirects, and credential-bearing URLs rejected; tests cover policy. |
+| Selection scope | Chat-level provider/model/effort overrides persist, runs use them, failed saves roll back, and other chats/agents remain unchanged. |
+| PVD status | PVD-001–PVD-016 Done; PVD-017 remains. |
+
+Record: [provider lifecycle](provider-lifecycle.md). Code: `shared/providers.ts`, `server/providers.ts`, `server/store.ts`, `server/runs.ts`, `server/index.ts`, UI filters. Tests: `tests/server/provider-contract.test.ts`, `tests/server/backend.test.ts`, `tests/server/model-options.test.ts`.
+
+## M2 real provider smoke
+
+Date: 2026-11-05. Scope: authorized live inference through the A Gent host and local provider runtimes. This is a smoke check, not full PVD-017 journey acceptance.
+
+| Provider | Evidence | Result |
+| --- | --- | --- |
+| Codex | `codex login status`: `Logged in using ChatGPT`; host connect returned 8 models; agent/chat used `gpt-6.1-sol` with `medium` effort | `completed`, response `OK` |
+| OpenCode | `opencode auth list`: stored OpenAI/OpenCode Console credentials; host connect returned 26 models; agent/chat used `opencode-go/deepseek-v4.1-flash` | `completed`, response text returned |
+| OpenCode alternate models | `openai/gpt-5.5` failed with “not supported when using Codex with a ChatGPT account”; `opencode/deepseek-v4.1-flash` failed with “Insufficient account funds” | Failed; model/account-dependent |
+| Ollama | `ollama` not installed | Not exercised |
+| Cloud / Gemini / Antigravity | No endpoint/API keys configured | Not exercised |
+
+The smoke used a temporary A Gent host with the real Codex/OpenCode CLIs and an isolated data directory. No credentials were written into the repo or exported.
+
+Additional Codex work/restart check: with `gpt-6.1-sol` in Work mode, Codex wrote `approval.txt` containing `hello` inside a temporary workspace. The host was stopped, restarted with the same data directory, the provider was rechecked, and the same conversation/thread appended `world` (`helloworld`). No approval prompt was raised because the workspace-write sandbox allowed the file change. Full CDX-006/OPC-006 still require an explicitly approved change, Stop, and edit/remove journeys; PVD-017 now covers Codex/OpenCode only.
+
+## D-02 provider-scope amendment
+
+Date: 2026-11-05. The owner deferred OpenAI-compatible/Cloud, Antigravity/Gemini, and Ollama to the distant future. R1 now advertises **Codex and OpenCode only**.
+
+| Change | Result |
+| --- | --- |
+| Release contract | D-02 amended; deferred providers removed from R1 support summary/exclusions updated. |
+| Task targets | 14 provider delivery tasks (HTTP/OLL/GEM) and 3 benchmarks (BEN-005/006/007) moved from R1 to R2. |
+| Counts | 191 R1, 28 R2, 16 paused-platform, 2 optional (total 237). |
+| Provider board | Deferred sections marked “not R1”; PVD-017 depends on Codex/OpenCode journeys only. |
+| Support matrix | HTTP/Cloud, Antigravity/Gemini, and Ollama marked deferred/not R1. |
+| Documentation links / diff | Checked after the amendment. |
+
 ## Public repository publication preflight
 
 Date: 2026-11-05. Prepared the complete pending UI, avatar, model-picker, documentation, and roadmap changes for the [public source repository](https://github.com/danialshirali16/a-gent), on publication branch `codex/publish-project` based on `892d5b5`. This publishes the development source; the public application-release gates in the roadmap remain open.

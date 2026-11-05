@@ -1,3 +1,4 @@
+import { isProviderReady } from '../../shared/providers';
 import { type KeyboardEvent, type RefObject } from 'react';
 import { ArrowUp, ChevronDown, FolderOpen, Paperclip, Plug, Plus, Square, Terminal } from 'lucide-react';
 import type { Agent, Attachment, ModelOption, ProviderInfo } from '../../shared/types';
@@ -44,7 +45,7 @@ const effortLabel: Record<string, string> = { low: 'Light', medium: 'Balanced', 
 export function Composer(props: ComposerProps) {
   const expanded = props.text.includes('\n') || props.text.length > 70 || props.attachments.length > 0;
   const workspaceName = props.workspacePath.split(/[\\/]/).filter(Boolean).at(-1) || '';
-  const modelLabel = props.currentProvider?.status === 'connected' ? (props.currentModel?.name || props.currentProvider.name) : 'Choose model';
+  const modelLabel = props.currentProvider && isProviderReady(props.currentProvider) ? (props.currentModel?.name || props.currentProvider.name) : 'Choose model';
   const effort = effortLabel[props.effort] || props.effort || 'Balanced';
 
   return <div className="reason-composer-shell">
@@ -70,9 +71,9 @@ export function Composer(props: ComposerProps) {
         <div className="reason-composer-actions">
           <div className="reason-model-anchor" ref={props.pickerRef}>
             <button className="reason-model-pill" aria-expanded={props.modelPicker} aria-haspopup="dialog" onClick={() => props.setModelPicker(!props.modelPicker)} onKeyDown={event => { if (event.key === 'ArrowDown') { event.preventDefault(); props.setModelPicker(true); } }}>
-              {props.currentProvider?.status === 'connected' && <span className="model-provider-glyph" aria-hidden="true"><ProviderGlyph provider={props.currentProvider} /></span>}
+              {props.currentProvider && isProviderReady(props.currentProvider) && <span className="model-provider-glyph" aria-hidden="true"><ProviderGlyph provider={props.currentProvider} /></span>}
               <span className="model-name">{modelLabel}</span>
-              {props.currentProvider?.status === 'connected' && props.currentProvider.kind === 'codex' && <span className="model-effort">{effort}</span>}
+              {props.currentProvider && isProviderReady(props.currentProvider) && props.currentProvider.kind === 'codex' && <span className="model-effort">{effort}</span>}
               <ChevronDown size={12} />
             </button>
             {props.modelPicker && <ModelPicker providers={props.providers} providerId={props.providerId} modelId={props.modelId} effort={props.effort} anchorRef={props.pickerRef} onClose={() => props.setModelPicker(false)} onChoose={props.onChooseModel} onSetEffort={props.onSetEffort} onOpenConnections={props.onOpenConnections} />}

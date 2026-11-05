@@ -1,12 +1,16 @@
 import express, { type ErrorRequestHandler, type Response } from 'express';
 import { createServer } from 'node:http';
-import { randomBytes, timingSafeEqual } from 'node:crypto';
+import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import { mkdir, readdir, readFile, realpath, stat, writeFile } from 'node:fs/promises';
 import { hostname, networkInterfaces } from 'node:os';
 import { dirname, join, resolve, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import type { Agent, Attachment, DeviceInfo, Schedule, SendMessageInput, ServerEvent, ServerHandle, ServerOptions, WorkspaceFileEntry } from '../shared/types.js';
+import { MODEL_ID_LIMIT } from '../shared/providers.js';
+import { BUDGETS } from './budgets.js';
+import { redact, requestIdFrom } from './diagnostics.js';
 import { DeviceStore } from './devices.js';
+import { InteractionStore } from './interactions.js';
 import { agentPatch, conversationPatch, id, InputError, now, object, schedulePatch, settingsPatch, StateStore, string } from './store.js';
 import { ProviderManager } from './providers.js';
 import { RunManager } from './runs.js';
@@ -63,7 +67,7 @@ function messageInput(value: unknown): SendMessageInput {
   }
   if (!content.trim() && !attachments?.length) throw new InputError('Write a message or attach a text file.');
   if (data.mode !== undefined && !['chat', 'work'].includes(String(data.mode))) throw new InputError('Choose Chat or Work mode.');
-  return { content, attachments, mode: data.mode as 'chat' | 'work' | undefined, providerId: data.providerId === undefined ? undefined : string(data.providerId, 'Provider ID', 200), modelId: data.modelId === undefined ? undefined : string(data.modelId, 'Model ID', 200, true) };
+  return { content, attachments, mode: data.mode as 'chat' | 'work' | undefined, providerId: data.providerId === undefined ? undefined : string(data.providerId, 'Provider ID', 200), modelId: data.modelId === undefined ? undefined : string(data.modelId, 'Model ID', MODEL_ID_LIMIT, true) };
 }
 
 export async function startServer(options: ServerOptions = {}): Promise<ServerHandle> {
@@ -78,20 +82,39 @@ export async function startServer(options: ServerOptions = {}): Promise<ServerHa
   const devices = new DeviceStore(dataDir);
   try { await devices.load(); }
   catch (error) { await store.close(); throw error; }
-  const clients = new Set<Response>();
+  const hostId = createHash('sha256').update(dataDir).digest('hex').slice(0, 16);
+  const interactions = new InteractionStore(dataDir, hostId);
+  try { await interactions.load(); }
+  catch (error) { await store.close(); throw error; }
+  const clients = new Map<Response, string | undefined>();
+  const closeDeviceStreams = (deviceId: string) => {
+    for (const [client, clientDeviceId] of clients) {
+      if (clientDeviceId !== deviceId) continue;
+      clients.delete(client);
+      client.end();
+    }
+  };
   const emit = (event: ServerEvent) => {
     const data = `data: ${JSON.stringify(event)}\n\n`;
-    for (const client of clients) {
+    for (const [client] of clients) {
       if (client.destroyed || client.writableEnded) { clients.delete(client); continue; }
-      if (client.writableLength > 2 * 1024 * 1024) { client.end(); clients.delete(client); continue; }
+      if (client.writableLength > BUDGETS.sseBufferBytes) { client.end(); clients.delete(client); continue; }
       client.write(data);
     }
   };
   const providers = new ProviderManager(dataDir, providers => emit({ type: 'providers', providers })); await providers.load();
-  const runs = new RunManager(store, providers, emit);
+  const runs = new RunManager(store, providers, emit, interactions);
   const server = createServer(app);
   let closed = false;
   const allowLocalTokenInjection = options.allowLocalTokenInjection ?? process.env.AGENT_ALLOW_LOCAL_TOKEN_INJECTION === '1';
+  const isLocalHostRequest = (request: express.Request): boolean => {
+    const address = request.socket.remoteAddress;
+    if (!address || !['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(address)) return false;
+    if (request.headers.forwarded || request.headers['x-forwarded-for'] || request.headers['x-forwarded-host'] || request.headers['x-real-ip']) return false;
+    let requestHost = '';
+    try { requestHost = new URL(`http://${request.headers.host}`).hostname; } catch { return false; }
+    return ['127.0.0.1', 'localhost', '[::1]', '::1'].includes(requestHost);
+  };
   const browserSession = async (request: express.Request): Promise<{ token: string; cookie?: string }> => {
     const cookie = readCookie(request, DEVICE_COOKIE);
     if (cookie) {
@@ -119,7 +142,10 @@ export async function startServer(options: ServerOptions = {}): Promise<ServerHa
   for (const entry of (process.env.AGENT_ALLOWED_HOSTS ?? '').split(',').map(value => value.trim()).filter(Boolean)) allowedHosts.add(entry);
   const appOrigins = new Set(['capacitor://localhost', 'http://localhost', 'https://localhost', ...(process.env.AGENT_ALLOWED_ORIGINS ?? '').split(',').map(value => value.trim()).filter(Boolean)]);
   app.use((req, res, next) => {
-    if (closed) { res.status(503).json({ error: 'A Gent is shutting down. Reconnect before starting more work.' }); return; }
+    const requestId = requestIdFrom(req.headers['x-request-id']) ?? id();
+    res.locals.requestId = requestId;
+    res.setHeader('X-Request-Id', requestId);
+    if (closed) { res.status(503).json({ error: 'A Gent is shutting down. Reconnect before starting more work.', requestId }); return; }
     let requestUrl: URL;
     try { requestUrl = new URL(`http://${req.headers.host ?? ''}`); } catch { res.status(400).json({ error: 'Invalid request host.' }); return; }
     if (!allowedHosts.has(requestUrl.hostname) || (Number(requestUrl.port || 80) !== listenPort)) { res.status(403).json({ error: 'This host is not allowed to access A Gent.' }); return; }
@@ -139,7 +165,7 @@ export async function startServer(options: ServerOptions = {}): Promise<ServerHa
     const bearer = authorization?.startsWith('Bearer ') ? authorization.slice(7) : '';
     const admin = Boolean(bearer) && textTokenMatches(bearer, token);
     const device = !admin && bearer ? devices.authenticate(bearer) : undefined;
-    if (!admin && !device) { res.status(401).json({ error: 'Connect with this A Gent server’s pairing token.' }); return; }
+    if (!admin && !device) { res.status(401).json({ error: 'Connect with this A Gent server’s pairing token.', requestId: res.locals.requestId }); return; }
     res.locals.auth = { admin, device };
     res.setHeader('Cache-Control', 'no-store');
     next();
@@ -150,6 +176,13 @@ export async function startServer(options: ServerOptions = {}): Promise<ServerHa
     const auth = res.locals.auth as RequestAuth;
     if (!auth.admin) throw new InputError('Only the host administrator token can manage devices.', 403);
   };
+  const requireHostAuthority = (req: express.Request, res: Response) => {
+    const auth = res.locals.auth as RequestAuth;
+    if (!auth.admin && !isLocalHostRequest(req)) {
+      throw new InputError('Only the host administrator or the desktop app on this computer can change host credentials or workspace configuration.', 403);
+    }
+  };
+  const hostOnlySettings = new Set(['defaultProviderId', 'defaultModelId', 'speech']);
   const checkGroup = (groupId?: string | null) => { if (groupId && !store.state.groups.some(group => group.id === groupId)) throw new InputError('Group not found.', 404); };
   const checkAgentGroup = (groupId?: string | null) => { if (groupId && !store.state.agentGroups.some(group => group.id === groupId)) throw new InputError('Agent group not found.', 404); };
   const workspaceFor = (conversationId?: string, agentId?: string): string => {
@@ -163,15 +196,16 @@ export async function startServer(options: ServerOptions = {}): Promise<ServerHa
   };
 
   app.get('/api/health', (_req, res) => { res.json({ ok: true, name: 'A Gent', version: '0.1.0' }); });
-  app.get('/api/bootstrap', (_req, res) => { res.json({ state: store.state, providers: providers.providers, runs: [...runs.runs.values()] }); });
-  app.get('/api/events', (req, res) => {
+  app.get('/api/bootstrap', (_req, res) => { res.json({ state: store.state, providers: providers.providers, runs: [...runs.runs.values()], interactions: runs.getInteractions() }); });
+  app.get('/api/events', (_req, res) => {
+    const auth = res.locals.auth as RequestAuth;
     res.status(200).set({ 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache, no-transform', Connection: 'keep-alive', 'X-Accel-Buffering': 'no' });
     res.flushHeaders(); res.write(': connected\n\n');
-    clients.add(res);
+    clients.set(res, auth.device?.id);
     res.write(`data: ${JSON.stringify({ type: 'state', state: store.state })}\n\n`);
     res.write(`data: ${JSON.stringify({ type: 'providers', providers: providers.providers })}\n\n`);
     for (const run of runs.runs.values()) res.write(`data: ${JSON.stringify({ type: 'run', run })}\n\n`);
-    const heartbeat = setInterval(() => { if (!res.destroyed) res.write(': heartbeat\n\n'); }, 15000);
+    const heartbeat = setInterval(() => { if (!res.destroyed) res.write(': heartbeat\n\n'); }, BUDGETS.heartbeat);
     res.on('close', () => { clearInterval(heartbeat); clients.delete(res); });
   });
   app.post('/api/agents', async (req, res) => {
@@ -200,6 +234,14 @@ export async function startServer(options: ServerOptions = {}): Promise<ServerHa
   });
   app.patch('/api/conversations/:id', async (req, res) => {
     const conversation = store.getConversation(String(req.params.id)), patch = conversationPatch(req.body); checkGroup(patch.groupId);
+    const effectiveProviderId = patch.providerId || conversation.providerId || store.getAgent(conversation.agentId).providerId;
+    const provider = providers.get(effectiveProviderId);
+    const effectiveModelId = patch.modelId !== undefined ? patch.modelId : conversation.modelId;
+    if (effectiveModelId && provider.models.length && !provider.models.some(model => model.id === effectiveModelId)) throw new InputError('Choose a model available from this provider.', 409);
+    const model = effectiveModelId ? provider.models.find(item => item.id === effectiveModelId) : undefined;
+    const effectiveEffort = patch.reasoningEffort !== undefined ? patch.reasoningEffort : conversation.reasoningEffort;
+    if (effectiveEffort && model?.reasoning?.kind === 'enum' && !model.reasoning.options.some(option => option.value === effectiveEffort)) throw new InputError('The selected reasoning option is not supported by this model.', 409);
+    if (effectiveEffort && model?.reasoning?.kind === 'unsupported') throw new InputError('This model does not support a reasoning setting.', 409);
     Object.assign(conversation, patch, { updatedAt: now() }); await publish(); res.json(conversation);
   });
   app.post('/api/conversations/:id/messages', async (req, res) => { res.status(202).json(await runs.send(String(req.params.id), messageInput(req.body))); });
@@ -217,6 +259,11 @@ export async function startServer(options: ServerOptions = {}): Promise<ServerHa
     const data = object(req.body);
     if (!['accept', 'decline'].includes(String(data.decision))) throw new InputError('Choose accept or decline.');
     runs.approve(String(req.params.id), data.decision === 'accept'); res.json({ ok: true });
+  });
+  app.post('/api/interactions/:id', async (req, res) => {
+    const data = object(req.body), action = String(data.action);
+    if (!['accept', 'decline', 'cancel'].includes(action)) throw new InputError('Choose accept, decline, or cancel.');
+    res.json(await runs.respondInteraction(String(req.params.id), action as 'accept' | 'decline' | 'cancel', data.response));
   });
   app.post('/api/groups', async (req, res) => {
     const data = object(req.body), group = { id: id(), name: string(data.name, 'Group name', 100), createdAt: now() };
@@ -267,7 +314,12 @@ export async function startServer(options: ServerOptions = {}): Promise<ServerHa
     const index = store.state.schedules.findIndex(schedule => schedule.id === req.params.id); if (index < 0) throw new InputError('Task not found.', 404);
     store.state.schedules.splice(index, 1); await publish(); res.json({ ok: true });
   });
-  app.patch('/api/settings', async (req, res) => { const patch = settingsPatch(req.body); if (patch.defaultProviderId) providers.get(patch.defaultProviderId); Object.assign(store.state.settings, patch); await publish(); res.json(store.state.settings); });
+  app.patch('/api/settings', async (req, res) => {
+    const patch = settingsPatch(req.body);
+    if (Object.keys(patch).some(key => hostOnlySettings.has(key))) requireHostAuthority(req, res);
+    if (patch.defaultProviderId) providers.get(patch.defaultProviderId);
+    Object.assign(store.state.settings, patch); await publish(); res.json(store.state.settings);
+  });
   app.get('/api/auth', (_req, res) => {
     const auth = res.locals.auth as RequestAuth;
     res.json({ admin: auth.admin, device: auth.device ?? null });
@@ -288,6 +340,7 @@ export async function startServer(options: ServerOptions = {}): Promise<ServerHa
     const id = String(req.params.id);
     if (!auth.admin && auth.device?.id !== id) throw new InputError('Only the host administrator can rotate another device.', 403);
     const rotated = await devices.rotate(id);
+    closeDeviceStreams(id);
     if (!auth.admin) res.setHeader('Set-Cookie', deviceCookie(req, rotated.token));
     res.json(rotated);
   });
@@ -296,6 +349,7 @@ export async function startServer(options: ServerOptions = {}): Promise<ServerHa
     const id = String(req.params.id);
     if (!auth.admin && auth.device?.id !== id) throw new InputError('Only the host administrator can revoke another device.', 403);
     const revoked = await devices.revoke(id);
+    closeDeviceStreams(id);
     if (!auth.admin) res.setHeader('Set-Cookie', clearDeviceCookie(req));
     res.json(revoked);
   });
@@ -328,10 +382,40 @@ export async function startServer(options: ServerOptions = {}): Promise<ServerHa
     res.json({ root, path: requested.split(/[\\/]/).filter(Boolean).join('/'), entries, truncated: all.length > 500 });
   });
   app.get('/api/providers', (_req, res) => { res.json(providers.providers); });
-  app.get('/api/apps', async (_req, res) => { res.json(await providers.apps()); });
-  app.post('/api/providers/:id/connect', async (req, res) => { res.json(await providers.connect(String(req.params.id), req.body ?? {})); });
-  app.get('/api/export', (_req, res) => { res.setHeader('Content-Disposition', 'attachment; filename="a-gent-workspace.json"'); res.json(store.state); });
-  app.post('/api/import', async (req, res) => { await store.merge(req.body); await publish(); res.json(store.state); });
+  app.get('/api/apps', async (req, res) => {
+    const conversationId = typeof req.query.conversationId === 'string' ? req.query.conversationId : undefined;
+    const threadId = conversationId ? store.getConversation(conversationId).providerThreadId : undefined;
+    res.json(await providers.apps(threadId));
+  });
+  app.get('/api/app-records', (_req, res) => { res.json(store.state.apps); });
+  app.post('/api/app-records', async (req, res) => {
+    requireHostAuthority(req, res);
+    const data = object(req.body), timestamp = now();
+    const record = await store.saveApp({ ...data, id: data.id === undefined ? id() : string(data.id, 'App ID', 100), createdAt: timestamp, updatedAt: timestamp });
+    await publish(); res.status(201).json(record);
+  });
+  app.patch('/api/app-records/:id', async (req, res) => {
+    requireHostAuthority(req, res);
+    const appId = String(req.params.id), existing = store.state.apps.find(item => item.id === appId);
+    if (!existing) throw new InputError('App record not found.', 404);
+    const record = await store.saveApp({ ...existing, ...object(req.body), id: appId, updatedAt: now() }, appId);
+    await publish(); res.json(record);
+  });
+  app.delete('/api/app-records/:id', async (req, res) => {
+    requireHostAuthority(req, res);
+    if (!(await store.removeApp(String(req.params.id)))) throw new InputError('App record not found.', 404);
+    await publish(); res.json({ ok: true });
+  });
+  app.post('/api/providers/:id/connect', async (req, res) => { requireHostAuthority(req, res); res.json(await providers.connect(String(req.params.id), req.body ?? {})); });
+  app.post('/api/providers/:id/disconnect', async (req, res) => {
+    requireHostAuthority(req, res);
+    const providerId = String(req.params.id);
+    if ([...runs.runs.values()].some(run => run.providerId === providerId && ['running', 'waiting'].includes(run.status))) throw new InputError('Stop active runs for this provider before disconnecting.', 409);
+    res.json(await providers.disconnect(providerId));
+  });
+  app.post('/api/providers/:id/test', async (req, res) => { requireHostAuthority(req, res); res.json(await providers.test(String(req.params.id), req.body ?? {})); });
+  app.get('/api/export', (req, res) => { requireHostAuthority(req, res); res.setHeader('Content-Disposition', 'attachment; filename="a-gent-workspace.json"'); res.json(store.state); });
+  app.post('/api/import', async (req, res) => { requireHostAuthority(req, res); await store.merge(req.body); await publish(); res.json(store.state); });
   app.use('/api', (_req, res) => { res.status(404).json({ error: 'A Gent API endpoint not found.' }); });
 
   const staticDir = resolve(options.staticDir ?? join(dirname(fileURLToPath(import.meta.url)), '..', 'dist'));
@@ -365,8 +449,11 @@ export async function startServer(options: ServerOptions = {}): Promise<ServerHa
   const errorHandler: ErrorRequestHandler = (error: Error & { status?: number; type?: string }, _req, res, _next) => {
     if (res.headersSent) { res.end(); return; }
     const status = error instanceof InputError ? error.status : error.type === 'entity.too.large' ? 413 : error instanceof SyntaxError ? 400 : 500;
-    if (status === 500) console.error('A Gent request failed:', error.message);
-    res.status(status).json({ error: status === 413 ? 'This request exceeds the 32 MB limit.' : status === 500 ? 'A Gent could not complete this request. Check the server log.' : error.message });
+    const requestId = (res.locals.requestId as string | undefined) ?? id();
+    const detail = redact(error.message);
+    if (status === 500) console.error(`[${requestId}] A Gent request failed: ${detail}`);
+    const message = status === 413 ? 'This request exceeds the 32 MB limit.' : status === 500 ? 'A Gent could not complete this request. Check the server log.' : detail;
+    res.status(status).json({ error: message, requestId });
   };
   app.use(errorHandler);
   try {
@@ -385,7 +472,7 @@ export async function startServer(options: ServerOptions = {}): Promise<ServerHa
     const listenerClosed = new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
     server.closeIdleConnections();
     server.closeAllConnections();
-    for (const client of clients) client.end(); clients.clear();
+    for (const client of clients.keys()) client.end(); clients.clear();
     await runs.close(); await devices.close(); await store.close(); if (closeVite) await closeVite();
     await listenerClosed;
   } };

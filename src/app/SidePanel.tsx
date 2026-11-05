@@ -37,7 +37,7 @@ export interface SidePanelProps {
   onApproval: (id: string, accept: boolean) => void;
 }
 
-const effortLabel: Record<string, string> = { low: 'Light', medium: 'Balanced', high: 'Deep' };
+
 
 function ActivityRow({ item }: { item: ActivityItem }) {
   const Icon = item.status === 'running' ? LoaderCircle : item.status === 'failed' ? AlertCircle : Check;
@@ -86,7 +86,7 @@ export function SidePanel(props: SidePanelProps) {
           </div>
           <div className="reason-session-rows">
             <div className="reason-session-row"><span>Model</span><span>{props.agent.modelId || 'Provider default'}</span></div>
-            <div className="reason-session-row"><span>Effort</span><span>{effortLabel[props.agent.reasoningEffort] || props.agent.reasoningEffort || 'Balanced'}</span></div>
+            <div className="reason-session-row"><span>Effort</span><span>{props.agent.reasoningEffort || 'Provider default'}</span></div>
             <div className="reason-session-row"><span>Workspace</span><span title={workspace}>{workspace || 'Host default'}</span></div>
             <div className="reason-session-row"><span>Conversation</span><span title={props.conversation?.title}>{props.conversation?.title || 'New conversation'}</span></div>
             <div className="reason-session-row"><span>Status</span><StatusIndicator label={status} tone={statusTone} pulse={!!props.currentRun} /></div>

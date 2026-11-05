@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState, type KeyboardEvent, type RefObject } from 'react';
 import { Check, Plug, Search, X } from 'lucide-react';
+import { isProviderReady } from '../../shared/providers';
 import type { ProviderInfo } from '../../shared/types';
 import { Button, IconButton } from '../ui/Button';
 import { Popover } from '../ui/Popover';
@@ -28,25 +29,34 @@ export function ModelPicker(props: ModelPickerProps) {
   const [browsedProviderId, setBrowsedProviderId] = useState(props.providerId);
   const [activeKey, setActiveKey] = useState(keyFor(props.providerId, props.modelId));
   const search = useRef<HTMLInputElement>(null);
+  const list = useRef<HTMLDivElement>(null);
   const options = useRef(new Map<string, HTMLButtonElement>());
   const tabs = useRef(new Map<string, HTMLButtonElement>());
   const id = useId();
-  const connected = props.providers.filter(provider => provider.status === 'connected');
+  const connected = props.providers.filter(isProviderReady);
   const activeProvider = connected.find(provider => provider.id === browsedProviderId) || connected.find(provider => provider.id === props.providerId) || connected[0];
   const searching = query.trim().length > 0;
   const groups = connectedModelGroups(props.providers, query).filter(group => searching || group.provider.id === activeProvider?.id);
   const choices = groups.flatMap(({ provider, choices }) => choices.map(choice => ({ ...choice, provider, key: keyFor(provider.id, choice.id) })));
+  const duplicateNames = new Set(choices.filter((choice, index) => choices.findIndex(other => other.name === choice.name) !== index).map(choice => choice.name));
   const selectedKey = keyFor(props.providerId, props.modelId);
   const focusKey = choices.some(choice => choice.key === activeKey) ? activeKey : choices.find(choice => choice.key === selectedKey)?.key || choices[0]?.key;
   const currentProvider = connected.find(provider => provider.id === props.providerId);
   const selectionMissing = !currentProvider || (!!props.modelId && !currentProvider.models.some(model => model.id === props.modelId));
   const availableKeys = choices.map(choice => choice.key).join('\n');
   const panelId = `${id}-models`;
-  const selectedEffort = ['low', 'medium', 'high'].indexOf(props.effort || 'medium');
+  const reasoning = currentProvider?.models.find(model => model.id === props.modelId)?.reasoning;
+  const effortOptions = reasoning?.kind === 'enum' ? reasoning.options : [];
+  const effortIndex = Math.max(0, effortOptions.findIndex(option => option.value === props.effort));
+  const meterFill = effortOptions.length > 1 ? Math.round((effortIndex / (effortOptions.length - 1)) * 2) : 0;
 
   useEffect(() => {
     if (!choices.some(choice => choice.key === activeKey) && document.activeElement === document.body) search.current?.focus({ preventScroll: true });
   }, [activeKey, availableKeys]);
+
+  useEffect(() => {
+    if (list.current) list.current.scrollTop = 0;
+  }, [query]);
 
   useEffect(() => {
     const tab = activeProvider && tabs.current.get(activeProvider.id);
@@ -60,7 +70,7 @@ export function ModelPicker(props: ModelPickerProps) {
   }
 
   function choose(providerId: string, modelId: string) {
-    const provider = props.providers.find(item => item.id === providerId && item.status === 'connected');
+    const provider = props.providers.find(item => item.id === providerId && isProviderReady(item));
     if (!provider || (modelId && !provider.models.some(model => model.id === modelId))) return;
     setActiveKey(keyFor(providerId, modelId));
     setBrowsedProviderId(providerId);
@@ -138,21 +148,24 @@ export function ModelPicker(props: ModelPickerProps) {
           <div className="model-picker-models">
             <div className="model-picker-caption">{searching ? `${choices.length} ${choices.length === 1 ? 'result' : 'results'}` : <bdi>{activeProvider.name}</bdi>}</div>
             {selectionMissing && <p className="model-picker-notice">Choose a connected model.</p>}
-            {choices.length ? <div className="model-picker-list" role="listbox" aria-label={searching ? 'Search results' : `${activeProvider.name} models`} onKeyDown={onListKey}>
+            {choices.length ? <div ref={list} className="model-picker-list" role="listbox" aria-label={searching ? 'Search results' : `${activeProvider.name} models`} onKeyDown={onListKey}>
               {choices.map(choice => {
                 const selected = choice.key === selectedKey;
-                return <button type="button" role="option" aria-label={searching ? `${choice.provider.name} · ${choice.name}` : choice.name} aria-selected={selected} tabIndex={choice.key === focusKey ? 0 : -1} data-provider-id={choice.provider.id} data-model-id={choice.id} className="model-picker-option" key={choice.key}
+                const label = duplicateNames.has(choice.name) && choice.id ? `${choice.name} · ${choice.id}` : choice.name;
+                return <button type="button" role="option" aria-label={searching ? `${choice.provider.name} · ${label}` : label} aria-selected={selected} tabIndex={choice.key === focusKey ? 0 : -1} data-provider-id={choice.provider.id} data-model-id={choice.id} className="model-picker-option" key={choice.key}
                   ref={node => { if (node) options.current.set(choice.key, node); else options.current.delete(choice.key); }} onFocus={() => setActiveKey(choice.key)} onClick={() => choose(choice.provider.id, choice.id)}>
                   {searching && <Tooltip label={choice.provider.name}><span className="model-picker-result-provider" aria-hidden="true"><ProviderGlyph provider={choice.provider} /></span></Tooltip>}
-                  <span className="model-picker-name"><bdi>{choice.name}</bdi></span>
+                  <span className="model-picker-name"><bdi>{label}</bdi></span>
                   {selected && <Check className="model-picker-check" size={15} strokeWidth={2} aria-hidden="true" />}
                 </button>;
               })}
             </div> : <div className="model-picker-empty"><Search size={21} strokeWidth={1.5} aria-hidden="true" /><strong>No models match “<bdi>{query}</bdi>”</strong><Button variant="quiet" size="sm" onClick={() => { setQuery(''); search.current?.focus(); }}>Clear search</Button></div>}
           </div>
           <div className="model-picker-thinking">
-            <span className="model-picker-thinking-label"><span className="model-picker-meter" aria-hidden="true">{[0, 1, 2].map(level => <span key={level} className={currentProvider?.kind === 'codex' && level <= selectedEffort ? 'is-filled' : ''} />)}</span>Thinking</span>
-            {currentProvider?.kind === 'codex' ? <SegmentedControl ariaLabel="Thinking effort" size="sm" value={props.effort || 'medium'} onChange={props.onSetEffort} options={[{ id: 'low', label: 'Light' }, { id: 'medium', label: 'Balanced' }, { id: 'high', label: 'Deep' }]} /> : <span className="model-picker-thinking-unavailable">Not available for this provider</span>}
+            <span className="model-picker-thinking-label"><span className="model-picker-meter" aria-hidden="true">{[0, 1, 2].map(level => <span key={level} className={effortOptions.length && level <= meterFill ? 'is-filled' : ''} />)}</span>Thinking</span>
+            {reasoning?.kind === 'enum'
+              ? <SegmentedControl ariaLabel="Thinking effort" size="sm" value={props.effort || reasoning.default || effortOptions[0].value} onChange={props.onSetEffort} options={effortOptions.map(option => ({ id: option.value, label: option.label || option.value }))} />
+              : <span className="model-picker-thinking-unavailable">{reasoning?.kind === 'unsupported' ? 'Not available for this model' : reasoning?.kind === 'unknown' ? 'Provider default' : 'Not available for this provider'}</span>}
           </div>
         </div>
       </div> : <>

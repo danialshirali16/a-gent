@@ -10,6 +10,18 @@ Updated: 2026-11-05. Active development scope: macOS. Windows and Android remain
 | Understand source status, packaged builds, and open issues | [Current project state](current-state-review.md) |
 | Choose the next product or release task | [Project roadmap](project-roadmap.md) |
 | Work through detailed tasks and dependencies | [Roadmap task boards](roadmaps/README.md) — 237 tracked tasks |
+| Read the accepted R1 scope and decisions | [Release contract](release-contract.md) — D-01–D-11, platform, exclusions |
+| Check supported runtime/schema versions | [Runtime baseline](runtime-baselines.md) — Codex, OpenCode, Electron, fixtures |
+| Understand durable state and migrations | [Durable workspace schema](data-schema.md) — workspace v2, backup/import rules |
+| Check who can change host credentials or workspace data | [Authority model](authority-model.md) — admin, desktop, remote device |
+| Understand Stop, termination, and shutdown recovery | [Run lifecycle](run-lifecycle.md) — states, adapter rules, tests |
+| Check write/backup/import/lock recovery | [Persistence](persistence.md) — atomic writes, backup, import rollback |
+| Understand approvals/questions and restart expiry | [Interactions](interactions.md) — correlation, host isolation, recovery |
+| Check timeout and cancellation budgets | [Timeouts](timeouts.md) — shared budgets and cleanup primitives |
+| Trace an error or check redaction | [Diagnostics](diagnostics.md) — request/run/provider IDs and redaction |
+| Check config/credential storage contracts | [Config and secrets](config-secrets.md) — ownership, encryption, rollback |
+| Understand provider readiness and model identity | [Provider lifecycle](provider-lifecycle.md) — states, normalization, limits |
+| Map a release surface to its test/evidence | [Support matrix](support-matrix.md) — initial QA-001 baseline |
 | Benchmark a scope before development | [Benchmark process and records](benchmarks/README.md), [25 scope prerequisites](roadmaps/benchmarking.md), and [record template](benchmarks/template.md) |
 | Understand incomplete provider/MCP/app workflows | [Integration readiness review](integration-review.md) |
 | Continue UI work and the 18-component process | [UI Roadmap](ui-roadmap.md) |
@@ -44,7 +56,9 @@ The initial 18-component pass is complete. Product integration remains partial. 
 | Paused platforms and later scope | 20 | [Platforms and next work](roadmaps/platforms-next.md) |
 | Benchmark prerequisites | 25 | [Scope comparison tasks](roadmaps/benchmarking.md) |
 
-First-release boundaries, the user's new requirements, and eleven decisions are in [the master](project-roadmap.md#decisions-to-record). There are 208 R1, 11 R2, 16 paused-platform, and 2 optional-scope tasks. Counts are acceptance packages rather than effort estimates; the boards have priorities, status, suggested roles, dependencies, and completion criteria.
+First-release boundaries, the user's new requirements, and eleven decisions are in [the master](project-roadmap.md#decisions-to-record) and the [release contract](release-contract.md). After the 2026-11-05 D-02 amendment there are **191 R1, 28 R2**, 16 paused-platform, and 2 optional-scope tasks. Counts are acceptance packages rather than effort estimates; the boards have priorities, status, suggested roles, dependencies, and completion criteria.
+
+**M0 is accepted (2026-11-05):** BEN-001, FND-001, and FND-002 are Done; D-01–D-11 and the initial QA-001 matrix are recorded. **M1 is complete (2026-11-05):** BEN-001 and FND-001–FND-012 are Done. **M2 is in progress for Codex/OpenCode only:** BEN-002–BEN-004 and BEN-021/BEN-022 are accepted; shared provider, reasoning, credential, endpoint, and selection work is implemented. **M3 is in progress:** BEN-008–BEN-010 are accepted and MCP/Connect Apps implementation is next. Cloud/OpenAI-compatible, Ollama, and Gemini/Antigravity are deferred (D-02).
 
 ## Evidence and history
 

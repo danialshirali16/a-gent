@@ -27,7 +27,10 @@ lines.on('line', line => {
     case 'initialize': respond({ userAgent: 'a-gent-test' }); break;
     case 'initialized': break;
     case 'account/read': respond({ account: { type: 'chatgpt' }, requiresOpenaiAuth: true }); break;
-    case 'model/list': respond({ data: [{ id: 'test-model', model: 'test-model', displayName: 'Test model', hidden: false }], nextCursor: null }); break;
+    case 'model/list': respond({ data: [
+      { id: 'test-model', model: 'test-model', displayName: 'Test model', hidden: false, defaultReasoningEffort: 'medium', supportedReasoningEfforts: [{ reasoningEffort: 'low', description: 'Fast' }, { reasoningEffort: 'medium', description: 'Balanced' }, { reasoningEffort: 'high', description: 'Deep' }] },
+      { id: 'test-model-2', model: 'test-model-2', displayName: 'Test model 2', hidden: false, defaultReasoningEffort: 'low', supportedReasoningEfforts: [{ reasoningEffort: 'low', description: 'Fast' }, { reasoningEffort: 'high', description: 'Deep' }] },
+    ], nextCursor: null }); break;
     case 'mcpServerStatus/list': respond({ data: [
       { name: 'Calendar', runtimeStatus: 'connected', authStatus: 'oAuth', httpOrigin: 'https://private.example', tools: { calendar: { inputSchema: { privateMarker: 'must-not-leak' } } } },
       { name: 'Files', runtimeStatus: 'authenticationRequired', authStatus: 'notLoggedIn', tools: {} },

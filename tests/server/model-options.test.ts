@@ -23,6 +23,8 @@ test('search matches model name, ID, and provider without exposing descriptions 
   assert.equal(connectedModelGroups(catalog, 'Research model').length, 2);
   assert.equal(connectedModelGroups(catalog, 'Beta')[0].choices.length, 2);
   assert.deepEqual(connectedModelGroups(catalog, 'nothing matches'), []);
+  const accented = [{ ...provider('Accent', 'connected'), models: [{ id: 'cafe', name: 'Café' }] }];
+  assert.equal(connectedModelGroups(accented, 'Cafe\u0301').length, 1, 'canonically equivalent Unicode matches');
   assert.deepEqual(catalog, before);
 });
 

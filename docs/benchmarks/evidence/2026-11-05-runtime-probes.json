@@ -1,0 +1,211 @@
+{
+  "capturedAt": "2026-11-05T09:22:36.487Z",
+  "host": {
+    "platform": "win32",
+    "arch": "x64",
+    "node": "v26.12.1"
+  },
+  "expected": {
+    "package": "0.1.0",
+    "electron": "45.2.2",
+    "codex": "0.166.0",
+    "opencode": "2.2.5",
+    "engines": {
+      "node": ">=22.12.0"
+    }
+  },
+  "codex": {
+    "installed": "0.166.0",
+    "clientMethodCount": 106,
+    "serverRequestMethodCount": 10,
+    "expectedClientMethodCount": 106,
+    "expectedServerRequestMethodCount": 10,
+    "methodsPresent": {
+      "initialize": true,
+      "account/read": true,
+      "model/list": true,
+      "thread/start": true,
+      "thread/resume": true,
+      "turn/start": true,
+      "turn/interrupt": true,
+      "mcpServerStatus/list": true,
+      "item/commandExecution/requestApproval": true,
+      "item/fileChange/requestApproval": true,
+      "item/permissions/requestApproval": true,
+      "mcpServer/elicitation/request": true,
+      "item/tool/requestUserInput": true
+    },
+    "modelReasoningFields": true,
+    "schemaDrift": [],
+    "checkedFiles": 26
+  },
+  "opencode": {
+    "installed": "2.2.5",
+    "fixture": {
+      "version": "2.2.5",
+      "openapi": "3.1.0",
+      "pathCount": 138,
+      "operationCount": 169,
+      "sha256": "f5c4571bf7e9afc22a440875a746f593f988c4c31bf824f602601c04b20e6c8e"
+    },
+    "probe": {
+      "url": "http://127.0.0.1:4096",
+      "reachable": false,
+      "error": "fetch failed"
+    },
+    "capturedFixture": {
+      "runtime": "opencode",
+      "version": "2.2.5",
+      "capturedAt": "2026-11-05",
+      "source": "installed CLI via `opencode api GET /openapi.json`",
+      "openapi": "3.1.0",
+      "pathCount": 138,
+      "operationCount": 169,
+      "sha256": "f5c4571bf7e9afc22a440875a746f593f988c4c31bf824f602601c04b20e6c8e",
+      "keyOperations": [
+        "GET /api/session",
+        "POST /api/session",
+        "GET /api/session/active",
+        "GET /api/session/{sessionID}",
+        "DELETE /api/session/{sessionID}",
+        "PATCH /api/session/{sessionID}",
+        "POST /api/session/{sessionID}/fork",
+        "POST /api/session/{sessionID}/agent",
+        "POST /api/session/{sessionID}/model",
+        "POST /api/session/{sessionID}/move",
+        "POST /api/session/{sessionID}/prompt",
+        "POST /api/session/{sessionID}/command",
+        "POST /api/session/{sessionID}/synthetic",
+        "POST /api/session/{sessionID}/shell",
+        "POST /api/session/{sessionID}/compact",
+        "POST /api/session/{sessionID}/revert/stage",
+        "DELETE /api/session/{sessionID}/revert",
+        "POST /api/session/{sessionID}/revert/commit",
+        "GET /api/session/{sessionID}/context",
+        "GET /api/session/{sessionID}/diff",
+        "GET /api/session/{sessionID}/inbox",
+        "DELETE /api/session/{sessionID}/inbox/{inboxID}",
+        "PATCH /api/session/{sessionID}/inbox/{inboxID}",
+        "POST /api/session/{sessionID}/generate",
+        "POST /api/session/{sessionID}/interrupt",
+        "POST /api/session/{sessionID}/background",
+        "GET /api/session/{sessionID}/message/{messageID}",
+        "GET /api/session/{sessionID}/form",
+        "POST /api/session/{sessionID}/form",
+        "GET /api/session/{sessionID}/form/{formID}",
+        "DELETE /api/session/{sessionID}/form/{formID}",
+        "POST /api/session/{sessionID}/form/{formID}/reply",
+        "PUT /api/session/{sessionID}/environment",
+        "POST /api/session/{sessionID}/view",
+        "GET /api/session/{sessionID}/message",
+        "GET /api/model",
+        "GET /api/model/default",
+        "GET /api/mcp",
+        "GET /api/mcp/resource",
+        "GET /api/form"
+      ],
+      "limitations": [
+        "Captured from the installed v2.2.5 server/CLI; official docs still describe some v1 paths.",
+        "No live model request or authenticated MCP/OAuth flow was exercised."
+      ]
+    }
+  },
+  "checks": [
+    {
+      "name": "Codex version matches fixture",
+      "pass": true,
+      "expected": "0.166.0",
+      "actual": "0.166.0"
+    },
+    {
+      "name": "Codex required methods present",
+      "pass": true,
+      "expected": "all used client and server-request methods",
+      "actual": {
+        "initialize": true,
+        "account/read": true,
+        "model/list": true,
+        "thread/start": true,
+        "thread/resume": true,
+        "turn/start": true,
+        "turn/interrupt": true,
+        "mcpServerStatus/list": true,
+        "item/commandExecution/requestApproval": true,
+        "item/fileChange/requestApproval": true,
+        "item/permissions/requestApproval": true,
+        "mcpServer/elicitation/request": true,
+        "item/tool/requestUserInput": true
+      }
+    },
+    {
+      "name": "Codex model reasoning metadata present",
+      "pass": true,
+      "expected": true,
+      "actual": true
+    },
+    {
+      "name": "Codex selected schema files match fixture",
+      "pass": true,
+      "expected": "0 changed selected files",
+      "actual": []
+    },
+    {
+      "name": "OpenCode version matches fixture",
+      "pass": true,
+      "expected": "2.2.5",
+      "actual": "2.2.5"
+    }
+  ],
+  "result": "pass",
+  "failures": [],
+  "purpose": "FND-002 runtime/capability baseline evidence for BEN-001/M0",
+  "openCodeCapture": {
+    "source": "installed CLI via `opencode api GET /openapi.json`",
+    "openapi": "3.1.0",
+    "pathCount": 138,
+    "operationCount": 169,
+    "sha256": "f5c4571bf7e9afc22a440875a746f593f988c4c31bf824f602601c04b20e6c8e",
+    "keyOperations": [
+      "GET /api/session",
+      "POST /api/session",
+      "GET /api/session/active",
+      "GET /api/session/{sessionID}",
+      "DELETE /api/session/{sessionID}",
+      "PATCH /api/session/{sessionID}",
+      "POST /api/session/{sessionID}/fork",
+      "POST /api/session/{sessionID}/agent",
+      "POST /api/session/{sessionID}/model",
+      "POST /api/session/{sessionID}/move",
+      "POST /api/session/{sessionID}/prompt",
+      "POST /api/session/{sessionID}/command",
+      "POST /api/session/{sessionID}/synthetic",
+      "POST /api/session/{sessionID}/shell",
+      "POST /api/session/{sessionID}/compact",
+      "POST /api/session/{sessionID}/revert/stage",
+      "DELETE /api/session/{sessionID}/revert",
+      "POST /api/session/{sessionID}/revert/commit",
+      "GET /api/session/{sessionID}/context",
+      "GET /api/session/{sessionID}/diff",
+      "GET /api/session/{sessionID}/inbox",
+      "DELETE /api/session/{sessionID}/inbox/{inboxID}",
+      "PATCH /api/session/{sessionID}/inbox/{inboxID}",
+      "POST /api/session/{sessionID}/generate",
+      "POST /api/session/{sessionID}/interrupt",
+      "POST /api/session/{sessionID}/background",
+      "GET /api/session/{sessionID}/message/{messageID}",
+      "GET /api/session/{sessionID}/form",
+      "POST /api/session/{sessionID}/form",
+      "GET /api/session/{sessionID}/form/{formID}",
+      "DELETE /api/session/{sessionID}/form/{formID}",
+      "POST /api/session/{sessionID}/form/{formID}/reply",
+      "PUT /api/session/{sessionID}/environment",
+      "POST /api/session/{sessionID}/view",
+      "GET /api/session/{sessionID}/message",
+      "GET /api/model",
+      "GET /api/model/default",
+      "GET /api/mcp",
+      "GET /api/mcp/resource",
+      "GET /api/form"
+    ]
+  }
+}

@@ -33,7 +33,7 @@ export default function App() {
   const [dialog, setDialog] = useState<DialogKind | null>(null);
   const [text, setText] = useState(''); const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [providerId, setProviderId] = useState('codex'); const [modelId, setModelId] = useState('');
-  const [effort, setEffort] = useState('medium'); const [mode, setMode] = useState<'chat' | 'work'>('chat');
+  const [effort, setEffort] = useState(''); const [mode, setMode] = useState<'chat' | 'work'>('chat');
   const [workspacePath, setWorkspacePath] = useState(''); const [sending, setSending] = useState(false);
   const [modelPicker, setModelPicker] = useState(false); const [copied, setCopied] = useState('');
   const composer = useRef<HTMLTextAreaElement>(null); const attachInput = useRef<HTMLInputElement>(null); const scroll = useRef<HTMLDivElement>(null); const pickerRef = useRef<HTMLDivElement>(null);
@@ -51,8 +51,23 @@ export default function App() {
   const busy = !!currentRun || sending;
 
   useEffect(() => {
-    if (!agent) return; if (agent.providerId !== 'codex') setMode('chat'); setProviderId(agent.providerId || 'codex'); setModelId(agent.modelId || ''); setEffort(agent.reasoningEffort || 'medium'); setWorkspacePath(conversation?.workspacePath || agent.workspacePath || '');
-  }, [agent?.id, agent?.providerId, agent?.modelId, agent?.reasoningEffort, agent?.workspacePath, conversation?.id, conversation?.workspacePath]);
+    if (!agent) return; const selectedProvider = conversation?.providerId || agent.providerId || 'codex'; if (selectedProvider !== 'codex') setMode('chat'); setProviderId(selectedProvider); setModelId(conversation?.modelId !== undefined ? conversation.modelId : agent.modelId || ''); setEffort(conversation?.reasoningEffort ?? agent.reasoningEffort ?? ''); setWorkspacePath(conversation?.workspacePath || agent.workspacePath || '');
+  }, [agent?.id, agent?.providerId, agent?.modelId, agent?.reasoningEffort, agent?.workspacePath, conversation?.id, conversation?.providerId, conversation?.modelId, conversation?.reasoningEffort, conversation?.workspacePath]);
+  useEffect(() => {
+    if (!currentModel) return;
+    const reasoning = currentModel.reasoning;
+    if (reasoning?.kind === 'enum') {
+      if (reasoning.options.some(option => option.value === effort)) return;
+      const next = reasoning.default || '';
+      setEffort(next);
+      if (conversation) void api(`/api/conversations/${conversation.id}`, 'PATCH', { reasoningEffort: next }).catch(() => {});
+      else if (agent) void api(`/api/agents/${agent.id}`, 'PATCH', { reasoningEffort: next }).catch(() => {});
+    } else if (effort) {
+      setEffort('');
+      if (conversation) void api(`/api/conversations/${conversation.id}`, 'PATCH', { reasoningEffort: '' }).catch(() => {});
+      else if (agent) void api(`/api/agents/${agent.id}`, 'PATCH', { reasoningEffort: '' }).catch(() => {});
+    }
+  }, [currentModel?.id, currentModel?.reasoning, effort, conversation?.id, agent?.id]);
   useEffect(() => {
     const theme = state?.settings.theme || 'dark';
     const media = window.matchMedia('(prefers-color-scheme: dark)');
@@ -100,7 +115,7 @@ export default function App() {
     setSending(true); setError('');
     try {
       let selected = conversation;
-      if (!selected) { selected = await api<Conversation>('/api/conversations', 'POST', { agentId: agent.id, workspacePath: workspacePath || undefined }); setActiveConversationId(selected.id); remember('aGent.conversation', selected.id); }
+      if (!selected) { selected = await api<Conversation>('/api/conversations', 'POST', { agentId: agent.id, workspacePath: workspacePath || undefined, providerId, modelId, reasoningEffort: effort }); setActiveConversationId(selected.id); remember('aGent.conversation', selected.id); }
       else if ((selected.workspacePath || '') !== workspacePath) await api(`/api/conversations/${selected.id}`, 'PATCH', { workspacePath: workspacePath || undefined });
       const run = await api<Run>(`/api/conversations/${selected.id}/messages`, 'POST', { content: text.trim() || 'Please read the attached files.', attachments, providerId, modelId, mode });
       updateRun(run); setText(''); setAttachments([]); setTimeout(() => scroll.current?.scrollTo({ top: scroll.current.scrollHeight, behavior: 'smooth' }), 50);
@@ -126,23 +141,34 @@ export default function App() {
   }
   async function chooseModel(nextProvider: string, nextModel: string) {
     const changed = nextProvider !== providerId || nextModel !== modelId;
-    setProviderId(nextProvider); setModelId(nextModel); if (nextProvider !== 'codex') setMode('chat');
-    if (agent) try {
-      await api(`/api/agents/${agent.id}`, 'PATCH', { providerId: nextProvider, modelId: nextModel });
-      if (changed) {
-        const provider = data?.providers.find(item => item.id === nextProvider);
-        const model = provider?.models.find(item => item.id === nextModel);
-        await appendSystemEvent(`Model changed to ${provider?.name || nextProvider}${model?.name ? ` · ${model.name}` : ' · Provider default'}`);
-      }
-    } catch (reason) { setError((reason as Error).message); }
+    const provider = data?.providers.find(item => item.id === nextProvider);
+    const model = provider?.models.find(item => item.id === nextModel);
+    const reasoning = model?.reasoning;
+    const nextEffort = reasoning?.kind === 'enum'
+      ? (reasoning.options.some(option => option.value === effort) ? effort : reasoning.default || '')
+      : '';
+    const previous = { providerId, modelId, effort };
+    setProviderId(nextProvider); setModelId(nextModel); setEffort(nextEffort); if (nextProvider !== 'codex') setMode('chat');
+    try {
+      if (conversation) await api(`/api/conversations/${conversation.id}`, 'PATCH', { providerId: nextProvider, modelId: nextModel, reasoningEffort: nextEffort });
+      else if (agent) await api(`/api/agents/${agent.id}`, 'PATCH', { providerId: nextProvider, modelId: nextModel, reasoningEffort: nextEffort });
+      if (changed) await appendSystemEvent(`Model changed to ${provider?.name || nextProvider}${model?.name ? ` · ${model.name}` : ' · Provider default'}`);
+    } catch (reason) {
+      setProviderId(previous.providerId); setModelId(previous.modelId); setEffort(previous.effort);
+      setError((reason as Error).message);
+    }
   }
   async function chooseEffort(next: string) {
     const changed = next !== effort;
+    const model = currentProvider?.models.find(item => item.id === modelId);
+    const label = model?.reasoning?.kind === 'enum' ? model.reasoning.options.find(option => option.value === next)?.label || next : next;
+    const previous = effort;
     setEffort(next);
-    if (agent) try {
-      await api(`/api/agents/${agent.id}`, 'PATCH', { reasoningEffort: next });
-      if (changed) await appendSystemEvent(`Reasoning effort set to ${next === 'low' ? 'Light' : next === 'high' ? 'Deep' : 'Balanced'}`);
-    } catch (reason) { setError((reason as Error).message); }
+    try {
+      if (conversation) await api(`/api/conversations/${conversation.id}`, 'PATCH', { reasoningEffort: next });
+      else if (agent) await api(`/api/agents/${agent.id}`, 'PATCH', { reasoningEffort: next });
+      if (changed) await appendSystemEvent(`Reasoning effort set to ${label || 'Provider default'}`);
+    } catch (reason) { setEffort(previous); setError((reason as Error).message); }
   }
   async function connect(next: Connection) { await request(next, '/api/bootstrap'); remember('aGent.host', next.url); try { sessionStorage.setItem('aGent.token', next.token); } catch { /* session-only fallback */ } setConnection(next); setActiveConversationId(null); setActiveAgentId('primary'); }
   function updateDeviceToken(token: string) { setConnection(previous => ({ ...previous, token })); try { sessionStorage.setItem('aGent.token', token); } catch { /* session-only fallback */ } }

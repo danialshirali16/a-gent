@@ -2,21 +2,33 @@ import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { EventEmitter } from 'node:events';
 import { createInterface } from 'node:readline';
 import type { Activity, Agent, AppConnection, Approval, Conversation, ModelOption } from '../shared/types.js';
+import { BUDGETS } from './budgets.js';
+import { redact } from './diagnostics.js';
 import { id, now } from './store.js';
 import { locateCodex, type CodexLaunch } from './codex-discovery.js';
 export { locateCodex } from './codex-discovery.js';
 
 interface RpcMessage { id?: number | string; method?: string; params?: any; result?: any; error?: { message: string; code?: number }; }
+export interface ProviderInteractionNotice {
+  kind: 'question' | 'form' | 'url';
+  title: string;
+  description?: string;
+  command?: string;
+  url?: string;
+  status: 'cancelled';
+}
 export interface ProviderCallbacks {
   delta(text: string): void;
   activity(activity: Activity): void;
   approval(approval: Omit<Approval, 'id' | 'runId' | 'conversationId' | 'status'>, respond: (accept: boolean) => void): void;
+  interaction?(notice: ProviderInteractionNotice): void;
   thread(threadId: string): void;
 }
 export interface ProviderRequest {
   agent: Agent;
   conversation: Conversation;
   modelId: string;
+  reasoning?: import('../shared/types.js').ReasoningCapability;
   mode: 'chat' | 'work';
   workspace: string;
   signal: AbortSignal;
@@ -38,7 +50,7 @@ export class CodexBridge {
     if (!this.process || this.process.stdin.destroyed) throw new Error('Codex connection closed. Reconnect and try again.');
     this.process.stdin.write(JSON.stringify(message) + '\n');
   }
-  private request(method: string, params: unknown, timeout = 90000): Promise<any> {
+  private request(method: string, params: unknown, timeout: number = BUDGETS.tool): Promise<any> {
     const requestId = ++this.nextId;
     return new Promise((resolve, reject) => {
       const timer = setTimeout(() => { this.requests.delete(requestId); reject(new Error(`Codex ${method} did not respond within ${Math.round(timeout / 1000)} seconds.`)); }, timeout);
@@ -86,36 +98,48 @@ export class CodexBridge {
       this.events.emit('closed', new Error(message));
     };
     child.once('error', error => stop(`Could not launch Codex: ${error.message}`));
-    child.once('exit', (code, signal) => stop(`Codex stopped${signal ? ` (${signal})` : ` (exit ${code ?? 'unknown'})`}. ${this.stderr.trim().slice(-1000)}`));
+    child.once('exit', (code, signal) => stop(redact(`Codex stopped${signal ? ` (${signal})` : ` (exit ${code ?? 'unknown'})`}. ${this.stderr.trim().slice(-1000)}`)));
     try {
-      await this.request('initialize', { clientInfo: { name: 'a_gent', title: 'A Gent', version: '0.1.0' }, capabilities: { experimentalApi: true } }, 30000);
+      await this.request('initialize', { clientInfo: { name: 'a_gent', title: 'A Gent', version: '0.1.0' }, capabilities: { experimentalApi: true } }, BUDGETS.startup);
       this.send({ method: 'initialized', params: {} });
     } catch (error) { if (this.process === child) await this.close(); throw error; }
   }
   async info(): Promise<{ authenticated: boolean; models: ModelOption[] }> {
     await this.connect();
-    const account = await this.request('account/read', { refreshToken: false }, 20000);
+    const account = await this.request('account/read', { refreshToken: false }, BUDGETS.auth);
     const models: ModelOption[] = [];
     let cursor: string | null = null;
     for (let page = 0; page < 10; page++) {
-      const result = await this.request('model/list', { limit: 100, cursor, includeHidden: false }, 30000);
-      for (const model of result.data ?? []) if (!model.hidden) models.push({ id: model.model ?? model.id, name: model.displayName ?? model.model ?? model.id, description: model.description });
+      const result = await this.request('model/list', { limit: 100, cursor, includeHidden: false }, BUDGETS.catalog);
+      for (const model of result.data ?? []) if (!model.hidden) {
+        const efforts = Array.isArray(model.supportedReasoningEfforts)
+          ? model.supportedReasoningEfforts.filter((effort: any) => typeof effort?.reasoningEffort === 'string' && effort.reasoningEffort.trim()).map((effort: any) => ({ value: String(effort.reasoningEffort), ...(typeof effort.description === 'string' ? { description: effort.description } : {}) }))
+          : [];
+        models.push({
+          id: model.model ?? model.id,
+          name: model.displayName ?? model.model ?? model.id,
+          description: model.description,
+          reasoning: efforts.length
+            ? { kind: 'enum', options: efforts, ...(typeof model.defaultReasoningEffort === 'string' && efforts.some((effort: any) => effort.value === model.defaultReasoningEffort) ? { default: model.defaultReasoningEffort } : {}), source: 'codex' }
+            : { kind: 'unknown', source: 'codex' },
+        });
+      }
       cursor = result.nextCursor;
       if (!cursor) break;
     }
     return { authenticated: Boolean(account.account) || account.requiresOpenaiAuth === false, models };
   }
-  async apps(): Promise<AppConnection[]> {
+  async apps(threadId?: string): Promise<AppConnection[]> {
     if (this.appInventoryPromise) return this.appInventoryPromise;
-    const operation = this.readApps(); this.appInventoryPromise = operation;
+    const operation = this.readApps(threadId); this.appInventoryPromise = operation;
     try { return await operation; } finally { if (this.appInventoryPromise === operation) this.appInventoryPromise = undefined; }
   }
-  private async readApps(): Promise<AppConnection[]> {
+  private async readApps(threadId?: string): Promise<AppConnection[]> {
     await this.connect();
     const apps: AppConnection[] = [];
     let cursor: string | null = null;
     for (let page = 0; page < 40; page++) {
-      const result = await this.request('mcpServerStatus/list', { cursor, limit: 5, detail: 'toolsAndAuthOnly', ...(this.lastThreadId ? { threadId: this.lastThreadId } : {}) }, 60000);
+      const result = await this.request('mcpServerStatus/list', { cursor, limit: 5, detail: 'toolsAndAuthOnly', ...(threadId ? { threadId } : {}) }, BUDGETS.tool);
       for (const server of result.data ?? []) {
         const runtime = server.runtimeStatus;
         const status: AppConnection['status'] = runtime === 'authenticationRequired' || server.authStatus === 'notLoggedIn' ? 'needs-auth' : runtime === 'connected' ? 'connected' : runtime === 'starting' ? 'starting' : runtime === 'disabled' ? 'disabled' : runtime === 'failed' || runtime === 'cancelled' || server.toolsError ? 'unavailable' : 'configured';
@@ -141,13 +165,13 @@ export class CodexBridge {
     let threadId: string;
     let fresh = !conversation.providerThreadId;
     if (conversation.providerThreadId) {
-      try { threadId = (await this.request('thread/resume', { ...params, threadId: conversation.providerThreadId, excludeTurns: true }, 120000)).thread.id; }
+      try { threadId = (await this.request('thread/resume', { ...params, threadId: conversation.providerThreadId, excludeTurns: true }, BUDGETS.session)).thread.id; }
       catch (error) {
         if (!/not found|does not exist|unknown thread|no rollout/i.test((error as Error).message)) throw error;
         fresh = true;
-        threadId = (await this.request('thread/start', { ...params, serviceName: 'a_gent' }, 120000)).thread.id;
+        threadId = (await this.request('thread/start', { ...params, serviceName: 'a_gent' }, BUDGETS.session)).thread.id;
       }
-    } else threadId = (await this.request('thread/start', { ...params, serviceName: 'a_gent' }, 120000)).thread.id;
+    } else threadId = (await this.request('thread/start', { ...params, serviceName: 'a_gent' }, BUDGETS.session)).thread.id;
     callbacks.thread(threadId);
     this.lastThreadId = threadId;
     if (signal.aborted) throw new Error('Run interrupted.');
@@ -175,7 +199,7 @@ export class CodexBridge {
         interruptionRequested = true;
         // An RPC acknowledgement only means the request was received. Keep the chat
         // reserved until the matching turn/completed notification or child exit.
-        void this.request('turn/interrupt', { threadId, turnId }, 10000).catch(() => {});
+        void this.request('turn/interrupt', { threadId, turnId }, BUDGETS.interrupt).catch(() => {});
       };
       const onAbort = () => {
         if (settled) return;
@@ -183,7 +207,7 @@ export class CodexBridge {
           // If Codex cannot confirm interruption, terminate this owned connection;
           // no later turn can inherit events from an unconfirmed running child.
           void this.close().catch(error => finish(error));
-        }, 10000);
+        }, BUDGETS.interrupt);
         interruptKnownTurn();
       };
       const onMessage = (message: RpcMessage) => {
@@ -191,6 +215,7 @@ export class CodexBridge {
         if (p.threadId !== threadId) return;
         const eventTurnId = typeof p.turnId === 'string' ? p.turnId : typeof p.turn?.id === 'string' ? p.turn.id : undefined;
         if (!eventTurnId && message.id !== undefined && message.method === 'mcpServer/elicitation/request') {
+          callbacks.interaction?.({ kind: 'form', title: 'An app connection needs additional input', description: typeof p.message === 'string' ? p.message : undefined, status: 'cancelled' });
           this.send({ id: message.id, result: { action: 'decline', content: null, _meta: null } });
           return;
         }
@@ -222,14 +247,19 @@ export class CodexBridge {
             else callbacks.approval({ title: method.includes('fileChange') ? 'Approve file changes' : method.includes('permissions') ? 'Approve requested access' : 'Approve command', description: [p.reason, p.cwd ? `Folder: ${p.cwd}` : '', permissions].filter(Boolean).join('\n') || 'Codex is asking for your approval before continuing.', command: command || fileDiff }, respond);
           } else if (method === 'mcpServer/elicitation/request') {
             // This release supports decline without collecting secrets or accepting an unseen form.
-            callbacks.activity({ id: id(), kind: 'status', title: 'An app connection needs additional input', detail: p.message ?? 'Complete this app connection in Codex, then retry the task.', status: 'failed', createdAt: now() });
+            const detail = p.message ?? 'Complete this app connection in Codex, then retry the task.';
+            callbacks.interaction?.({ kind: 'form', title: 'An app connection needs additional input', description: detail, status: 'cancelled' });
+            callbacks.activity({ id: id(), kind: 'status', title: 'An app connection needs additional input', detail, status: 'failed', createdAt: now() });
             pendingApprovalIds.delete(requestId);
             this.send({ id: requestId, result: { action: 'decline', content: null, _meta: null } });
           } else if (method === 'item/tool/requestUserInput') {
-            callbacks.activity({ id: id(), kind: 'status', title: 'Your agent has a question', detail: (p.questions ?? []).map((q: any) => q.question).join('\n'), status: 'completed', createdAt: now() });
+            const detail = (p.questions ?? []).map((q: any) => q.question).join('\n');
+            callbacks.interaction?.({ kind: 'question', title: 'Your agent has a question', description: detail, status: 'cancelled' });
+            callbacks.activity({ id: id(), kind: 'status', title: 'Your agent has a question', detail, status: 'completed', createdAt: now() });
             pendingApprovalIds.delete(requestId);
             this.send({ id: requestId, result: { answers: {} } });
           } else {
+            callbacks.interaction?.({ kind: 'form', title: 'Unsupported interactive request', description: method, status: 'cancelled' });
             pendingApprovalIds.delete(requestId);
             this.send({ id: requestId, error: { code: -32601, message: 'This A Gent release does not support this interactive request.' } });
           }
@@ -263,8 +293,8 @@ export class CodexBridge {
       this.events.on('message', onMessage); this.events.on('closed', onClose); signal.addEventListener('abort', onAbort, { once: true });
       const turnParams: Record<string, unknown> = { threadId, input: [{ type: 'text', text, text_elements: [] }], approvalPolicy: 'on-request', approvalsReviewer: 'user', cwd: workspace, sandboxPolicy: mode === 'work' ? { type: 'workspaceWrite', writableRoots: [workspace], networkAccess: false, excludeTmpdirEnvVar: false, excludeSlashTmp: false } : { type: 'readOnly', networkAccess: false } };
       if (request.modelId) turnParams.model = request.modelId;
-      if (['none', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max', 'ultra'].includes(agent.reasoningEffort)) turnParams.effort = agent.reasoningEffort;
-      void this.request('turn/start', turnParams, 120000).then(result => {
+      if (request.reasoning?.kind === 'enum' && request.reasoning.options.some(option => option.value === agent.reasoningEffort)) turnParams.effort = agent.reasoningEffort;
+      void this.request('turn/start', turnParams, BUDGETS.session).then(result => {
         turnId = result.turn?.id ?? '';
         if (!turnId) { finish(new Error('Codex did not return a turn ID.')); return; }
         for (const message of earlyEvents.splice(0)) { if (settled) break; onMessage(message); }
@@ -281,13 +311,13 @@ export class CodexBridge {
       let terminated = false;
       const cleanup = () => { clearTimeout(term); clearTimeout(kill); clearTimeout(deadline); child.off('exit', onExit); };
       const onExit = () => { terminated = true; cleanup(); resolve(); };
-      const term = setTimeout(() => { if (!terminated) child.kill('SIGTERM'); }, 2000);
-      const kill = setTimeout(() => { if (!terminated) child.kill('SIGKILL'); }, 3500);
+      const term = setTimeout(() => { if (!terminated) child.kill('SIGTERM'); }, BUDGETS.terminationGrace);
+      const kill = setTimeout(() => { if (!terminated) child.kill('SIGKILL'); }, BUDGETS.terminationKill);
       const deadline = setTimeout(() => {
         cleanup();
         this.shutdownError = new Error('Codex did not confirm shutdown. Restart A Gent before reconnecting.');
         reject(this.shutdownError);
-      }, 6000);
+      }, BUDGETS.shutdown);
       child.once('exit', onExit);
       child.stdin.end();
     });

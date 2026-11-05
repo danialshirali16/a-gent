@@ -62,7 +62,7 @@ The final pass ran typecheck, 17 backend tests, production build, 18 Playwright 
 
 Remaining UI work includes provider setup, app authentication/access/management, real questions/forms, and catalog corrections, alongside manual accessibility and release QA. Large-workspace/SSE checks, packaged notices, distribution, and resumed platform work are tracked in the master/task boards rather than implied complete by the component pass.
 
-Current continuation: follow FND-001/002 and the shared contracts, then deliver one provider/app vertical slice. UI owners use PVD-005/006/009/010/012 for model/provider setup and APP-001–APP-012 plus HIL-001–HIL-006 for Connect Apps and real user interactions. UX-001–UX-007 cover final integration/accessibility. Update task status in those boards, keeping this document for component process and UI evidence.
+Current continuation: use the accepted FND-001/002 contracts, then deliver one provider/app vertical slice. UI owners use PVD-005/006/009/010/012 for model/provider setup and APP-001–APP-012 plus HIL-001–HIL-006 for Connect Apps and real user interactions. UX-001–UX-007 cover final integration/accessibility. Update task status in those boards, keeping this document for component process and UI evidence.
 
 The catalog regression toggle remains Demo data, Worst case, Empty, One choice, 1,000 models, and Invalid IDs, with URL persistence. [The report](model-options-stress-test.md) contains field contracts, reproductions, and verification limits.
 
