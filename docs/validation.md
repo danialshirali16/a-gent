@@ -62,11 +62,13 @@ The `/tmp` path is intentionally writable under the current `excludeSlashTmp: fa
 
 | Artifact | Record |
 | --- | --- |
-| `release/A-Gent-1.0.0-mac-arm64.dmg` | Size and SHA-256 in `release-artifacts/A-Gent-1.0.0-macos-arm64.json` / `SHA256SUMS.txt`. |
-| `release/A-Gent-1.0.0-mac-arm64.zip` | Size and SHA-256 in the same manifest. |
-| `release/mac-arm64/A Gent.app` | Inspected bundle; the manifest records its size. A bundle digest is not a notarization identity. |
+| Local `release/A-Gent-1.0.0-mac-arm64.dmg` | Size and SHA-256 in `release-artifacts/A-Gent-1.0.0-macos-arm64.json` / `LOCAL-SHA256SUMS.txt`. |
+| Local `release/A-Gent-1.0.0-mac-arm64.zip` | Size and SHA-256 in the same manifest. |
+| CI `A-Gent-macos` artifact zip | 658,485,676 bytes; SHA-256 `02b7d02e7309448462259ddc405f8ccbed793c6f09a9645a86dc61c8ad409e9d`; `CI-SHA256SUMS.txt`. |
+| CI-extracted DMG / ZIP | SHA-256 values in `SHA256SUMS.txt`; the CI DMG's app tree hash matches the local app (`59b86ca2…`). |
+| `.app` bundle | Inspected in both builds; identical content tree hash `59b86ca263d8c03e4d23b1499b9523ff3503e7e40a9122ce41d2fcd9e88e4984`. A bundle digest is not a notarization identity. |
 
-CI artifact: the `A-Gent-macos` artifact attached to the GitHub Actions run for the build commit (expires per repository policy). The local `release/` paths are the directly inspected copies. The manifest itself is repository evidence and is not part of the packaged app.
+CI artifact: the `A-Gent-macos` artifact attached to the GitHub Actions run for the build commit (expires per repository policy). The artifact's extracted `mac-arm64` directory can have dereferenced framework symlinks; use its DMG or ZIP. The manifest itself is repository evidence and is not part of the packaged app.
 
 ### Open V1-06/V1-07 items
 

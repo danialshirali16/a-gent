@@ -10,11 +10,11 @@ Status: **Prepared for the V1-07 candidate; not yet accepted.** This procedure i
 | Git branch / commit | `codex/v1-macos-release` / build commit recorded in `release-artifacts/A-Gent-1.0.0-macos-arm64.json` |
 | Build host | MacBook Pro (MacBookPro17,1), Apple M1, 8 GB, macOS 27.2 (26B123) |
 | Build runtime | Node 24.12.0, npm 11.6.2, Electron 45.2.2, Codex CLI 0.166.0 |
-| DMG | `release/A-Gent-1.0.0-mac-arm64.dmg` |
-| DMG SHA-256 | recorded in `release-artifacts/A-Gent-1.0.0-macos-arm64.json` and `SHA256SUMS.txt` |
-| ZIP | `release/A-Gent-1.0.0-mac-arm64.zip` |
-| ZIP SHA-256 | recorded in `release-artifacts/A-Gent-1.0.0-macos-arm64.json` and `SHA256SUMS.txt` |
-| CI artifact | GitHub Actions run for the build commit, artifact `A-Gent-macos` |
+| DMG | `release/A-Gent-1.0.0-mac-arm64.dmg` (or the same name inside the CI artifact zip) |
+| DMG SHA-256 | CI download: `SHA256SUMS.txt`; local build: `LOCAL-SHA256SUMS.txt` |
+| ZIP | `release/A-Gent-1.0.0-mac-arm64.zip` (or the same name inside the CI artifact zip) |
+| ZIP SHA-256 | CI download: `SHA256SUMS.txt`; local build: `LOCAL-SHA256SUMS.txt` |
+| CI artifact | GitHub Actions run for the build commit, artifact `A-Gent-macos`; the artifact zip hash is in `CI-SHA256SUMS.txt` |
 | Signing | Unsigned / ad-hoc (personal test build; no Developer ID or notarization) |
 | Minimum OS | macOS 13.0, arm64 only |
 
@@ -25,7 +25,7 @@ shasum -a 256 A-Gent-1.0.0-mac-arm64.dmg
 shasum -a 256 A-Gent-1.0.0-mac-arm64.zip
 ```
 
-Compare both hashes with `release-artifacts/SHA256SUMS.txt` (or the values published with the pull request). Do not continue if either hash differs.
+Compare both hashes with `release-artifacts/SHA256SUMS.txt` if you downloaded the CI artifact, or `release-artifacts/LOCAL-SHA256SUMS.txt` if you built locally. Do not continue if either hash differs. Use the DMG or ZIP; do not use the artifact zip's extracted `mac-arm64` directory, because GitHub artifact transport may dereference the framework symlinks.
 
 ## Before you begin
 
