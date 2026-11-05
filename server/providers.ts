@@ -352,6 +352,7 @@ export class ProviderManager {
   }
 
   async reloadApps(): Promise<void> {
+    if (this.get('codex').status === 'unavailable') throw new InputError('Connect Codex before reloading app configuration.', 409);
     await this.codex.reload();
   }
 

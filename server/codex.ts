@@ -92,6 +92,7 @@ export class CodexBridge {
     const child = spawn(launch.command, args, { stdio: 'pipe', windowsHide: true, env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' } });
     this.process = child;
     this.lastThreadId = undefined;
+    this.oauthLogins.clear();
     this.stderr = '';
     const lines = createInterface({ input: child.stdout });
     lines.on('line', line => {
@@ -268,7 +269,7 @@ export class CodexBridge {
     try { parsed = new URL(url); } catch { throw new Error('Codex returned an invalid sign-in URL.'); }
     if (!['http:', 'https:'].includes(parsed.protocol)) throw new Error('Codex returned a non-HTTP sign-in URL.');
     const loginId = typeof result.loginId === 'string' ? result.loginId : undefined;
-    if (loginId) this.oauthLogins.set(loginId, { loginId, status: 'pending', updatedAt: now() });
+    if (loginId && !this.oauthLogins.has(loginId)) this.oauthLogins.set(loginId, { loginId, status: 'pending', updatedAt: now() });
     return { appId: `codex:${serverName}`, authorizationUrl: url, ...(loginId ? { loginId } : {}), status: 'pending' };
   }
 
