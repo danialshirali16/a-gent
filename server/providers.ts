@@ -1,7 +1,7 @@
 import { readFile, writeFile, rename } from 'node:fs/promises';
 import { isIP } from 'node:net';
 import { join } from 'node:path';
-import type { Agent, AppCapabilities, AppConnection, AppInventory, Conversation, ProviderInfo } from '../shared/types.js';
+import type { Agent, AppCapabilities, AppConnection, AppInventory, AppLoginStart, AppLoginState, Conversation, ProviderInfo } from '../shared/types.js';
 import { isProviderReady, MODEL_ID_LIMIT, MODEL_LIMIT, normalizeModels, providerCapabilities } from '../shared/providers.js';
 import { BUDGETS, budgetSignal, combineBudget } from './budgets.js';
 import { redact } from './diagnostics.js';
@@ -331,6 +331,28 @@ export class ProviderManager {
       };
     }
     throw new InputError('Unknown app provider.', 404);
+  }
+
+  async appLogin(appId: string, scopes?: string[], threadId?: string): Promise<AppLoginStart> {
+    const separator = appId.indexOf(':');
+    if (separator <= 0 || separator === appId.length - 1) throw new InputError('Use a provider-qualified app ID.', 400);
+    const providerId = appId.slice(0, separator), name = appId.slice(separator + 1);
+    if (providerId === 'codex') {
+      if (this.get('codex').status === 'unavailable') throw new InputError('Connect Codex before signing in to this app.', 409);
+      return this.codex.login(name, scopes, threadId);
+    }
+    if (providerId === 'opencode') {
+      throw new InputError(`Complete this sign-in with “opencode mcp auth ${name}” on the host. A Gent does not copy OpenCode tokens.`, 409);
+    }
+    throw new InputError('Unknown app provider.', 404);
+  }
+
+  appLoginState(loginId: string): AppLoginState | undefined {
+    return this.codex.loginState(loginId);
+  }
+
+  async reloadApps(): Promise<void> {
+    await this.codex.reload();
   }
 
   async run(providerId: string, request: ProviderRequest): Promise<void> {

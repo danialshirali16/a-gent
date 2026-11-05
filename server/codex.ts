@@ -1,7 +1,7 @@
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { EventEmitter } from 'node:events';
 import { createInterface } from 'node:readline';
-import type { Activity, Agent, AppCapabilities, AppConnection, AppInventory, AppResourceCapability, AppToolCapability, Approval, Conversation, InteractionField, InteractionQuestion, ModelOption } from '../shared/types.js';
+import type { Activity, Agent, AppCapabilities, AppConnection, AppInventory, AppLoginStart, AppLoginState, AppResourceCapability, AppToolCapability, Approval, Conversation, InteractionField, InteractionQuestion, ModelOption } from '../shared/types.js';
 import { BUDGETS } from './budgets.js';
 import { redact } from './diagnostics.js';
 import { parseElicitation, parseQuestions, validateElicitationValues, validateQuestionAnswers } from './hil.js';
@@ -44,6 +44,7 @@ export class CodexBridge {
   private shutdownError?: Error;
   private lastThreadId?: string;
   private appInventories = new Map<string, Promise<AppInventory>>();
+  private oauthLogins = new Map<string, AppLoginState>();
   private requests = new Map<string | number, { resolve(value: any): void; reject(error: Error): void; timer: ReturnType<typeof setTimeout> }>();
   private events = new EventEmitter();
   private nextId = 0;
@@ -98,6 +99,21 @@ export class CodexBridge {
       let message: RpcMessage;
       try { message = JSON.parse(line); } catch { return; }
       if (!message || typeof message !== 'object') return;
+      if (message.method === 'mcpServer/oauthLogin/completed') {
+        const params = message.params ?? {};
+        if (typeof params.loginId === 'string') {
+          this.oauthLogins.set(params.loginId, {
+            loginId: params.loginId,
+            status: params.success === true ? 'success' : 'failed',
+            ...(typeof params.error === 'string' && params.error ? { error: redact(params.error).slice(0, 2000) } : {}),
+            updatedAt: now(),
+          });
+          if (this.oauthLogins.size > 50) {
+            const oldest = this.oauthLogins.keys().next().value;
+            if (oldest) this.oauthLogins.delete(oldest);
+          }
+        }
+      }
       if (message.id !== undefined && !message.method) {
         const pending = this.requests.get(message.id);
         if (!pending) return;
@@ -237,6 +253,33 @@ export class CodexBridge {
       ...(typeof server.toolsError === 'string' && server.toolsError ? { error: server.toolsError.slice(0, 2000) } : {}),
       checkedAt: now(),
     };
+  }
+
+  async login(serverName: string, scopes?: string[], threadId?: string): Promise<AppLoginStart> {
+    await this.connect();
+    const result = await this.request('mcpServer/oauth/login', {
+      name: serverName,
+      ...(scopes?.length ? { scopes } : {}),
+      ...(threadId ? { threadId } : {}),
+    }, BUDGETS.auth);
+    const url = typeof result?.authorizationUrl === 'string' ? result.authorizationUrl : typeof result?.authUrl === 'string' ? result.authUrl : undefined;
+    if (!url) throw new Error('Codex did not return a sign-in URL.');
+    let parsed: URL;
+    try { parsed = new URL(url); } catch { throw new Error('Codex returned an invalid sign-in URL.'); }
+    if (!['http:', 'https:'].includes(parsed.protocol)) throw new Error('Codex returned a non-HTTP sign-in URL.');
+    const loginId = typeof result.loginId === 'string' ? result.loginId : undefined;
+    if (loginId) this.oauthLogins.set(loginId, { loginId, status: 'pending', updatedAt: now() });
+    return { appId: `codex:${serverName}`, authorizationUrl: url, ...(loginId ? { loginId } : {}), status: 'pending' };
+  }
+
+  loginState(loginId: string): AppLoginState | undefined {
+    const state = this.oauthLogins.get(loginId);
+    return state ? { ...state } : undefined;
+  }
+
+  async reload(): Promise<void> {
+    await this.connect();
+    await this.request('config/mcpServer/reload', null, BUDGETS.tool);
   }
 
   async run(request: ProviderRequest): Promise<void> {

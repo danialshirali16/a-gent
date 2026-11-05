@@ -404,6 +404,28 @@ export async function startServer(options: ServerOptions = {}): Promise<ServerHa
       throw error;
     }
   });
+  app.post('/api/apps/:id/auth', async (req, res) => {
+    requireHostAuthority(req, res);
+    const data = object(req.body);
+    let scopes: string[] | undefined;
+    if (data.scopes !== undefined) {
+      if (!Array.isArray(data.scopes) || data.scopes.length > 50 || data.scopes.some(scope => typeof scope !== 'string' || !scope.trim() || scope.length > 200)) throw new InputError('Scopes must be a list of short strings.');
+      scopes = data.scopes.map(scope => (scope as string).trim());
+    }
+    const conversationId = typeof data.conversationId === 'string' ? data.conversationId : undefined;
+    const threadId = conversationId ? store.getConversation(conversationId).providerThreadId : undefined;
+    res.json(await providers.appLogin(String(req.params.id), scopes, threadId));
+  });
+  app.get('/api/apps/auth/:loginId', (req, res) => {
+    const state = providers.appLoginState(String(req.params.loginId));
+    if (!state) throw new InputError('Sign-in not found.', 404);
+    res.json(state);
+  });
+  app.post('/api/apps/reload', async (req, res) => {
+    requireHostAuthority(req, res);
+    await providers.reloadApps();
+    res.json({ ok: true });
+  });
   app.get('/api/app-records', (_req, res) => { res.json(store.state.apps); });
   app.post('/api/app-records', async (req, res) => {
     requireHostAuthority(req, res);

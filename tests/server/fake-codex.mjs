@@ -42,6 +42,14 @@ lines.on('line', line => {
       { id: 'test-model', model: 'test-model', displayName: 'Test model', hidden: false, defaultReasoningEffort: 'medium', supportedReasoningEfforts: [{ reasoningEffort: 'low', description: 'Fast' }, { reasoningEffort: 'medium', description: 'Balanced' }, { reasoningEffort: 'high', description: 'Deep' }] },
       { id: 'test-model-2', model: 'test-model-2', displayName: 'Test model 2', hidden: false, defaultReasoningEffort: 'low', supportedReasoningEfforts: [{ reasoningEffort: 'low', description: 'Fast' }, { reasoningEffort: 'high', description: 'Deep' }] },
     ], nextCursor: null }); break;
+    case 'mcpServer/oauth/login': {
+      const loginId = `login-${++sequence}`;
+      const failed = p.name === 'Broken';
+      respond({ authorizationUrl: `https://example.test/oauth?login=${loginId}`, loginId });
+      setTimeout(() => write({ method: 'mcpServer/oauthLogin/completed', params: { name: p.name, loginId, threadId: p.threadId ?? null, success: !failed, ...(failed ? { error: 'Access denied by the fixture.' } : {}) } }), 40);
+      break;
+    }
+    case 'config/mcpServer/reload': respond({}); break;
     case 'mcpServerStatus/list': {
       if (process.argv.includes('--mcp-slow')) break;
       if (p.detail === 'full' && p.serverName) {

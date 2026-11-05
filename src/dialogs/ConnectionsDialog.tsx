@@ -1,8 +1,8 @@
 import { Button } from '../ui/Button';
 import { Tabs } from '../ui/Tabs';
 import { useEffect, useState } from 'react';
-import { ArrowUpRight, Check, Copy, Monitor, RefreshCw } from 'lucide-react';
-import type { AppCapabilities, AppConnection, AppInventory, ProviderInfo } from '../../shared/types';
+import { ArrowUpRight, Check, Copy, Monitor, RefreshCw, RotateCw } from 'lucide-react';
+import type { AppCapabilities, AppConnection, AppInventory, AppLoginStart, AppLoginState, ProviderInfo } from '../../shared/types';
 import type { Connection } from '../api';
 import type { Api } from '../dialogs';
 import { Modal } from '../components';
@@ -36,6 +36,12 @@ export function ConnectionsDialog({ providers, api, onRefresh, connection, onHos
   const [capabilities, setCapabilities] = useState<AppCapabilities | null>(null);
   const [capabilityError, setCapabilityError] = useState('');
   const [capabilityBusy, setCapabilityBusy] = useState(false);
+  const [scopes, setScopes] = useState('');
+  const [loginStart, setLoginStart] = useState<AppLoginStart | null>(null);
+  const [loginState, setLoginState] = useState<AppLoginState | null>(null);
+  const [loginBusy, setLoginBusy] = useState(false);
+  const [loginError, setLoginError] = useState('');
+  const [reloading, setReloading] = useState(false);
   const [copied, setCopied] = useState(false);
   const toast = useToast();
 
@@ -54,9 +60,47 @@ export function ConnectionsDialog({ providers, api, onRefresh, connection, onHos
     if (!app.id) return;
     if (selectedApp?.id === app.id) { setSelectedApp(null); setCapabilities(null); setCapabilityError(''); return; }
     setSelectedApp(app); setCapabilities(null); setCapabilityError(''); setCapabilityBusy(true);
+    setLoginStart(null); setLoginState(null); setLoginError(''); setScopes('');
     try { setCapabilities(await api<AppCapabilities>(`/api/apps/${encodeURIComponent(app.id)}/capabilities`)); }
     catch (reason) { setCapabilityError((reason as Error).message); }
     finally { setCapabilityBusy(false); }
+  }
+
+  async function reloadRuntime() {
+    setReloading(true); setAppError('');
+    try { await api('/api/apps/reload', 'POST', {}); await checkApps(); }
+    catch (reason) { setAppError((reason as Error).message); }
+    finally { setReloading(false); }
+  }
+
+  async function startLogin(app: AppConnection) {
+    if (!app.id) return;
+    setLoginBusy(true); setLoginError(''); setLoginState(null);
+    try {
+      const body = scopes.trim() ? { scopes: scopes.split(',').map(scope => scope.trim()).filter(Boolean) } : {};
+      const started = await api<AppLoginStart>(`/api/apps/${encodeURIComponent(app.id)}/auth`, 'POST', body);
+      setLoginStart(started);
+      window.open(started.authorizationUrl, '_blank', 'noopener,noreferrer');
+      if (started.loginId) void pollLogin(started.loginId);
+      else setLoginBusy(false);
+    } catch (reason) { setLoginError((reason as Error).message); setLoginBusy(false); }
+  }
+
+  async function pollLogin(loginId: string) {
+    for (let attempt = 0; attempt < 60; attempt++) {
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      try {
+        const state = await api<AppLoginState>(`/api/apps/auth/${encodeURIComponent(loginId)}`);
+        setLoginState(state);
+        if (state.status === 'pending') continue;
+        setLoginBusy(false);
+        if (state.status === 'success') await checkApps();
+        else setLoginError(state.error || 'Sign-in did not complete.');
+        return;
+      } catch (reason) { setLoginError((reason as Error).message); setLoginBusy(false); return; }
+    }
+    setLoginError('Sign-in timed out. Start it again when you are ready.');
+    setLoginBusy(false);
   }
 
   const needle = query.trim().toLowerCase();
@@ -80,13 +124,23 @@ export function ConnectionsDialog({ providers, api, onRefresh, connection, onHos
         </section>}
 
         {showApps && <section className="connections-section">
-          <h3>Connected apps <Button variant="quiet" size="sm" loading={checkingApps} onClick={() => void checkApps()}><RefreshCw size={13} />Refresh</Button></h3>
+          <h3>Connected apps <Button variant="quiet" size="sm" loading={checkingApps} onClick={() => void checkApps()}><RefreshCw size={13} />Refresh</Button><Button variant="quiet" size="sm" loading={reloading} onClick={() => void reloadRuntime()}><RotateCw size={13} />Reload runtime</Button></h3>
           <p className="connections-note">MCP connections configured in Codex or OpenCode on this host. Tool lists are read from the runtime, not guessed.</p>
           {appNotice && <p className="connections-notice" role="status">{appNotice}</p>}
           {appError ? <p className="connections-error">{appError}</p> : !shownApps.length ? <p className="connections-empty">{checkingApps ? 'Checking app connections…' : needle ? 'No apps match.' : 'No app connections found. Add MCP servers to Codex or OpenCode on the host, then refresh.'}</p> : <>
             <div className="connections-app-grid">{shownApps.map(app => <button type="button" className={`connection-app-card ${selectedApp?.id === app.id ? 'is-selected' : ''}`} key={app.id || `${app.providerId || 'runtime'}:${app.name}`} onClick={() => void inspectApp(app)} aria-expanded={selectedApp?.id === app.id} aria-controls="connection-app-detail"><span className={`connection-dot ${app.status === 'connected' ? 'is-connected' : ''}`} /><div><strong>{app.name.replace(/[_-]/g, ' ')}</strong><small>{app.status === 'connected' ? `${app.toolsCount === undefined ? 'Tool list unavailable' : `${app.toolsCount} ${app.toolsCount === 1 ? 'tool' : 'tools'}`}${app.authStatus ? ` · ${app.authStatus}` : ''}` : app.status === 'needs-auth' ? 'Sign-in needed' : app.error ? 'Check failed' : app.status.replace('-', ' ')}</small></div></button>)}</div>
             {selectedApp && <div className="connection-app-detail" id="connection-app-detail">
               <div className="connection-app-detail-head"><div><strong>{selectedApp.name.replace(/[_-]/g, ' ')}</strong><small>{selectedApp.providerId || 'runtime'} · {selectedApp.transport || 'unknown transport'}{selectedApp.authStatus ? ` · ${selectedApp.authStatus}` : ''}</small></div><Button variant="quiet" size="sm" onClick={() => { setSelectedApp(null); setCapabilities(null); setCapabilityError(''); }}>Close</Button></div>
+              {selectedApp.providerId === 'codex' && <div className="connection-auth-box">
+                <div className="connection-auth-field"><label htmlFor="connection-app-scopes">Scopes <span>optional, comma-separated</span></label><input id="connection-app-scopes" value={scopes} onChange={event => setScopes(event.target.value)} placeholder="read, write" disabled={loginBusy} autoComplete="off" /></div>
+                <div className="connection-auth-actions">
+                  <Button variant="secondary" size="sm" loading={loginBusy} onClick={() => void startLogin(selectedApp)}>{selectedApp.status === 'needs-auth' ? 'Sign in' : 'Sign in again'}</Button>
+                  {loginStart && <a href={loginStart.authorizationUrl} target="_blank" rel="noreferrer noopener">Open sign-in page</a>}
+                </div>
+                {loginState?.status === 'pending' && <p className="connections-note" role="status">Waiting for sign-in to finish in your browser…</p>}
+                {loginState?.status === 'success' && <p className="connections-note" role="status">Signed in. Refreshing app status…</p>}
+                {loginError && <p className="connections-error" role="alert">{loginError}</p>}
+              </div>}
               {capabilityBusy ? <p className="connections-note">Reading capabilities from the runtime…</p> : capabilityError ? <p className="connections-error">{capabilityError}</p> : capabilities ? <>
                 {!capabilities.supported ? <p className="connections-notice">{capabilities.error}</p> : <>
                   {capabilities.error && <p className="connections-notice">{capabilities.error}</p>}

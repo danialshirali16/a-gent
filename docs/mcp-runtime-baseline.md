@@ -18,9 +18,9 @@ Status: **MCP-002 recorded 2026-11-05.** Pins the R1 Codex/OpenCode MCP surfaces
 | --- | --- |
 | Inventory | Codex status is paginated (cursor/limit), scoped by thread when supplied, cancelable, and returns partial results with an error envelope. OpenCode `mcp list` is provider-qualified; its tool list is omitted rather than inferred. No second MCP executor. |
 | Capability detail | Codex `mcpServerStatus/list` with `detail: full` and `serverName` supplies tool schemas, resources, templates, and server capabilities on demand; schemas are bounded and never cached. OpenCode reports `supported: false`. |
-| Auth | Runtime owns OAuth/token storage. A Gent surfaces needs-auth and starts runtime auth; it never receives long-lived MCP tokens. |
+| Auth | Runtime owns OAuth/token storage. Codex start returns a reviewed HTTP(S) URL plus login ID; completion is correlated through `mcpServer/oauthLogin/completed`. A Gent never receives long-lived MCP tokens and does not forward another client's tokens. |
 | Config adoption | External config is read-only until explicit adoption; writes require atomic rollback. |
-| Reload | Use runtime reload/restart; absent reload disables with an actionable message. |
+| Reload | Codex `config/mcpServer/reload` is exposed as a host-authority action; absent reload disables with an actionable message. Affected-thread/in-flight isolation is still a review item. |
 | Tool call | Runtime executes; A Gent records activity/approval and never invents a tool result. |
 | Unknown/experimental methods | Explicit unsupported/fallback; no private protocol assumptions. |
 | Timeout/cancel | Shared tool/interaction budgets; abort closes the runtime request/stream. |

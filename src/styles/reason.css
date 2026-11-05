@@ -2755,6 +2755,32 @@
 .connection-app-detail-head strong { font-size: 11px; font-weight: 500; overflow-wrap: anywhere; }
 .connection-app-detail-head small { color: var(--ui-text-3); font-size: 10px; }
 
+.connection-auth-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 9px;
+  border: 1px solid var(--ui-border);
+  border-radius: 7px;
+}
+
+.connection-auth-field { display: flex; flex-direction: column; gap: 3px; }
+.connection-auth-field label { font-size: 10px; color: var(--ui-ink); }
+.connection-auth-field label span { color: var(--ui-text-3); }
+.connection-auth-field input {
+  padding: 6px 8px;
+  border: 1px solid var(--ui-border);
+  border-radius: 6px;
+  background: var(--ui-page);
+  color: var(--ui-ink);
+  font: inherit;
+  font-size: 10px;
+}
+
+.connection-auth-actions { display: flex; align-items: center; gap: 10px; }
+.connection-auth-actions a { color: var(--ui-accent); font-size: 10px; }
+
 .connection-capability-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

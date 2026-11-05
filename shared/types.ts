@@ -242,6 +242,18 @@ export interface AppResourceCapability {
   description?: string;
   mimeType?: string;
 }
+export interface AppLoginStart {
+  appId: string;
+  authorizationUrl: string;
+  loginId?: string;
+  status: 'pending';
+}
+export interface AppLoginState {
+  loginId: string;
+  status: 'pending' | 'success' | 'failed';
+  error?: string;
+  updatedAt: string;
+}
 export interface AppCapabilities {
   appId: string;
   supported: boolean;

@@ -285,7 +285,7 @@ Date: 2026-11-05. Compared Codex/OpenCode MCP surfaces, MCP 2026-07-28 transport
 | BEN-009 | Connect Apps IA/add/auth/access/inspect/enable/disable/remove and catalog-honesty decisions. |
 | BEN-010 | Correlated HIL approvals/questions/forms/URL, decline/timeout, sensitive values, concurrency, accessibility. |
 
-Records: [BEN-008](../docs/benchmarks/BEN-008-mcp-runtime.md), [BEN-009](../docs/benchmarks/BEN-009-connect-apps-ux.md), [BEN-010](../docs/benchmarks/BEN-010-hil.md). MCP-002 runtime/protocol baseline is recorded in [mcp-runtime-baseline.md](../docs/mcp-runtime-baseline.md). MCP-001 app-record fields, MCP-003/MCP-004 scoped runtime inventory, MCP-005 managed app-record CRUD, MCP-015 capability discovery, and HIL-001/HIL-002 interaction routing/question answers are implemented; HIL-003 is a Review item. No live OAuth connector or live HIL journey was exercised.
+Records: [BEN-008](../docs/benchmarks/BEN-008-mcp-runtime.md), [BEN-009](../docs/benchmarks/BEN-009-connect-apps-ux.md), [BEN-010](../docs/benchmarks/BEN-010-hil.md). MCP-002 runtime/protocol baseline is recorded in [mcp-runtime-baseline.md](../docs/mcp-runtime-baseline.md). MCP-001 app-record fields, MCP-003/MCP-004 scoped runtime inventory, MCP-005 managed app-record CRUD, MCP-009 OAuth handoff, MCP-015 capability discovery, and HIL-001/HIL-002 interaction routing/question answers are implemented; MCP-010/MCP-011/MCP-014 and HIL-003 remain Review items. No live OAuth connector or live HIL journey was exercised.
 
 ### MCP-003/MCP-004 inventory evidence
 
@@ -309,6 +309,18 @@ Date: 2026-11-05. `tests/server/app-inventory.test.ts` and `tests/server/backend
 - Discovery is fetched on demand, so schema changes are visible on the next inspection without a stale cache.
 - OpenCode returns `supported: false` with recovery text instead of inventing tools/resources; unknown IDs return 404.
 - The Connect Apps detail panel shows provider, transport, auth, tool/resource counts, version, prompt advertisement, schemas' field names, and truncation/error states.
+
+### MCP-009/MCP-014 OAuth and reload evidence
+
+Date: 2026-11-05. `tests/server/backend.test.ts` verifies with the Codex protocol fixture:
+
+- `POST /api/apps/:id/auth` starts `mcpServer/oauth/login`, accepts optional scopes, returns the runtime's HTTP(S) authorization URL and login ID, and never returns tokens.
+- `GET /api/apps/auth/:loginId` reports pending/success/failure after `mcpServer/oauthLogin/completed`; the failure fixture carries the runtime error text.
+- OpenCode sign-in returns 409 with `opencode mcp auth` guidance instead of copying another app's tokens.
+- `POST /api/apps/reload` invokes `config/mcpServer/reload`.
+- Sign-in start/reload require host authority; the UI opens only the returned URL, shows waiting/success/failure, and offers an explicit retry.
+
+Live OAuth completion, granted scopes, logout/revoke, duplicate callbacks, and in-flight reload isolation remain Review/MCP-022 gates.
 
 ### HIL-002/HIL-003 deterministic evidence
 

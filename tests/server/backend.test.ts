@@ -549,6 +549,17 @@ test('authenticated API persists CRUD, streams real adapter lifecycle, approves,
     assert.equal(capabilities.body.serverInfo.version, '1.2.3');
     assert.ok(!JSON.stringify(capabilities.body).includes('must-not-leak'));
     assert.equal((await api(`/apps/${encodeURIComponent('codex:Missing')}/capabilities`)).status, 404);
+    const login = await api(`/apps/${encodeURIComponent('codex:Files')}/auth`, { scopes: ['read', 'write'] });
+    assert.equal(login.status, 200);
+    assert.match(login.body.authorizationUrl, /^https:\/\//);
+    assert.equal(login.body.status, 'pending');
+    assert.ok(login.body.loginId);
+    const loginState = await waitFor(async () => (await api(`/apps/auth/${encodeURIComponent(login.body.loginId)}`)).body, state => state.status === 'success');
+    assert.equal(loginState.status, 'success');
+    const failedLogin = await api(`/apps/${encodeURIComponent('codex:Broken')}/auth`, {});
+    const failedState = await waitFor(async () => (await api(`/apps/auth/${encodeURIComponent(failedLogin.body.loginId)}`)).body, state => state.status === 'failed');
+    assert.match(failedState.error, /Access denied/);
+    assert.equal((await api('/apps/reload', {})).status, 200);
     assert.equal((await api('/agents', { name: 'Bad', color: 'red' })).status, 400);
     const agent = (await api('/agents', { name: 'Test Agent', instructions: 'Test instructions', color: '#112233', providerId: 'codex' })).body;
     assert.equal(agent.name, 'Test Agent');
@@ -852,6 +863,9 @@ test('OpenCode provider discovers models and streams a continued CLI session', a
     assert.equal(openCodeCapabilities.body.supported, false);
     assert.match(openCodeCapabilities.body.error, /does not expose MCP tool or resource detail/);
     assert.equal((await api(`/apps/${encodeURIComponent('opencode:missing')}/capabilities`)).status, 404);
+    const openCodeAuth = await api(`/apps/${encodeURIComponent('opencode:computer-use')}/auth`, {});
+    assert.equal(openCodeAuth.status, 409);
+    assert.match(openCodeAuth.body.error, /opencode mcp auth/);
     const agent = (await api('/agents', { name: 'OpenCode Agent', providerId: 'opencode', modelId: 'opencode/test-model' })).body;
     const conversation = (await api('/conversations', { agentId: agent.id })).body;
     const first = await api(`/conversations/${conversation.id}/messages`, { content: 'Hello OpenCode' });
