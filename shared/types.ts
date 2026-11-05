@@ -215,6 +215,11 @@ export interface AppConnection {
   source?: 'runtime' | 'managed' | 'external';
   transport?: 'stdio' | 'http' | 'unknown';
   lastCheckedAt?: string;
+  tools?: string[];
+  resourcesCount?: number;
+  authStatus?: string;
+  serverVersion?: string;
+  error?: string;
 }
 export type InteractionKind = 'approval' | 'question' | 'form' | 'url';
 export type InteractionStatus = 'pending' | 'accepted' | 'declined' | 'cancelled' | 'expired';

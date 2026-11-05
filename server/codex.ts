@@ -146,7 +146,21 @@ export class CodexBridge {
       for (const server of result.data ?? []) {
         const runtime = server.runtimeStatus;
         const status: AppConnection['status'] = runtime === 'authenticationRequired' || server.authStatus === 'notLoggedIn' ? 'needs-auth' : runtime === 'connected' ? 'connected' : runtime === 'starting' ? 'starting' : runtime === 'disabled' ? 'disabled' : runtime === 'failed' || runtime === 'cancelled' || server.toolsError ? 'unavailable' : 'configured';
-        apps.push({ name: String(server.name ?? 'Unnamed app').slice(0, 200), status, toolsCount: Object.keys(server.tools ?? {}).length });
+        const name = String(server.name ?? 'Unnamed app').slice(0, 200);
+        const tools = Object.keys(server.tools ?? {}).slice(0, 1000);
+        const resources = Array.isArray(server.resources) ? server.resources.length : undefined;
+        const authStatus = typeof server.authStatus === 'string' ? server.authStatus : undefined;
+        const serverVersion = typeof server.serverInfo?.version === 'string' ? server.serverInfo.version : undefined;
+        apps.push({
+          id: `codex:${name}`, providerId: 'codex', source: 'runtime',
+          transport: typeof server.httpOrigin === 'string' ? 'http' : 'unknown',
+          name, status, toolsCount: tools.length, tools,
+          ...(resources === undefined ? {} : { resourcesCount: resources }),
+          ...(authStatus ? { authStatus } : {}),
+          ...(serverVersion ? { serverVersion } : {}),
+          ...(typeof server.toolsError === 'string' && server.toolsError ? { error: server.toolsError.slice(0, 2000) } : {}),
+          lastCheckedAt: new Date().toISOString(),
+        });
       }
       cursor = result.nextCursor;
       if (!cursor) return apps.sort((a, b) => a.name.localeCompare(b.name));
