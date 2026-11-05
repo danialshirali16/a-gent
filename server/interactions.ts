@@ -28,6 +28,7 @@ function validInteraction(value: unknown): value is PendingInteraction {
     && (item.description === undefined || typeof item.description === 'string')
     && (item.command === undefined || typeof item.command === 'string')
     && (item.url === undefined || typeof item.url === 'string')
+    && (item.payload === undefined || (typeof item.payload === 'object' && item.payload !== null && !Array.isArray(item.payload)))
     && (item.expiresAt === undefined || validString(item.expiresAt, 100));
 }
 

@@ -218,6 +218,31 @@ export interface AppConnection {
 }
 export type InteractionKind = 'approval' | 'question' | 'form' | 'url';
 export type InteractionStatus = 'pending' | 'accepted' | 'declined' | 'cancelled' | 'expired';
+export interface InteractionOption { value: string; label: string; description?: string; }
+export interface InteractionQuestion {
+  id: string;
+  header: string;
+  question: string;
+  options?: InteractionOption[];
+  isOther?: boolean;
+  isSecret?: boolean;
+}
+export type InteractionFieldType = 'string' | 'number' | 'integer' | 'boolean' | 'enum' | 'multi-enum';
+export interface InteractionField {
+  name: string;
+  label: string;
+  description?: string;
+  type: InteractionFieldType;
+  required?: boolean;
+  default?: unknown;
+  options?: InteractionOption[];
+  minimum?: number;
+  maximum?: number;
+  minLength?: number;
+  maxLength?: number;
+  format?: string;
+}
+export interface InteractionPayload { questions?: InteractionQuestion[]; fields?: InteractionField[]; }
 export interface PendingInteraction {
   id: string;
   hostId: string;
@@ -230,6 +255,7 @@ export interface PendingInteraction {
   description?: string;
   command?: string;
   url?: string;
+  payload?: InteractionPayload;
   status: InteractionStatus;
   response?: unknown;
   createdAt: string;
@@ -269,6 +295,7 @@ export type ServerEvent =
   | { type: 'state'; state: WorkspaceState }
   | { type: 'providers'; providers: ProviderInfo[] }
   | { type: 'run'; run: Run }
+  | { type: 'interaction'; interaction: PendingInteraction }
   | { type: 'delta'; conversationId: string; messageId: string; delta: string }
   | { type: 'error'; message: string; requestId?: string; runId?: string; providerId?: string; appId?: string; code?: string };
 export interface SendMessageInput {

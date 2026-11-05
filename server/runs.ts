@@ -1,7 +1,7 @@
 import { mkdir, realpath, stat } from 'node:fs/promises';
 import { isAbsolute, join } from 'node:path';
 import { isProviderReady } from '../shared/providers.js';
-import type { Activity, Approval, Message, Run, SendMessageInput, ServerEvent } from '../shared/types.js';
+import type { Activity, Approval, Message, PendingInteraction, Run, SendMessageInput, ServerEvent } from '../shared/types.js';
 import { BUDGETS } from './budgets.js';
 import { redact } from './diagnostics.js';
 import { InteractionStore } from './interactions.js';
@@ -13,6 +13,7 @@ export class RunManager {
   runs = new Map<string, Run>();
   private controllers = new Map<string, AbortController>();
   private approvals = new Map<string, (accept: boolean) => void>();
+  private interactionResolvers = new Map<string, (action: 'accept' | 'decline' | 'cancel', response?: unknown) => void>();
   private scheduler?: ReturnType<typeof setInterval>;
   private ticking = false;
   private closing = false;
@@ -101,15 +102,20 @@ export class RunManager {
           ...(approval.command ? { command: approval.command } : {}), status: 'pending', createdAt, updatedAt: createdAt,
         }).catch(error => this.emit({ type: 'error', message: redact(`Could not save pending interaction: ${(error as Error).message}`), runId: run.id, providerId }));
       },
-      interaction: notice => {
-        const createdAt = now();
-        void this.interactions.upsert({
-          id: id(), hostId: this.interactions.hostId, runId: run.id, conversationId, providerId,
+      interaction: (request, respond) => {
+        const createdAt = now(), interactionId = id();
+        const payload = request.questions?.length ? { questions: request.questions } : request.fields?.length ? { fields: request.fields } : undefined;
+        const interaction: PendingInteraction = {
+          id: interactionId, hostId: this.interactions.hostId, runId: run.id, conversationId, providerId,
           ...(conversation.providerThreadId ? { threadId: conversation.providerThreadId } : {}),
-          kind: notice.kind, title: notice.title, ...(notice.description ? { description: notice.description } : {}),
-          ...(notice.command ? { command: notice.command } : {}), ...(notice.url ? { url: notice.url } : {}),
-          status: notice.status, createdAt, updatedAt: createdAt,
-        }).catch(error => this.emit({ type: 'error', message: redact(`Could not save pending interaction: ${(error as Error).message}`), runId: run.id, providerId }));
+          kind: request.kind, title: request.title, ...(request.description ? { description: request.description } : {}),
+          ...(request.command ? { command: request.command } : {}), ...(request.url ? { url: request.url } : {}),
+          ...(payload ? { payload } : {}),
+          status: respond ? 'pending' : 'declined', createdAt, updatedAt: createdAt,
+        };
+        if (respond) { this.interactionResolvers.set(interactionId, respond); run.status = 'waiting'; this.emit({ type: 'run', run }); }
+        this.emit({ type: 'interaction', interaction });
+        void this.interactions.upsert(interaction).catch(error => this.emit({ type: 'error', message: redact(`Could not save pending interaction: ${(error as Error).message}`), runId: run.id, providerId }));
       },
     } }).then(async () => {
       if (streamTimedOut) {
@@ -133,6 +139,13 @@ export class RunManager {
       clearTimeout(streamTimer);
       for (const approval of run.approvals) if (approval.status === 'pending') { approval.status = 'declined'; this.approvals.delete(approval.id); }
       for (const item of run.activities) if (item.status === 'running') item.status = run.status === 'failed' ? 'failed' : 'completed';
+      for (const interaction of this.interactions.list()) {
+        if (interaction.runId !== run.id || interaction.status !== 'pending') continue;
+        const resolver = this.interactionResolvers.get(interaction.id);
+        this.interactionResolvers.delete(interaction.id);
+        try { resolver?.('cancel'); } catch { /* the provider already settled the request */ }
+        this.emit({ type: 'interaction', interaction: { ...interaction, status: 'cancelled', updatedAt: now() } });
+      }
       await this.interactions.cancelRun(run.id, 'cancelled').catch(error => this.emit({ type: 'error', message: redact(`Could not cancel pending interactions: ${(error as Error).message}`), runId: run.id, providerId }));
       conversation.updatedAt = now(); this.controllers.delete(run.id); this.emit({ type: 'run', run });
       await this.publishState().catch(error => this.emit({ type: 'error', message: redact(`Could not save conversation: ${(error as Error).message}`), runId: run.id, providerId }));
@@ -142,9 +155,28 @@ export class RunManager {
     return run;
   }
   async respondInteraction(interactionId: string, action: 'accept' | 'decline' | 'cancel', response?: unknown): Promise<unknown> {
+    const record = this.interactions.list().find(item => item.id === interactionId);
+    if (!record || record.status !== 'pending') throw new InputError('This interaction is no longer pending.', 409);
+    const resolver = this.interactionResolvers.get(interactionId);
+    if (action === 'accept' && !resolver) throw new InputError('This request cannot be answered here. Retry it from the app that started it.', 409);
     const status = action === 'accept' ? 'accepted' : action === 'decline' ? 'declined' : 'cancelled';
-    const updated = await this.interactions.respond(interactionId, status, response);
+    // Resolve with the provider first: validation failures leave the request pending and actionable.
+    try { resolver?.(action, response); }
+    catch (error) { throw new InputError((error as Error).message); }
+    this.interactionResolvers.delete(interactionId);
+    // Form values and secret answers can contain credentials or personal data. The
+    // runtime receives them, but the durable interaction ledger keeps only a marker.
+    const sensitive = record.kind === 'form' || record.payload?.questions?.some(question => question.isSecret);
+    const storedResponse = action === 'accept' ? sensitive ? { redacted: true } : response : undefined;
+    const updated = await this.interactions.respond(interactionId, status, storedResponse);
     if (!updated) throw new InputError('This interaction is no longer pending.', 409);
+    const run = this.runs.get(record.runId);
+    if (run && this.controllers.has(run.id)) {
+      // The provider can complete the turn before persistence returns; never overwrite a settled run.
+      run.status = this.interactions.list().some(item => item.runId === run.id && item.status === 'pending') ? 'waiting' : 'running';
+      this.emit({ type: 'run', run });
+    }
+    this.emit({ type: 'interaction', interaction: updated });
     return updated;
   }
 

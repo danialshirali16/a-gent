@@ -26,6 +26,7 @@ export function useWorkspace(connection: Connection) {
         if (event.type === 'state') return { ...previous, state: event.state };
         if (event.type === 'providers') return { ...previous, providers: event.providers };
         if (event.type === 'run') return { ...previous, runs: [...previous.runs.filter(run => run.id !== event.run.id), event.run].slice(-100) };
+        if (event.type === 'interaction') return { ...previous, interactions: [...(previous.interactions || []).filter(item => item.id !== event.interaction.id), event.interaction].slice(-200) };
         if (event.type === 'delta') return { ...previous, state: { ...previous.state, conversations: previous.state.conversations.map(chat => chat.id !== event.conversationId ? chat : { ...chat, messages: chat.messages.map(message => message.id !== event.messageId ? message : { ...message, content: message.content + event.delta }) }) } };
         return previous;
       });

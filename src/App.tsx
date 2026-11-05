@@ -175,6 +175,11 @@ export default function App() {
   function handleDeviceRevoked() { try { sessionStorage.removeItem('aGent.token'); } catch { /* session-only fallback */ } window.location.reload(); }
   async function copyMessage(content: string, id: string) { try { await navigator.clipboard.writeText(content); setCopied(id); setTimeout(() => setCopied(''), 1500); toast({ title: 'Message copied', tone: 'success' }); } catch { toast({ title: 'Clipboard unavailable', description: 'Copying is blocked in this environment.', tone: 'danger' }); } }
   async function handleApproval(id: string, accept: boolean) { try { await api(`/api/approvals/${id}`, 'POST', { decision: accept ? 'accept' : 'decline' }); } catch (reason) { setError((reason as Error).message); } }
+  async function handleInteraction(id: string, action: 'accept' | 'decline' | 'cancel', response?: unknown) {
+    try { await api(`/api/interactions/${id}`, 'POST', { action, response }); }
+    catch (reason) { setError((reason as Error).message); throw reason; }
+  }
+  const pendingInteractions = (data?.interactions || []).filter(item => item.status === 'pending' && item.conversationId === conversation?.id);
   async function stopRun() { if (!currentRun) return; try { updateRun(await api<Run>(`/api/runs/${currentRun.id}/interrupt`, 'POST')); } catch (reason) { setError((reason as Error).message); } }
   function openConversationDetails(chat: Conversation) { setDialog({ kind: 'conversation', conversation: chat }); }
 
@@ -249,6 +254,8 @@ export default function App() {
               runError={runError}
               onCopy={copyMessage}
               onApproval={handleApproval}
+              interactions={pendingInteractions}
+              onInteraction={handleInteraction}
               onOpenDetails={() => conversation && openConversationDetails(conversation)}
             />}
           </div>

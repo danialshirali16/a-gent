@@ -595,6 +595,31 @@ test('authenticated API persists CRUD, streams real adapter lifecycle, approves,
     await waitFor(async () => (await api('/bootstrap')).body, data => data.runs.some((run: any) => run.id === approvalRun.id && run.status === 'completed'));
     assert.equal((await api(`/approvals/${approval.id}`, { decision: 'accept' })).status, 409);
 
+    const questionRun = (await api(`/conversations/${conversation.id}/messages`, { content: '[question]', mode: 'chat' })).body;
+    const questionState = await waitFor(async () => (await api('/bootstrap')).body, data => data.runs.some((run: any) => run.id === questionRun.id && run.status === 'waiting'));
+    const question = questionState.interactions.find((item: any) => item.runId === questionRun.id && item.kind === 'question');
+    assert.ok(question, 'the question is correlated to the run');
+    assert.equal(question.status, 'pending');
+    assert.equal(question.payload.questions[0].id, 'scope');
+    assert.deepEqual(question.payload.questions[0].options.map((option: any) => option.value), ['Workspace', 'Account']);
+    const invalidAnswer = await api(`/interactions/${question.id}`, { action: 'accept', response: { answers: { scope: { answers: ['Not an option'] } } } });
+    assert.equal(invalidAnswer.status, 400, 'answers must match the runtime options');
+    assert.equal((await api(`/interactions/${question.id}`, { action: 'accept', response: { answers: { scope: { answers: ['Workspace'] } } } })).status, 200);
+    const answered = await waitFor(async () => (await api('/bootstrap')).body, data => data.interactions?.some((item: any) => item.id === question.id && item.status === 'accepted') && data.runs.some((run: any) => run.id === questionRun.id && run.status === 'completed'));
+    assert.match(answered.state.conversations.find((item: any) => item.id === conversation.id).messages.at(-1).content, /Question answer: Workspace/);
+    assert.equal((await api(`/interactions/${question.id}`, { action: 'accept', response: { answers: { scope: { answers: ['Workspace'] } } } })).status, 409, 'a settled question cannot be answered twice');
+
+    const formRun = (await api(`/conversations/${conversation.id}/messages`, { content: '[form]', mode: 'chat' })).body;
+    const formState = await waitFor(async () => (await api('/bootstrap')).body, data => data.runs.some((run: any) => run.id === formRun.id && run.status === 'waiting'));
+    const form = formState.interactions.find((item: any) => item.runId === formRun.id && item.kind === 'form');
+    assert.ok(form, 'the elicitation form is correlated to the run');
+    assert.deepEqual(form.payload.fields.map((field: any) => field.name), ['calendar', 'days']);
+    assert.equal((await api(`/interactions/${form.id}`, { action: 'accept', response: {} })).status, 400, 'required form fields are enforced');
+    assert.equal((await api(`/interactions/${form.id}`, { action: 'accept', response: { calendar: 'work', days: 99 } })).status, 400, 'numeric bounds are enforced');
+    assert.equal((await api(`/interactions/${form.id}`, { action: 'accept', response: { calendar: 'work', days: 14 } })).status, 200);
+    const formAnswered = await waitFor(async () => (await api('/bootstrap')).body, data => data.interactions?.some((item: any) => item.id === form.id && item.status === 'accepted') && data.runs.some((run: any) => run.id === formRun.id && run.status === 'completed'));
+    assert.match(formAnswered.state.conversations.find((item: any) => item.id === conversation.id).messages.at(-1).content, /"calendar":"work"/);
+
     const slowRun = (await api(`/conversations/${conversation.id}/messages`, { content: '[slow]', mode: 'chat' })).body;
     assert.equal((await api(`/conversations/${conversation.id}/messages`, { content: 'Duplicate' })).status, 409);
     assert.equal((await api(`/runs/${slowRun.id}/interrupt`, {})).body.status, 'interrupted');

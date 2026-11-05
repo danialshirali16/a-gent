@@ -1211,6 +1211,101 @@
   margin-top: 10px;
 }
 
+/* Questions, forms, and URL handoffs */
+
+.reason-interaction {
+  border-color: color-mix(in srgb, var(--ui-accent) 38%, var(--ui-border));
+  background: color-mix(in srgb, var(--ui-accent) 6%, var(--ui-page));
+}
+
+.reason-interaction .reason-approval-head { color: var(--ui-accent); }
+
+.reason-interaction-question {
+  margin: 11px 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.reason-interaction-question legend {
+  padding: 0;
+  color: var(--ui-ink);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.reason-interaction-question > small {
+  display: block;
+  margin-top: 3px;
+  color: var(--ui-text-3);
+  font-size: 10px;
+}
+
+.reason-interaction-options {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 6px;
+}
+
+.reason-interaction-option,
+.reason-interaction-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  color: var(--ui-text-2);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.reason-interaction-option {
+  padding: 6px 8px;
+  border: 1px solid var(--ui-border);
+  border-radius: 7px;
+  background: var(--ui-page);
+  cursor: pointer;
+}
+
+.reason-interaction-option:hover { border-color: color-mix(in srgb, var(--ui-accent) 45%, var(--ui-border)); }
+.reason-interaction-option input,
+.reason-interaction-check input { margin-top: 2px; accent-color: var(--ui-accent); }
+.reason-interaction-option span,
+.reason-interaction-check span { display: flex; flex-direction: column; gap: 1px; }
+.reason-interaction-option small,
+.reason-interaction-check small { color: var(--ui-text-3); font-size: 10px; }
+
+.reason-interaction-text,
+.reason-interaction-field input,
+.reason-interaction-field select {
+  width: 100%;
+  margin-top: 6px;
+  padding: 7px 9px;
+  border: 1px solid var(--ui-border);
+  border-radius: 7px;
+  background: var(--ui-page);
+  color: var(--ui-ink);
+  font: inherit;
+  font-size: 11px;
+}
+
+.reason-interaction-field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: 10px;
+}
+
+.reason-interaction-field label { color: var(--ui-ink); font-size: 11px; font-weight: 500; }
+.reason-interaction-field small { color: var(--ui-text-3); font-size: 10px; line-height: 1.5; }
+.reason-interaction-check { margin-top: 8px; }
+
+.reason-interaction-url {
+  font-family: var(--ui-font-mono);
+  overflow-wrap: anywhere;
+}
+
+.reason-interaction-url a { color: var(--ui-accent); }
+
 /* Welcome */
 
 .reason-welcome {
