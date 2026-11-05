@@ -523,8 +523,10 @@ test('authenticated API persists CRUD, streams real adapter lifecycle, approves,
     assert.equal(liveTest.body.provider.verifiedBy, 'inference');
     assert.match(liveTest.body.response, /A Gent test response/);
     const apps = await api('/apps');
-    assert.equal(apps.body.length, 2);
-    const calendar = apps.body.find((app: any) => app.name === 'Calendar');
+    assert.equal(apps.body.partial, false);
+    assert.ok(apps.body.checkedAt);
+    assert.equal(apps.body.apps.length, 2);
+    const calendar = apps.body.apps.find((app: any) => app.name === 'Calendar');
     assert.equal(calendar.id, 'codex:Calendar');
     assert.equal(calendar.providerId, 'codex');
     assert.equal(calendar.source, 'runtime');
@@ -533,7 +535,7 @@ test('authenticated API persists CRUD, streams real adapter lifecycle, approves,
     assert.deepEqual(calendar.tools, ['calendar']);
     assert.equal(calendar.authStatus, 'oAuth');
     assert.equal(calendar.toolsCount, 1);
-    const files = apps.body.find((app: any) => app.name === 'Files');
+    const files = apps.body.apps.find((app: any) => app.name === 'Files');
     assert.equal(files.status, 'needs-auth');
     assert.equal(files.authStatus, 'notLoggedIn');
     assert.equal(files.toolsCount, 0);
@@ -578,6 +580,11 @@ test('authenticated API persists CRUD, streams real adapter lifecycle, approves,
     assert.ok(initialMessageIndex >= 0 && initialMessageIndex < deltaIndex, 'initial assistant state precedes deltas');
     let bootstrap = (await api('/bootstrap')).body;
     assert.equal(bootstrap.state.conversations.find((c: any) => c.id === conversation.id).messages.at(-1).content, 'A Gent test response 1.');
+    const scopedApps = await api(`/apps?conversationId=${conversation.id}`);
+    assert.equal(scopedApps.status, 200);
+    assert.ok(scopedApps.body.apps.some((app: any) => app.name === 'ThreadOnly'), 'inventory uses the selected conversation thread');
+    const globalApps = await api('/apps');
+    assert.ok(!globalApps.body.apps.some((app: any) => app.name === 'ThreadOnly'), 'an unscoped inventory does not reuse a chat thread');
 
     const pendingRun = (await api(`/conversations/${conversation.id}/messages`, { content: '[start-pending]', mode: 'chat' })).body;
     await waitFor(async () => { try { return await readFile(trace, 'utf8'); } catch { return ''; } }, text => text.includes('[start-pending]'));
@@ -827,7 +834,8 @@ test('OpenCode provider discovers models and streams a continued CLI session', a
     assert.equal(connected.body.status, 'connected');
     assert.deepEqual(connected.body.models.map((model: any) => model.id), ['opencode/test-model', 'opencode/second-model']);
     const apps = await api('/apps');
-    assert.ok(apps.body.some((app: any) => app.name === 'computer-use' && app.providerId === 'opencode' && app.source === 'runtime'));
+    assert.ok(apps.body.apps.some((app: any) => app.id === 'opencode:computer-use' && app.providerId === 'opencode' && app.source === 'runtime' && app.status === 'connected'));
+    assert.ok(apps.body.apps.some((app: any) => app.id === 'opencode:remote-calendar' && app.status === 'needs-auth' && app.toolsCount === undefined), 'OpenCode auth state is reported without an inferred tool count');
     const agent = (await api('/agents', { name: 'OpenCode Agent', providerId: 'opencode', modelId: 'opencode/test-model' })).body;
     const conversation = (await api('/conversations', { agentId: agent.id })).body;
     const first = await api(`/conversations/${conversation.id}/messages`, { content: 'Hello OpenCode' });

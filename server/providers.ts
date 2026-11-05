@@ -1,7 +1,7 @@
 import { readFile, writeFile, rename } from 'node:fs/promises';
 import { isIP } from 'node:net';
 import { join } from 'node:path';
-import type { Agent, AppConnection, Conversation, ProviderInfo } from '../shared/types.js';
+import type { Agent, AppConnection, AppInventory, Conversation, ProviderInfo } from '../shared/types.js';
 import { isProviderReady, MODEL_ID_LIMIT, MODEL_LIMIT, normalizeModels, providerCapabilities } from '../shared/providers.js';
 import { BUDGETS, budgetSignal, combineBudget } from './budgets.js';
 import { redact } from './diagnostics.js';
@@ -122,15 +122,33 @@ export class ProviderManager {
     if (!provider) throw new InputError('Provider not found.', 404);
     return provider;
   }
-  async apps(threadId?: string): Promise<AppConnection[]> {
-    const apps: AppConnection[] = [];
+  async apps(threadId?: string, signal?: AbortSignal): Promise<AppInventory> {
+    const apps: AppConnection[] = [], errors: string[] = [];
+    let partial = false;
     if (this.get('codex').status !== 'unavailable') {
-      try { apps.push(...await this.codex.apps(threadId)); } catch { /* provider detail carries the failure */ }
+      try {
+        const inventory = await this.codex.apps(threadId, signal);
+        apps.push(...inventory.apps); partial ||= inventory.partial; if (inventory.error) errors.push(`Codex: ${inventory.error}`);
+      } catch (error) {
+        if (signal?.aborted) throw error;
+        partial = true; errors.push(`Codex: ${(error as Error).message}`);
+      }
     }
     if (isProviderReady(this.get('opencode'))) {
-      try { apps.push(...await this.opencode.apps()); } catch { /* provider detail carries the failure */ }
+      try {
+        const inventory = await this.opencode.apps(signal);
+        apps.push(...inventory.apps); partial ||= inventory.partial; if (inventory.error) errors.push(`OpenCode: ${inventory.error}`);
+      } catch (error) {
+        if (signal?.aborted) throw error;
+        partial = true; errors.push(`OpenCode: ${(error as Error).message}`);
+      }
     }
-    return apps.sort((left, right) => left.name.localeCompare(right.name));
+    return {
+      apps: apps.sort((left, right) => left.name.localeCompare(right.name)),
+      partial,
+      ...(errors.length ? { error: redact(errors.join(' ')) } : {}),
+      checkedAt: now(),
+    };
   }
   async probeCodex(): Promise<ProviderInfo> {
     const provider = this.get('codex');

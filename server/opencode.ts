@@ -4,7 +4,7 @@ import { constants } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { normalizeModels } from '../shared/providers.js';
-import type { AppConnection, ModelOption } from '../shared/types.js';
+import type { AppConnection, AppInventory, ModelOption } from '../shared/types.js';
 import { BUDGETS } from './budgets.js';
 import { redact } from './diagnostics.js';
 import type { ProviderRequest } from './codex.js';
@@ -61,8 +61,10 @@ export class OpenCodeBridge {
     return normalizeModels(output.split(/\r?\n/).map(line => line.trim()).filter(line => /^[^/\s]+\/\S+$/.test(line)).map(id => ({ id, name: id })), 1000);
   }
 
-  async apps(): Promise<AppConnection[]> {
+  async apps(signal?: AbortSignal): Promise<AppInventory> {
+    if (signal?.aborted) throw new Error('App inventory was cancelled.');
     const output = await this.capture(await this.command(), ['mcp', 'list']);
+    if (signal?.aborted) throw new Error('App inventory was cancelled.');
     const apps: AppConnection[] = [];
     for (const rawLine of output.split(/\r?\n/)) {
       const line = rawLine.replace(/\x1b\[[0-9;]*m/g, '').trim();
@@ -71,9 +73,9 @@ export class OpenCodeBridge {
       if (!match) continue;
       const state = match[2].toLowerCase();
       const status: AppConnection['status'] = /connect/.test(state) ? 'connected' : /auth|login|sign.?in/.test(state) ? 'needs-auth' : /disabl/.test(state) ? 'disabled' : /fail|error/.test(state) ? 'unavailable' : 'configured';
-      apps.push({ id: `opencode:${match[1]}`, providerId: 'opencode', source: 'runtime', transport: 'unknown', name: match[1], status, toolsCount: 0, lastCheckedAt: new Date().toISOString() });
+      apps.push({ id: `opencode:${match[1]}`, providerId: 'opencode', source: 'runtime', transport: 'unknown', name: match[1], status, lastCheckedAt: new Date().toISOString() });
     }
-    return apps.sort((left, right) => left.name.localeCompare(right.name));
+    return { apps: apps.sort((left, right) => left.name.localeCompare(right.name)), partial: false, checkedAt: new Date().toISOString() };
   }
 
   async run(request: ProviderRequest): Promise<void> {

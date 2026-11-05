@@ -42,10 +42,19 @@ lines.on('line', line => {
       { id: 'test-model', model: 'test-model', displayName: 'Test model', hidden: false, defaultReasoningEffort: 'medium', supportedReasoningEfforts: [{ reasoningEffort: 'low', description: 'Fast' }, { reasoningEffort: 'medium', description: 'Balanced' }, { reasoningEffort: 'high', description: 'Deep' }] },
       { id: 'test-model-2', model: 'test-model-2', displayName: 'Test model 2', hidden: false, defaultReasoningEffort: 'low', supportedReasoningEfforts: [{ reasoningEffort: 'low', description: 'Fast' }, { reasoningEffort: 'high', description: 'Deep' }] },
     ], nextCursor: null }); break;
-    case 'mcpServerStatus/list': respond({ data: [
-      { name: 'Calendar', runtimeStatus: 'connected', authStatus: 'oAuth', httpOrigin: 'https://private.example', tools: { calendar: { inputSchema: { privateMarker: 'must-not-leak' } } } },
-      { name: 'Files', runtimeStatus: 'authenticationRequired', authStatus: 'notLoggedIn', tools: {} },
-    ], nextCursor: null }); break;
+    case 'mcpServerStatus/list': {
+      if (process.argv.includes('--mcp-slow')) break;
+      if (process.argv.includes('--mcp-paginate')) {
+        if (!p.cursor) { respond({ data: [{ name: 'Calendar', runtimeStatus: 'connected', authStatus: 'oAuth', httpOrigin: 'https://private.example', tools: { calendar: { inputSchema: { privateMarker: 'must-not-leak' } } } }], nextCursor: 'page-2' }); break; }
+        if (p.cursor === 'page-2') { write({ id: message.id, error: { code: -32000, message: 'Inventory page failed.' } }); break; }
+      }
+      const data = [
+        { name: 'Calendar', runtimeStatus: 'connected', authStatus: 'oAuth', httpOrigin: 'https://private.example', tools: { calendar: { inputSchema: { privateMarker: 'must-not-leak' } } } },
+        { name: 'Files', runtimeStatus: 'authenticationRequired', authStatus: 'notLoggedIn', tools: {} },
+      ];
+      if (p.threadId) data.push({ name: 'ThreadOnly', runtimeStatus: 'connected', authStatus: 'none', tools: { thread_tool: {} } });
+      respond({ data, nextCursor: null }); break;
+    }
     case 'thread/start': {
       if (p.approvalPolicy !== 'on-request' || p.approvalsReviewer !== 'user' || !['read-only', 'workspace-write'].includes(p.sandbox)) throw new Error('Unsafe or missing thread controls.');
       const threadId = `test-thread-${++sequence}`; threads.set(threadId, { turns: 0 }); respond({ thread: { id: threadId } }); break;

@@ -1,7 +1,7 @@
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { EventEmitter } from 'node:events';
 import { createInterface } from 'node:readline';
-import type { Activity, Agent, AppConnection, Approval, Conversation, InteractionField, InteractionQuestion, ModelOption } from '../shared/types.js';
+import type { Activity, Agent, AppConnection, AppInventory, Approval, Conversation, InteractionField, InteractionQuestion, ModelOption } from '../shared/types.js';
 import { BUDGETS } from './budgets.js';
 import { redact } from './diagnostics.js';
 import { parseElicitation, parseQuestions, validateElicitationValues, validateQuestionAnswers } from './hil.js';
@@ -43,7 +43,7 @@ export class CodexBridge {
   private closing?: Promise<void>;
   private shutdownError?: Error;
   private lastThreadId?: string;
-  private appInventoryPromise?: Promise<AppConnection[]>;
+  private appInventories = new Map<string, Promise<AppInventory>>();
   private requests = new Map<string | number, { resolve(value: any): void; reject(error: Error): void; timer: ReturnType<typeof setTimeout> }>();
   private events = new EventEmitter();
   private nextId = 0;
@@ -53,13 +53,27 @@ export class CodexBridge {
     if (!this.process || this.process.stdin.destroyed) throw new Error('Codex connection closed. Reconnect and try again.');
     this.process.stdin.write(JSON.stringify(message) + '\n');
   }
-  private request(method: string, params: unknown, timeout: number = BUDGETS.tool): Promise<any> {
+  private request(method: string, params: unknown, timeout: number = BUDGETS.tool, signal?: AbortSignal): Promise<any> {
     const requestId = ++this.nextId;
     return new Promise((resolve, reject) => {
-      const timer = setTimeout(() => { this.requests.delete(requestId); reject(new Error(`Codex ${method} did not respond within ${Math.round(timeout / 1000)} seconds.`)); }, timeout);
-      this.requests.set(requestId, { resolve, reject, timer });
+      let settled = false;
+      const cleanup = () => { if (signal) signal.removeEventListener('abort', onAbort); };
+      const finish = (settle: (value?: any) => void, value?: any) => {
+        if (settled) return;
+        settled = true; this.requests.delete(requestId); clearTimeout(timer); cleanup(); settle(value);
+      };
+      const onAbort = () => {
+        try { this.send({ method: '$/cancelRequest', params: { id: requestId } }); } catch { /* connection closed */ }
+        finish(reject, new Error(`Codex ${method} was cancelled.`));
+      };
+      const timer = setTimeout(() => finish(reject, new Error(`Codex ${method} did not respond within ${Math.round(timeout / 1000)} seconds.`)), timeout);
+      this.requests.set(requestId, { resolve: value => finish(resolve, value), reject: error => finish(reject, error), timer });
+      if (signal) {
+        if (signal.aborted) { onAbort(); return; }
+        signal.addEventListener('abort', onAbort, { once: true });
+      }
       try { this.send({ id: requestId, method, params }); }
-      catch (error) { clearTimeout(timer); this.requests.delete(requestId); reject(error); }
+      catch (error) { finish(reject, error); }
     });
   }
   async connect(): Promise<void> {
@@ -132,17 +146,32 @@ export class CodexBridge {
     }
     return { authenticated: Boolean(account.account) || account.requiresOpenaiAuth === false, models };
   }
-  async apps(threadId?: string): Promise<AppConnection[]> {
-    if (this.appInventoryPromise) return this.appInventoryPromise;
-    const operation = this.readApps(threadId); this.appInventoryPromise = operation;
-    try { return await operation; } finally { if (this.appInventoryPromise === operation) this.appInventoryPromise = undefined; }
+  async apps(threadId?: string, signal?: AbortSignal): Promise<AppInventory> {
+    const key = threadId ?? '';
+    if (!signal) {
+      const existing = this.appInventories.get(key);
+      if (existing) return existing;
+    }
+    const operation = this.readApps(threadId, signal);
+    if (!signal) this.appInventories.set(key, operation);
+    try { return await operation; }
+    finally { if (this.appInventories.get(key) === operation) this.appInventories.delete(key); }
   }
-  private async readApps(threadId?: string): Promise<AppConnection[]> {
+  private async readApps(threadId?: string, signal?: AbortSignal): Promise<AppInventory> {
     await this.connect();
     const apps: AppConnection[] = [];
     let cursor: string | null = null;
     for (let page = 0; page < 40; page++) {
-      const result = await this.request('mcpServerStatus/list', { cursor, limit: 5, detail: 'toolsAndAuthOnly', ...(threadId ? { threadId } : {}) }, BUDGETS.tool);
+      if (signal?.aborted) throw new Error('App inventory was cancelled.');
+      let result: any;
+      try {
+        result = await this.request('mcpServerStatus/list', { cursor, limit: 5, detail: 'toolsAndAuthOnly', ...(threadId ? { threadId } : {}) }, BUDGETS.tool, signal);
+      } catch (error) {
+        if (signal?.aborted) throw error;
+        // Keep what the runtime already returned; the UI can offer a retry.
+        if (apps.length) return { apps: apps.sort((a, b) => a.name.localeCompare(b.name)), partial: true, error: redact((error as Error).message), checkedAt: now() };
+        throw error;
+      }
       for (const server of result.data ?? []) {
         const runtime = server.runtimeStatus;
         const status: AppConnection['status'] = runtime === 'authenticationRequired' || server.authStatus === 'notLoggedIn' ? 'needs-auth' : runtime === 'connected' ? 'connected' : runtime === 'starting' ? 'starting' : runtime === 'disabled' ? 'disabled' : runtime === 'failed' || runtime === 'cancelled' || server.toolsError ? 'unavailable' : 'configured';
@@ -163,9 +192,9 @@ export class CodexBridge {
         });
       }
       cursor = result.nextCursor;
-      if (!cursor) return apps.sort((a, b) => a.name.localeCompare(b.name));
+      if (!cursor) return { apps: apps.sort((a, b) => a.name.localeCompare(b.name)), partial: false, checkedAt: now() };
     }
-    throw new Error('The configured app inventory exceeded its 200-server limit.');
+    return { apps: apps.sort((a, b) => a.name.localeCompare(b.name)), partial: true, error: 'The configured app inventory exceeded its 200-server limit.', checkedAt: now() };
   }
   async run(request: ProviderRequest): Promise<void> {
     await this.connect();

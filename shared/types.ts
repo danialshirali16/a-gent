@@ -209,7 +209,8 @@ export interface ProviderInfo {
 export interface AppConnection {
   name: string;
   status: 'connected' | 'starting' | 'needs-auth' | 'configured' | 'unavailable' | 'disabled';
-  toolsCount: number;
+  /** Omitted when the runtime does not expose a tool list. */
+  toolsCount?: number;
   id?: string;
   providerId?: string;
   source?: 'runtime' | 'managed' | 'external';
@@ -220,6 +221,12 @@ export interface AppConnection {
   authStatus?: string;
   serverVersion?: string;
   error?: string;
+}
+export interface AppInventory {
+  apps: AppConnection[];
+  partial: boolean;
+  error?: string;
+  checkedAt: string;
 }
 export type InteractionKind = 'approval' | 'question' | 'form' | 'url';
 export type InteractionStatus = 'pending' | 'accepted' | 'declined' | 'cancelled' | 'expired';

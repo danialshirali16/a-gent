@@ -2648,6 +2648,13 @@
   font-size: 11px;
 }
 
+.connections-notice {
+  margin-top: 4px;
+  color: var(--ui-warning);
+  font-size: 10px;
+  line-height: 1.6;
+}
+
 .connections-empty {
   padding: 12px 0;
   color: var(--ui-text-3);

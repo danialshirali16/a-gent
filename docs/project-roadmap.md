@@ -45,7 +45,7 @@ The [integration review](integration-review.md) records exact source locations a
 | [Paused platforms and later product completion](roadmaps/platforms-next.md) | 20 | Paused / later scope |
 | [Benchmark prerequisites](roadmaps/benchmarking.md) | 25 | BEN-001–004/BEN-008–010/BEN-021–022 accepted; 13 R1 comparisons remain; BEN-005/006/007 deferred |
 
-**237 tracked acceptance tasks:** **191 R1, 28 R2**, 16 paused-platform, and 2 optional-scope tasks. The 2026-11-05 D-02 amendment moved 17 provider/benchmark tasks (HTTP/Ollama/Gemini plus BEN-005/006/007) from R1 to R2 “distant future.” As of 2026-11-05, BEN-001–004/BEN-008–010/BEN-021–022, FND-001–FND-012, PVD-001–016, MCP-001/MCP-002/MCP-005, HIL-001/HIL-002, CDX-004, OPC-002, and EFF-001–007/EFF-011 are Done. R1 provider focus is Codex/OpenCode only.
+**237 tracked acceptance tasks:** **191 R1, 28 R2**, 16 paused-platform, and 2 optional-scope tasks. The 2026-11-05 D-02 amendment moved 17 provider/benchmark tasks (HTTP/Ollama/Gemini plus BEN-005/006/007) from R1 to R2 “distant future.” As of 2026-11-05, BEN-001–004/BEN-008–010/BEN-021–022, FND-001–FND-012, PVD-001–016, MCP-001–005, HIL-001/HIL-002, CDX-004, OPC-002, and EFF-001–007/EFF-011 are Done. R1 provider focus is Codex/OpenCode only.
 
 ## Decisions to record
 
@@ -154,7 +154,7 @@ A UI control, successful catalog fetch, fixture pass, or old screenshot is not s
 
 ### Tracking and progress
 
-Maintain task status in the owning board, decisions in this master and [the release contract](release-contract.md), current behavior in current-state-review, and executed evidence in validation. Report completed versus total **R1 acceptance tasks**, the active vertical slice, remaining P0/P1 items, and concrete blockers. Do not use speculative overall completion percentages. Current position: **52 of 191 R1 tasks Done** (BEN-001–004/BEN-008–010/BEN-021–022, FND-001–FND-012, PVD-001–PVD-016, MCP-001/MCP-002/MCP-005, HIL-001/HIL-002, CDX-004, OPC-002, EFF-001–EFF-007/EFF-011); M3 benchmarks accepted, app-record CRUD, question/form answers, and HIL routing implemented. **M1 is complete, M2 is in progress for Codex/OpenCode.** Next: finish MCP inventory/lifecycle and Connect Apps onboarding, then M3 acceptance.
+Maintain task status in the owning board, decisions in this master and [the release contract](release-contract.md), current behavior in current-state-review, and executed evidence in validation. Report completed versus total **R1 acceptance tasks**, the active vertical slice, remaining P0/P1 items, and concrete blockers. Do not use speculative overall completion percentages. Current position: **54 of 191 R1 tasks Done** (BEN-001–004/BEN-008–010/BEN-021–022, FND-001–FND-012, PVD-001–PVD-016, MCP-001–005, HIL-001/HIL-002, CDX-004, OPC-002, EFF-001–EFF-007/EFF-011); M3 benchmarks accepted, scoped runtime inventory, app-record CRUD, question/form answers, and HIL routing implemented. **M1 is complete, M2 is in progress for Codex/OpenCode.** Next: MCP lifecycle/config adoption and Connect Apps onboarding, then M3 acceptance.
 
 Use issue tracking later if useful, retaining these IDs and acceptance criteria. Creating this roadmap does not create external issues, run production changes, or authorize publication.
 

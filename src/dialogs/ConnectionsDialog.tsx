@@ -2,7 +2,7 @@ import { Button } from '../ui/Button';
 import { Tabs } from '../ui/Tabs';
 import { useEffect, useState } from 'react';
 import { ArrowUpRight, Check, Copy, Monitor, RefreshCw } from 'lucide-react';
-import type { AppConnection, ProviderInfo } from '../../shared/types';
+import type { AppConnection, AppInventory, ProviderInfo } from '../../shared/types';
 import type { Connection } from '../api';
 import type { Api } from '../dialogs';
 import { Modal } from '../components';
@@ -24,14 +24,18 @@ export function ConnectionsDialog({ providers, api, onRefresh, connection, onHos
   const [query, setQuery] = useState('');
   const [apps, setApps] = useState<AppConnection[]>([]);
   const [appError, setAppError] = useState('');
+  const [appNotice, setAppNotice] = useState('');
   const [checkingApps, setCheckingApps] = useState(false);
   const [copied, setCopied] = useState(false);
   const toast = useToast();
 
   async function checkApps() {
-    setCheckingApps(true); setAppError('');
-    try { setApps(await api<AppConnection[]>('/api/apps')); }
-    catch { setAppError('Could not read connected apps. Check the Codex connection, then refresh.'); }
+    setCheckingApps(true); setAppError(''); setAppNotice('');
+    try {
+      const inventory = await api<AppInventory>('/api/apps');
+      setApps(inventory.apps);
+      if (inventory.partial) setAppNotice(inventory.error ? `Some connections could not be checked. ${inventory.error}` : 'Some connections could not be checked. Refresh to retry.');
+    } catch { setAppError('Could not read connected apps. Check the host connection, then refresh.'); }
     finally { setCheckingApps(false); }
   }
   useEffect(() => { void checkApps(); }, []);
@@ -58,8 +62,9 @@ export function ConnectionsDialog({ providers, api, onRefresh, connection, onHos
 
         {showApps && <section className="connections-section">
           <h3>Connected apps <Button variant="quiet" size="sm" loading={checkingApps} onClick={() => void checkApps()}><RefreshCw size={13} />Refresh</Button></h3>
-          <p className="connections-note">Local MCP connections already configured in Codex on this host.</p>
-          {appError ? <p className="connections-error">{appError}</p> : !shownApps.length ? <p className="connections-empty">{checkingApps ? 'Checking app connections…' : needle ? 'No apps match.' : 'No app connections found. Add MCP servers to Codex on the host, then refresh.'}</p> : <div className="connections-app-grid">{shownApps.map(app => <div className="connection-app-card" key={app.name}><span className={`connection-dot ${app.status === 'connected' ? 'is-connected' : ''}`} /><div><strong>{app.name.replace(/[_-]/g, ' ')}</strong><small>{app.status === 'connected' ? `${app.toolsCount} ${app.toolsCount === 1 ? 'tool' : 'tools'}` : app.status === 'needs-auth' ? 'Sign-in needed' : app.status.replace('-', ' ')}</small></div></div>)}</div>}
+          <p className="connections-note">MCP connections configured in Codex or OpenCode on this host. Tool lists are read from the runtime, not guessed.</p>
+          {appNotice && <p className="connections-notice" role="status">{appNotice}</p>}
+          {appError ? <p className="connections-error">{appError}</p> : !shownApps.length ? <p className="connections-empty">{checkingApps ? 'Checking app connections…' : needle ? 'No apps match.' : 'No app connections found. Add MCP servers to Codex or OpenCode on the host, then refresh.'}</p> : <div className="connections-app-grid">{shownApps.map(app => <div className="connection-app-card" key={app.id || `${app.providerId || 'runtime'}:${app.name}`}><span className={`connection-dot ${app.status === 'connected' ? 'is-connected' : ''}`} /><div><strong>{app.name.replace(/[_-]/g, ' ')}</strong><small>{app.status === 'connected' ? `${app.toolsCount === undefined ? 'Tool list unavailable' : `${app.toolsCount} ${app.toolsCount === 1 ? 'tool' : 'tools'}`}${app.authStatus ? ` · ${app.authStatus}` : ''}` : app.status === 'needs-auth' ? 'Sign-in needed' : app.error ? 'Check failed' : app.status.replace('-', ' ')}</small></div></div>)}</div>}
         </section>}
 
         {showHost && <section className="connections-section">

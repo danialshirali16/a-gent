@@ -385,7 +385,13 @@ export async function startServer(options: ServerOptions = {}): Promise<ServerHa
   app.get('/api/apps', async (req, res) => {
     const conversationId = typeof req.query.conversationId === 'string' ? req.query.conversationId : undefined;
     const threadId = conversationId ? store.getConversation(conversationId).providerThreadId : undefined;
-    res.json(await providers.apps(threadId));
+    const controller = new AbortController();
+    res.on('close', () => { if (!res.writableEnded) controller.abort(); });
+    try { res.json(await providers.apps(threadId, controller.signal)); }
+    catch (error) {
+      if (controller.signal.aborted) return;
+      throw error;
+    }
   });
   app.get('/api/app-records', (_req, res) => { res.json(store.state.apps); });
   app.post('/api/app-records', async (req, res) => {

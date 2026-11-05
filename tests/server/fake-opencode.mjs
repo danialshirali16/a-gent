@@ -11,6 +11,7 @@ const command = commandIndex >= 0 ? args[commandIndex] : '';
 
 if (command === 'mcp' && args[commandIndex + 1] === 'list') {
   process.stdout.write('✓ computer-use  connected\n');
+  process.stdout.write('○ remote-calendar  needs authentication\n');
   process.exit(0);
 }
 
