@@ -39,6 +39,8 @@ Scope: V1-06 source/browser/real-Codex checks and V1-07 package build/inspection
 | Signing | Unsigned/ad-hoc only (`identity: null`); `spctl` on this host reported `override=security disabled`, so this is not ordinary Gatekeeper evidence. No notarization claim. |
 | `npm run test:visual`/install/launch | Visual passes in Chrome; Finder launch, native dialog, install/upgrade/quit/relaunch, and Gatekeeper behavior were not exercised. |
 
+The first record-commit CI run exposed a flaky dark-mode axe scan: Chromium reported the new root `--ui-ink` before the shell's inherited color recalculated, so axe briefly saw light text on a dark background. The audit now polls the painted `.reason-app` color (commit `a374158`); 35/35 repeated accessibility checks pass locally, and the fix is included in the current CI run.
+
 ### Real Codex probes
 
 All live checks used the external signed-in Codex CLI with an isolated data directory and disposable workspace. No account token was copied into the workspace or repository.
