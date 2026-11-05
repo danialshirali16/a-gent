@@ -1,7 +1,7 @@
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { EventEmitter } from 'node:events';
 import { createInterface } from 'node:readline';
-import type { Activity, Agent, AppConnection, AppInventory, Approval, Conversation, InteractionField, InteractionQuestion, ModelOption } from '../shared/types.js';
+import type { Activity, Agent, AppCapabilities, AppConnection, AppInventory, AppResourceCapability, AppToolCapability, Approval, Conversation, InteractionField, InteractionQuestion, ModelOption } from '../shared/types.js';
 import { BUDGETS } from './budgets.js';
 import { redact } from './diagnostics.js';
 import { parseElicitation, parseQuestions, validateElicitationValues, validateQuestionAnswers } from './hil.js';
@@ -196,6 +196,49 @@ export class CodexBridge {
     }
     return { apps: apps.sort((a, b) => a.name.localeCompare(b.name)), partial: true, error: 'The configured app inventory exceeded its 200-server limit.', checkedAt: now() };
   }
+  async capabilities(serverName: string, threadId?: string, signal?: AbortSignal): Promise<AppCapabilities> {
+    await this.connect();
+    const result = await this.request('mcpServerStatus/list', { cursor: null, limit: 5, detail: 'full', serverName, ...(threadId ? { threadId } : {}) }, BUDGETS.tool, signal);
+    const server = (result.data ?? []).find((item: any) => item.name === serverName);
+    if (!server) throw new Error(`The app “${serverName}” is not configured in the Codex runtime.`);
+    const toolEntries = Object.entries(server.tools ?? {});
+    const tools: AppToolCapability[] | undefined = server.toolsError ? undefined : toolEntries.slice(0, 500).map(([name, raw]) => {
+      const tool = (raw ?? {}) as Record<string, any>;
+      const capability: AppToolCapability = {
+        name,
+        ...(typeof tool.title === 'string' ? { title: tool.title.slice(0, 500) } : {}),
+        ...(typeof tool.description === 'string' ? { description: tool.description.slice(0, 4000) } : {}),
+      };
+      if (tool.inputSchema !== undefined) {
+        try {
+          const serialized = JSON.stringify(tool.inputSchema);
+          if (serialized.length <= 50000) capability.inputSchema = tool.inputSchema;
+          else capability.inputSchemaTruncated = true;
+        } catch { capability.inputSchemaTruncated = true; }
+      }
+      return capability;
+    });
+    const resources: AppResourceCapability[] | undefined = server.toolsError ? undefined : (Array.isArray(server.resources) ? server.resources : []).slice(0, 500).map((resource: any) => ({
+      uri: String(resource.uri ?? '').slice(0, 4000),
+      ...(typeof resource.name === 'string' ? { name: resource.name.slice(0, 500) } : {}),
+      ...(typeof resource.title === 'string' ? { title: resource.title.slice(0, 500) } : {}),
+      ...(typeof resource.description === 'string' ? { description: resource.description.slice(0, 4000) } : {}),
+      ...(typeof resource.mimeType === 'string' ? { mimeType: resource.mimeType.slice(0, 200) } : {}),
+    })).filter((resource: AppResourceCapability) => resource.uri);
+    return {
+      appId: `codex:${serverName}`, supported: true,
+      ...(tools ? { tools, ...(toolEntries.length > 500 ? { toolsTruncated: true } : {}) } : {}), ...(resources ? { resources } : {}),
+      ...(Array.isArray(server.resourceTemplates) ? { resourceTemplates: server.resourceTemplates.slice(0, 100) } : {}),
+      ...(server.serverCapabilities && typeof server.serverCapabilities === 'object' && 'prompts' in server.serverCapabilities ? { promptsSupported: true } : {}),
+      ...(server.serverCapabilities !== undefined && server.serverCapabilities !== null ? { serverCapabilities: server.serverCapabilities } : {}),
+      ...(server.serverInfo ? { serverInfo: { ...(typeof server.serverInfo.name === 'string' ? { name: server.serverInfo.name } : {}), ...(typeof server.serverInfo.version === 'string' ? { version: server.serverInfo.version } : {}) } } : {}),
+      ...(server.toolListMeta !== undefined && server.toolListMeta !== null ? { toolListMeta: server.toolListMeta } : {}),
+      partial: Boolean(server.toolsError),
+      ...(typeof server.toolsError === 'string' && server.toolsError ? { error: server.toolsError.slice(0, 2000) } : {}),
+      checkedAt: now(),
+    };
+  }
+
   async run(request: ProviderRequest): Promise<void> {
     await this.connect();
     const { agent, conversation, callbacks, signal, mode, workspace } = request;

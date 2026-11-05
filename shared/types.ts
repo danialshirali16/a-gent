@@ -228,6 +228,35 @@ export interface AppInventory {
   error?: string;
   checkedAt: string;
 }
+export interface AppToolCapability {
+  name: string;
+  title?: string;
+  description?: string;
+  inputSchema?: unknown;
+  inputSchemaTruncated?: boolean;
+}
+export interface AppResourceCapability {
+  uri: string;
+  name?: string;
+  title?: string;
+  description?: string;
+  mimeType?: string;
+}
+export interface AppCapabilities {
+  appId: string;
+  supported: boolean;
+  tools?: AppToolCapability[];
+  toolsTruncated?: boolean;
+  resources?: AppResourceCapability[];
+  resourceTemplates?: unknown[];
+  promptsSupported?: boolean;
+  serverCapabilities?: unknown;
+  serverInfo?: { name?: string; version?: string };
+  toolListMeta?: unknown;
+  partial: boolean;
+  error?: string;
+  checkedAt: string;
+}
 export type InteractionKind = 'approval' | 'question' | 'form' | 'url';
 export type InteractionStatus = 'pending' | 'accepted' | 'declined' | 'cancelled' | 'expired';
 export interface InteractionOption { value: string; label: string; description?: string; }

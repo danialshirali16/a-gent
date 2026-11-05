@@ -1,7 +1,7 @@
 import { readFile, writeFile, rename } from 'node:fs/promises';
 import { isIP } from 'node:net';
 import { join } from 'node:path';
-import type { Agent, AppConnection, AppInventory, Conversation, ProviderInfo } from '../shared/types.js';
+import type { Agent, AppCapabilities, AppConnection, AppInventory, Conversation, ProviderInfo } from '../shared/types.js';
 import { isProviderReady, MODEL_ID_LIMIT, MODEL_LIMIT, normalizeModels, providerCapabilities } from '../shared/providers.js';
 import { BUDGETS, budgetSignal, combineBudget } from './budgets.js';
 import { redact } from './diagnostics.js';
@@ -308,6 +308,31 @@ export class ProviderManager {
     const key = this.keys.get(providerId);
     return { 'Content-Type': 'application/json', ...(key ? { Authorization: `Bearer ${key}` } : {}) };
   }
+  async appCapabilities(appId: string, threadId?: string, signal?: AbortSignal): Promise<AppCapabilities> {
+    const separator = appId.indexOf(':');
+    if (separator <= 0 || separator === appId.length - 1) throw new InputError('Use a provider-qualified app ID.', 400);
+    const providerId = appId.slice(0, separator), name = appId.slice(separator + 1);
+    if (providerId === 'codex') {
+      if (this.get('codex').status === 'unavailable') throw new InputError('Connect Codex before inspecting this app.', 409);
+      try { return await this.codex.capabilities(name, threadId, signal); }
+      catch (error) {
+        if (signal?.aborted) throw error;
+        if (/not configured/.test((error as Error).message)) throw new InputError('App not found.', 404);
+        throw error;
+      }
+    }
+    if (providerId === 'opencode') {
+      const inventory = await this.opencode.apps(signal);
+      if (!inventory.apps.some(app => app.id === appId)) throw new InputError('App not found.', 404);
+      return {
+        appId, supported: false, partial: false,
+        error: 'OpenCode does not expose MCP tool or resource detail through its supported CLI. Use OpenCode to inspect this server.',
+        checkedAt: now(),
+      };
+    }
+    throw new InputError('Unknown app provider.', 404);
+  }
+
   async run(providerId: string, request: ProviderRequest): Promise<void> {
     if (providerId === 'codex') return this.codex.run(request);
     if (providerId === 'opencode') return this.opencode.run(request);

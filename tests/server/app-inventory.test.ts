@@ -40,3 +40,25 @@ test('Codex inventory scopes discovery to the supplied thread', async () => {
     assert.equal(global.partial, false);
   } finally { await bridge.close(); }
 });
+
+test('Codex capability detail exposes tools, resources, and server info', async () => {
+  const bridge = new CodexBridge({ command: process.execPath, args: [fixture] });
+  try {
+    const calendar = await bridge.capabilities('Calendar');
+    assert.equal(calendar.supported, true);
+    assert.equal(calendar.partial, false);
+    assert.equal(calendar.tools?.length, 1);
+    assert.equal(calendar.tools?.[0].name, 'calendar');
+    assert.equal(calendar.tools?.[0].title, 'Calendar');
+    assert.deepEqual((calendar.tools?.[0].inputSchema as any).properties.date, { type: 'string' });
+    assert.equal(calendar.resources?.[0].uri, 'calendar://primary');
+    assert.equal(calendar.resourceTemplates?.length, 1);
+    assert.equal(calendar.serverInfo?.version, '1.2.3');
+    assert.deepEqual(calendar.serverCapabilities, { resources: {} });
+
+    const files = await bridge.capabilities('Files');
+    assert.deepEqual(files.tools, []);
+    assert.deepEqual(files.resources, []);
+    await assert.rejects(bridge.capabilities('Missing'), /not configured/);
+  } finally { await bridge.close(); }
+});

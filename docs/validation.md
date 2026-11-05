@@ -285,7 +285,7 @@ Date: 2026-11-05. Compared Codex/OpenCode MCP surfaces, MCP 2026-07-28 transport
 | BEN-009 | Connect Apps IA/add/auth/access/inspect/enable/disable/remove and catalog-honesty decisions. |
 | BEN-010 | Correlated HIL approvals/questions/forms/URL, decline/timeout, sensitive values, concurrency, accessibility. |
 
-Records: [BEN-008](../docs/benchmarks/BEN-008-mcp-runtime.md), [BEN-009](../docs/benchmarks/BEN-009-connect-apps-ux.md), [BEN-010](../docs/benchmarks/BEN-010-hil.md). MCP-002 runtime/protocol baseline is recorded in [mcp-runtime-baseline.md](../docs/mcp-runtime-baseline.md). MCP-001 app-record fields, MCP-003/MCP-004 scoped runtime inventory, MCP-005 managed app-record CRUD, and HIL-001/HIL-002 interaction routing/question answers are implemented; HIL-003 is a Review item. No live OAuth connector or live HIL journey was exercised.
+Records: [BEN-008](../docs/benchmarks/BEN-008-mcp-runtime.md), [BEN-009](../docs/benchmarks/BEN-009-connect-apps-ux.md), [BEN-010](../docs/benchmarks/BEN-010-hil.md). MCP-002 runtime/protocol baseline is recorded in [mcp-runtime-baseline.md](../docs/mcp-runtime-baseline.md). MCP-001 app-record fields, MCP-003/MCP-004 scoped runtime inventory, MCP-005 managed app-record CRUD, MCP-015 capability discovery, and HIL-001/HIL-002 interaction routing/question answers are implemented; HIL-003 is a Review item. No live OAuth connector or live HIL journey was exercised.
 
 ### MCP-003/MCP-004 inventory evidence
 
@@ -299,6 +299,17 @@ Date: 2026-11-05. `tests/server/app-inventory.test.ts` and `tests/server/backend
 - OpenCode `mcp list` reports connected and needs-auth servers with provider-qualified IDs and omits an unknown tool count instead of reporting zero.
 - `/api/apps` returns `{ apps, partial, error?, checkedAt }`; the Connect Apps UI shows a retry notice for partial inventory.
 
+### MCP-015 capability discovery evidence
+
+Date: 2026-11-05. `tests/server/app-inventory.test.ts` and `tests/server/backend.test.ts` verify:
+
+- `/api/apps/:id/capabilities` returns tool names, titles, descriptions, input schemas, resources, resource templates, server info/capabilities, and tool-list meta from Codex `mcpServerStatus/list` with `detail: full`.
+- Tool schemas are bounded to 50 KB each and 500 tools; truncation is explicit and the list summary never includes schema/private markers.
+- A server with an empty catalog returns an empty tool list; a discovery error returns `partial: true` with no fabricated empty list.
+- Discovery is fetched on demand, so schema changes are visible on the next inspection without a stale cache.
+- OpenCode returns `supported: false` with recovery text instead of inventing tools/resources; unknown IDs return 404.
+- The Connect Apps detail panel shows provider, transport, auth, tool/resource counts, version, prompt advertisement, schemas' field names, and truncation/error states.
+
 ### HIL-002/HIL-003 deterministic evidence
 
 Date: 2026-11-05. `tests/server/hil.test.ts` and the `question`/`form` Codex fixtures in `tests/server/backend.test.ts` verify:
@@ -309,7 +320,7 @@ Date: 2026-11-05. `tests/server/hil.test.ts` and the `question`/`form` Codex fix
 - accepted forms and secret answers are stored as `{ redacted: true }`, not raw values;
 - unsupported elicitation schemas decline with a visible recovery message.
 
-`npm test` passes 61/61; typecheck and production build pass with the existing chunk-size advisory. The live HIL acceptance journey remains HIL-006.
+`npm test` passes 62/62; typecheck and production build pass with the existing chunk-size advisory. The live HIL acceptance journey remains HIL-006.
 
 ## M2 shared provider lifecycle slice
 

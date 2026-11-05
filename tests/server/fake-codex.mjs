@@ -44,6 +44,21 @@ lines.on('line', line => {
     ], nextCursor: null }); break;
     case 'mcpServerStatus/list': {
       if (process.argv.includes('--mcp-slow')) break;
+      if (p.detail === 'full' && p.serverName) {
+        const full = {
+          Calendar: {
+            name: 'Calendar', runtimeStatus: 'connected', authStatus: 'oAuth', httpOrigin: 'https://private.example',
+            tools: { calendar: { title: 'Calendar', description: 'Read calendar events.', inputSchema: { type: 'object', properties: { date: { type: 'string' } }, required: ['date'] }, annotations: { readOnlyHint: true } } },
+            resources: [{ uri: 'calendar://primary', name: 'Primary calendar', mimeType: 'text/calendar' }],
+            resourceTemplates: [{ uriTemplate: 'calendar://{id}', name: 'Calendar by ID' }],
+            serverInfo: { name: 'calendar-mcp', version: '1.2.3' },
+            serverCapabilities: { resources: {} },
+            toolListMeta: { nextCursor: null },
+          },
+          Files: { name: 'Files', runtimeStatus: 'authenticationRequired', authStatus: 'notLoggedIn', tools: {}, resources: [] },
+        };
+        respond({ data: full[p.serverName] ? [full[p.serverName]] : [], nextCursor: null }); break;
+      }
       if (process.argv.includes('--mcp-paginate')) {
         if (!p.cursor) { respond({ data: [{ name: 'Calendar', runtimeStatus: 'connected', authStatus: 'oAuth', httpOrigin: 'https://private.example', tools: { calendar: { inputSchema: { privateMarker: 'must-not-leak' } } } }], nextCursor: 'page-2' }); break; }
         if (p.cursor === 'page-2') { write({ id: message.id, error: { code: -32000, message: 'Inventory page failed.' } }); break; }

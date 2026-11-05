@@ -83,7 +83,7 @@ npm test
 npm run build
 ```
 
-Results: typecheck pass; 61/61 server/model-option tests pass; production build pass with the existing chunk-size advisory.
+Results: typecheck pass; 62/62 server/model-option tests pass; production build pass with the existing chunk-size advisory.
 
 ## Remaining work
 

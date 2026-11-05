@@ -540,6 +540,15 @@ test('authenticated API persists CRUD, streams real adapter lifecycle, approves,
     assert.equal(files.authStatus, 'notLoggedIn');
     assert.equal(files.toolsCount, 0);
     assert.ok(!JSON.stringify(apps.body).includes('must-not-leak'));
+    const capabilities = await api(`/apps/${encodeURIComponent('codex:Calendar')}/capabilities`);
+    assert.equal(capabilities.status, 200);
+    assert.equal(capabilities.body.supported, true);
+    assert.equal(capabilities.body.tools[0].name, 'calendar');
+    assert.deepEqual(capabilities.body.tools[0].inputSchema.properties.date, { type: 'string' });
+    assert.equal(capabilities.body.resources[0].uri, 'calendar://primary');
+    assert.equal(capabilities.body.serverInfo.version, '1.2.3');
+    assert.ok(!JSON.stringify(capabilities.body).includes('must-not-leak'));
+    assert.equal((await api(`/apps/${encodeURIComponent('codex:Missing')}/capabilities`)).status, 404);
     assert.equal((await api('/agents', { name: 'Bad', color: 'red' })).status, 400);
     const agent = (await api('/agents', { name: 'Test Agent', instructions: 'Test instructions', color: '#112233', providerId: 'codex' })).body;
     assert.equal(agent.name, 'Test Agent');
@@ -838,6 +847,11 @@ test('OpenCode provider discovers models and streams a continued CLI session', a
     const apps = await api('/apps');
     assert.ok(apps.body.apps.some((app: any) => app.id === 'opencode:computer-use' && app.providerId === 'opencode' && app.source === 'runtime' && app.status === 'connected'));
     assert.ok(apps.body.apps.some((app: any) => app.id === 'opencode:remote-calendar' && app.status === 'needs-auth' && app.toolsCount === undefined), 'OpenCode auth state is reported without an inferred tool count');
+    const openCodeCapabilities = await api(`/apps/${encodeURIComponent('opencode:computer-use')}/capabilities`);
+    assert.equal(openCodeCapabilities.status, 200);
+    assert.equal(openCodeCapabilities.body.supported, false);
+    assert.match(openCodeCapabilities.body.error, /does not expose MCP tool or resource detail/);
+    assert.equal((await api(`/apps/${encodeURIComponent('opencode:missing')}/capabilities`)).status, 404);
     const agent = (await api('/agents', { name: 'OpenCode Agent', providerId: 'opencode', modelId: 'opencode/test-model' })).body;
     const conversation = (await api('/conversations', { agentId: agent.id })).body;
     const first = await api(`/conversations/${conversation.id}/messages`, { content: 'Hello OpenCode' });

@@ -17,6 +17,7 @@ Status: **MCP-002 recorded 2026-11-05.** Pins the R1 Codex/OpenCode MCP surfaces
 | Capability | Behavior / fallback |
 | --- | --- |
 | Inventory | Codex status is paginated (cursor/limit), scoped by thread when supplied, cancelable, and returns partial results with an error envelope. OpenCode `mcp list` is provider-qualified; its tool list is omitted rather than inferred. No second MCP executor. |
+| Capability detail | Codex `mcpServerStatus/list` with `detail: full` and `serverName` supplies tool schemas, resources, templates, and server capabilities on demand; schemas are bounded and never cached. OpenCode reports `supported: false`. |
 | Auth | Runtime owns OAuth/token storage. A Gent surfaces needs-auth and starts runtime auth; it never receives long-lived MCP tokens. |
 | Config adoption | External config is read-only until explicit adoption; writes require atomic rollback. |
 | Reload | Use runtime reload/restart; absent reload disables with an actionable message. |
