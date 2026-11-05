@@ -11,7 +11,9 @@ Status: **FND-009 recorded 2026-11-05.** This defines the durable correlation re
 - `id`, `hostId`, `runId`, `conversationId`, `providerId`, optional `threadId`
 - `kind`: `approval`, `question`, `form`, or `url`
 - `title`, optional `description`, `command`, `url`
+- optional `payload`: typed questions (`id`, `header`, `question`, options, free-text/secret flags) or form fields (`string`, `number`, `integer`, `boolean`, `enum`, `multi-enum`, required/default/bounds/format)
 - `status`: `pending`, `accepted`, `declined`, `cancelled`, or `expired`
+- optional `response`: non-sensitive answer evidence; forms and secret questions store only `{ redacted: true }`
 - `createdAt`, `updatedAt`, optional `expiresAt`
 
 The `hostId` is derived from the workspace data directory. `runId`, `conversationId`, and `threadId` correlate the request to the exact run; a refresh or host switch cannot route a decision to a different conversation.
@@ -22,13 +24,17 @@ The `hostId` is derived from the workspace data directory. `runId`, `conversatio
 | --- | --- |
 | Approval requested | A pending record is written before the run is shown as `waiting`; the in-memory responder remains the only way to accept/decline. |
 | User accepts/declines | The run approval is updated and the interaction record becomes `accepted`/`declined`. |
-| Run finishes with a pending approval | The approval is declined in memory and the interaction becomes `cancelled`. |
+| Codex tool question | `item/tool/requestUserInput` becomes a `question` record with its runtime ID, header, options, free-text/secret flags, and the run stays `waiting` until answered. |
+| Codex/MCP form | `mcpServer/elicitation/request` becomes a `form` record for supported primitive schemas, or a `url` record for URL mode. Unsupported schemas are declined with a visible activity and recovery text. |
+| User answers a question/form | The answer is validated against the runtime schema before the provider receives it; invalid answers leave the request pending. Accepted forms/secret questions are redacted before persistence. |
+| Decline/cancel | The provider receives an explicit decline/cancel (or a JSON-RPC cancellation for Codex questions), never an empty fabricated answer. |
+| Run finishes with a pending interaction | The provider receives a cancellation/error for the outstanding request and the interaction becomes `cancelled`. |
 | Host restarts | Every still-`pending` record is marked `expired` during `InteractionStore.load()` before the API is available. It cannot be acted on without a live provider callback. |
-| Refresh | The run ledger still exposes the live approval; the durable record provides correlation/recovery. |
+| Refresh | The run ledger and bootstrap interaction list expose the live request; the durable record provides correlation/recovery. |
 | Host switch | Each data directory has its own `interactions.json` and host ID; another host's pending requests are not shown or actionable. |
 | Corrupt file | The damaged file is renamed to `interactions.json.corrupt-<timestamp>` and a clean version-1 store is created; the evidence is retained. |
 
-Unsupported Codex elicitation, tool questions, and unknown interactive requests are recorded as `form`/`question`/`url`-compatible notices with `status: cancelled`, alongside the existing activity. A real answer flow is owned by HIL-001–HIL-006; this task does not fabricate answers or accept unseen forms.
+Unknown interactive requests are recorded as a `form` notice and answered with JSON-RPC `-32601`; unsupported elicitation schemas are declined, not guessed. Sensitive form values and secret question answers are sent only to the runtime and never written to the interaction ledger.
 
 ## Storage
 
@@ -42,7 +48,9 @@ Unsupported Codex elicitation, tool questions, and unknown interactive requests 
 
 `GET /api/bootstrap` includes `interactions: PendingInteraction[]` in addition to state, providers, and runs. Approval decisions continue to use `POST /api/approvals/:id`; the interaction record shares the approval ID.
 
-The current UI reads approvals from the run ledger. A future interactions panel can render the bootstrap list without changing the correlation contract.
+`POST /api/interactions/:id` accepts `{ action: 'accept' | 'decline' | 'cancel', response? }`. Accepted questions use `{ answers: { questionId: { answers: string[] } } }`; accepted forms use `{ fieldName: value }`. A response is rejected with 400 when it does not match the runtime schema, and 409 when the request is already settled or has no live provider callback.
+
+The chat UI renders pending questions, forms, and URL confirmations as accessible cards. Each card validates required answers before enabling submission, supports decline, and never invents an answer.
 
 ## Verification
 
@@ -51,11 +59,20 @@ The current UI reads approvals from the run ledger. A future interactions panel 
 1. Pending records survive a write/read cycle but become `expired` on the next host load; resolved records remain.
 2. Two hosts/data directories keep separate records and host IDs.
 3. A corrupt file is preserved and replaced with a clean store.
+4. A response can be recorded once; double responses are ignored.
+
+`tests/server/hil.test.ts` covers:
+
+- Codex question parsing, listed-option validation, free-text handling, and malformed/empty rejection.
+- MCP form parsing for string/enum/integer/boolean/multi-select fields, required values, numeric bounds, type checks, and unsupported nested objects.
+- URL elicitation accepting only HTTP(S) destinations.
 
 `tests/server/backend.test.ts` covers:
 
 - A real approval fixture writes `kind: approval`, `runId`, `conversationId`, `providerId`, `threadId`, and `status: pending`.
 - Approving it persists `status: accepted` before the run completes.
+- A Codex `requestUserInput` fixture waits as a `question`, rejects an option outside the runtime schema, accepts `Workspace`, returns it to the runtime, and rejects a second answer with 409.
+- A Codex `mcpServer/elicitation/request` fixture waits as a `form`, rejects a missing required field and an out-of-range number, accepts valid values, and completes the run.
 - Existing approval/decline and run-reservation tests remain green.
 
 Commands run 2026-11-05:
@@ -66,11 +83,13 @@ npm test
 npm run build
 ```
 
-Results: typecheck pass; 45/45 server/model-option tests pass; production build pass with the existing chunk-size advisory.
+Results: typecheck pass; 58/58 server/model-option tests pass; production build pass with the existing chunk-size advisory.
 
 ## Remaining work
 
-- **HIL-001–HIL-006:** render and answer questions/forms/URL requests; this record deliberately records unsupported requests as cancelled rather than pretending they succeeded.
+- **HIL-003:** browser/keyboard/focus evidence for the form card and sensitive-field policy fixtures.
+- **HIL-004:** open the reviewed URL, correlate callback/completion, and reject mismatched or untrusted destinations.
+- **HIL-005:** close pending interactions on stop/disconnect/shutdown with exactly-once provider resolution.
+- **HIL-006:** real HIL acceptance across refresh, simultaneous chats, late responses, denial, and runtime failure.
 - **FND-010:** shared timeout/cancellation budgets, including interaction expiry.
 - **FND-011:** diagnostics/correlation IDs for interaction failures.
-- **UI:** add an interaction list/recovery surface if refresh/restart recovery needs to be visible rather than only diagnostic.

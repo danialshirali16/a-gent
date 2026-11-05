@@ -1,27 +1,30 @@
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { EventEmitter } from 'node:events';
 import { createInterface } from 'node:readline';
-import type { Activity, Agent, AppConnection, Approval, Conversation, ModelOption } from '../shared/types.js';
+import type { Activity, Agent, AppConnection, Approval, Conversation, InteractionField, InteractionQuestion, ModelOption } from '../shared/types.js';
 import { BUDGETS } from './budgets.js';
 import { redact } from './diagnostics.js';
+import { parseElicitation, parseQuestions, validateElicitationValues, validateQuestionAnswers } from './hil.js';
 import { id, now } from './store.js';
 import { locateCodex, type CodexLaunch } from './codex-discovery.js';
 export { locateCodex } from './codex-discovery.js';
 
 interface RpcMessage { id?: number | string; method?: string; params?: any; result?: any; error?: { message: string; code?: number }; }
-export interface ProviderInteractionNotice {
+export interface ProviderInteractionRequest {
   kind: 'question' | 'form' | 'url';
   title: string;
   description?: string;
   command?: string;
   url?: string;
-  status: 'cancelled';
+  questions?: InteractionQuestion[];
+  fields?: InteractionField[];
 }
+export type ProviderInteractionRespond = (action: 'accept' | 'decline' | 'cancel', response?: unknown) => void;
 export interface ProviderCallbacks {
   delta(text: string): void;
   activity(activity: Activity): void;
   approval(approval: Omit<Approval, 'id' | 'runId' | 'conversationId' | 'status'>, respond: (accept: boolean) => void): void;
-  interaction?(notice: ProviderInteractionNotice): void;
+  interaction?(request: ProviderInteractionRequest, respond?: ProviderInteractionRespond): void;
   thread(threadId: string): void;
 }
 export interface ProviderRequest {
@@ -191,7 +194,12 @@ export class CodexBridge {
       let interruptionRequested = false;
       let interruptionDeadline: ReturnType<typeof setTimeout> | undefined;
       const earlyEvents: RpcMessage[] = [];
-      const cleanup = () => { this.events.off('message', onMessage); this.events.off('closed', onClose); signal.removeEventListener('abort', onAbort); if (interruptionDeadline) clearTimeout(interruptionDeadline); };
+      const cleanup = () => {
+        this.events.off('message', onMessage); this.events.off('closed', onClose); signal.removeEventListener('abort', onAbort); if (interruptionDeadline) clearTimeout(interruptionDeadline);
+        // A settled interaction must never leave the runtime waiting on a request.
+        for (const requestId of pendingInteractionIds) { try { this.send({ id: requestId, error: { code: -32800, message: 'The run ended before the request was answered.' } }); } catch { /* the connection may already be closed */ } }
+        pendingInteractionIds.clear();
+      };
       const finish = (error?: Error) => { if (settled) return; settled = true; cleanup(); if (error) reject(error); else resolve(); };
       const onClose = (error: Error) => finish(error);
       const interruptKnownTurn = () => {
@@ -210,13 +218,85 @@ export class CodexBridge {
         }, BUDGETS.interrupt);
         interruptKnownTurn();
       };
+      const pendingInteractionIds = new Set<string | number>();
+      const declineRequest = (requestId: string | number, message: string) => {
+        pendingInteractionIds.delete(requestId);
+        if (settled) return;
+        try { this.send({ id: requestId, error: { code: -32800, message } }); } catch { /* the run is already closing */ }
+      };
+      const handleQuestion = (requestId: string | number, p: any) => {
+        const parsed = parseQuestions(p);
+        if (!parsed) { declineRequest(requestId, 'The question request was malformed.'); return; }
+        pendingApprovalIds.add(requestId);
+        pendingInteractionIds.add(requestId);
+        callbacks.activity({ id: id(), kind: 'status', title: 'Your agent is asking a question', detail: parsed.questions.map(question => question.question).join('\n'), status: 'running', createdAt: now() });
+        const respond: ProviderInteractionRespond = (action, response) => {
+          if (!pendingInteractionIds.has(requestId)) return;
+          if (action !== 'accept') {
+            declineRequest(requestId, action === 'decline' ? 'The user declined to answer.' : 'The question was cancelled.');
+            callbacks.activity({ id: id(), kind: 'status', title: action === 'decline' ? 'Question declined' : 'Question cancelled', status: 'failed', createdAt: now() });
+            return;
+          }
+          const result = validateQuestionAnswers(parsed.questions, response);
+          pendingInteractionIds.delete(requestId);
+          pendingApprovalIds.delete(requestId);
+          if (!settled) this.send({ id: requestId, result });
+          callbacks.activity({ id: id(), kind: 'status', title: 'Question answered', status: 'completed', createdAt: now() });
+        };
+        if (signal.aborted) { respond('cancel'); return; }
+        callbacks.interaction?.({
+          kind: 'question',
+          title: parsed.questions.length === 1 ? parsed.questions[0].header : 'Your agent has questions',
+          description: parsed.questions.map(question => question.question).join('\n'),
+          questions: parsed.questions,
+        }, respond);
+      };
+      const handleElicitation = (requestId: string | number, p: any) => {
+        const parsed = parseElicitation(p);
+        if (parsed.mode === 'unsupported') {
+          callbacks.interaction?.({ kind: 'form', title: 'Unsupported app form', description: parsed.reason });
+          callbacks.activity({ id: id(), kind: 'status', title: 'Unsupported app form', detail: parsed.reason, status: 'failed', createdAt: now() });
+          if (!settled) this.send({ id: requestId, result: { action: 'decline', content: null, _meta: null } });
+          return;
+        }
+        pendingApprovalIds.add(requestId);
+        pendingInteractionIds.add(requestId);
+        const serverName = typeof p.serverName === 'string' ? p.serverName : 'an app';
+        const message = typeof p.message === 'string' ? p.message : 'An app connection needs additional input.';
+        const respond: ProviderInteractionRespond = (action, response) => {
+          if (!pendingInteractionIds.has(requestId)) return;
+          if (action !== 'accept') {
+            pendingInteractionIds.delete(requestId);
+            pendingApprovalIds.delete(requestId);
+            if (!settled) this.send({ id: requestId, result: { action, content: null, _meta: null } });
+            callbacks.activity({ id: id(), kind: 'status', title: action === 'decline' ? 'App request declined' : 'App request cancelled', status: 'failed', createdAt: now() });
+            return;
+          }
+          if (parsed.mode === 'url') {
+            pendingInteractionIds.delete(requestId);
+            pendingApprovalIds.delete(requestId);
+            if (!settled) this.send({ id: requestId, result: { action: 'accept', content: null, _meta: null } });
+            callbacks.activity({ id: id(), kind: 'status', title: `Opened ${serverName} sign-in`, status: 'completed', createdAt: now() });
+            return;
+          }
+          const values = validateElicitationValues(parsed.fields, response);
+          pendingInteractionIds.delete(requestId);
+          pendingApprovalIds.delete(requestId);
+          if (!settled) this.send({ id: requestId, result: { action: 'accept', content: values, _meta: null } });
+          callbacks.activity({ id: id(), kind: 'status', title: `Submitted input for ${serverName}`, status: 'completed', createdAt: now() });
+        };
+        if (signal.aborted) { respond('cancel'); return; }
+        callbacks.interaction?.(parsed.mode === 'url'
+          ? { kind: 'url', title: `Sign in to ${serverName}`, description: message, url: parsed.url }
+          : { kind: 'form', title: `Input needed for ${serverName}`, description: message, fields: parsed.fields }, respond);
+        callbacks.activity({ id: id(), kind: 'status', title: `Waiting for input for ${serverName}`, status: 'running', createdAt: now() });
+      };
       const onMessage = (message: RpcMessage) => {
         const p = message.params ?? {};
         if (p.threadId !== threadId) return;
         const eventTurnId = typeof p.turnId === 'string' ? p.turnId : typeof p.turn?.id === 'string' ? p.turn.id : undefined;
         if (!eventTurnId && message.id !== undefined && message.method === 'mcpServer/elicitation/request') {
-          callbacks.interaction?.({ kind: 'form', title: 'An app connection needs additional input', description: typeof p.message === 'string' ? p.message : undefined, status: 'cancelled' });
-          this.send({ id: message.id, result: { action: 'decline', content: null, _meta: null } });
+          handleElicitation(message.id, p);
           return;
         }
         if (!turnId) {
@@ -246,20 +326,11 @@ export class CodexBridge {
             if (signal.aborted) respond(false);
             else callbacks.approval({ title: method.includes('fileChange') ? 'Approve file changes' : method.includes('permissions') ? 'Approve requested access' : 'Approve command', description: [p.reason, p.cwd ? `Folder: ${p.cwd}` : '', permissions].filter(Boolean).join('\n') || 'Codex is asking for your approval before continuing.', command: command || fileDiff }, respond);
           } else if (method === 'mcpServer/elicitation/request') {
-            // This release supports decline without collecting secrets or accepting an unseen form.
-            const detail = p.message ?? 'Complete this app connection in Codex, then retry the task.';
-            callbacks.interaction?.({ kind: 'form', title: 'An app connection needs additional input', description: detail, status: 'cancelled' });
-            callbacks.activity({ id: id(), kind: 'status', title: 'An app connection needs additional input', detail, status: 'failed', createdAt: now() });
-            pendingApprovalIds.delete(requestId);
-            this.send({ id: requestId, result: { action: 'decline', content: null, _meta: null } });
+            handleElicitation(requestId, p);
           } else if (method === 'item/tool/requestUserInput') {
-            const detail = (p.questions ?? []).map((q: any) => q.question).join('\n');
-            callbacks.interaction?.({ kind: 'question', title: 'Your agent has a question', description: detail, status: 'cancelled' });
-            callbacks.activity({ id: id(), kind: 'status', title: 'Your agent has a question', detail, status: 'completed', createdAt: now() });
-            pendingApprovalIds.delete(requestId);
-            this.send({ id: requestId, result: { answers: {} } });
+            handleQuestion(requestId, p);
           } else {
-            callbacks.interaction?.({ kind: 'form', title: 'Unsupported interactive request', description: method, status: 'cancelled' });
+            callbacks.interaction?.({ kind: 'form', title: 'Unsupported interactive request', description: method });
             pendingApprovalIds.delete(requestId);
             this.send({ id: requestId, error: { code: -32601, message: 'This A Gent release does not support this interactive request.' } });
           }

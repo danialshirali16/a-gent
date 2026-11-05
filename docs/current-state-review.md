@@ -46,7 +46,7 @@ The audit stops before production fixes under the invoked break-ui workflow. Its
 
 ## Provider and app integration completion
 
-The latest [integration review](integration-review.md) inspected current source/routes/types, existing test definitions, CI/package configuration, and upstream documentation. It confirmed that Connect Apps is currently an inventory of externally configured Codex MCP servers, not a complete connection manager. HTTP providers do not have their own MCP execution loop; unsupported MCP forms are declined and tool questions receive empty answers.
+The latest [integration review](integration-review.md) inspected current source/routes/types, existing test definitions, CI/package configuration, and upstream documentation. It confirmed that Connect Apps started as inventory of externally configured Codex MCP servers, not a complete connection manager. HTTP providers do not have their own MCP execution loop. Tool questions and supported MCP forms are now answered through correlated HIL records with schema validation; unsupported forms decline explicitly. Connection onboarding/auth/removal remains M3 work.
 
 The [completion/release roadmap](project-roadmap.md) now defines 237 acceptance tasks: 12 foundations, 44 provider, 40 MCP/app/user-input, 12 model-reasoning, 20 skills, 18 speech, 22 product/UI, 24 quality/release, 20 paused/later, and 25 benchmark prerequisites. After the 2026-11-05 D-02 amendment the targets are **191 first-release macOS tasks, 28 R2 tasks**, 16 paused-platform, and 2 optional-scope tasks. FND-001 records the decisions and acting owners; creating the plan does not mark implementation complete.
 

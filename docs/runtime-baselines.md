@@ -63,8 +63,8 @@ The checked-in fixture is `tests/fixtures/runtime-baselines/codex-0.166.0/`.
 | `item/commandExecution/requestApproval` | Command approval | Present |
 | `item/fileChange/requestApproval` | File-change approval | Present |
 | `item/permissions/requestApproval` | Permission approval | Present |
-| `mcpServer/elicitation/request` | Declined with a status activity (`server/codex.ts:193`, `:223`) | Present; fallback is temporary, not a complete UI |
-| `item/tool/requestUserInput` | Answered with `{}` plus an activity (`server/codex.ts:228`) | Present; fabricated/empty answer is a known gap |
+| `mcpServer/elicitation/request` | Form/URL interaction with schema validation; unsupported schemas decline with an activity (`server/hil.ts`, `server/codex.ts`) | Present; URL completion is HIL-004 |
+| `item/tool/requestUserInput` | Correlated question with option/free-text validation; answers return to Codex, decline/cancel is explicit (`server/hil.ts`, `server/codex.ts`) | Present; live acceptance is HIL-006 |
 
 ### Available but not used in R1
 

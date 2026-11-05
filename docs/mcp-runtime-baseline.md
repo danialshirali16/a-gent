@@ -16,7 +16,7 @@ Status: **MCP-002 recorded 2026-11-05.** Pins the R1 Codex/OpenCode MCP surfaces
 
 | Capability | Behavior / fallback |
 | --- | --- |
-| Inventory | Codex status is paginated (cursor/limit) and scoped by thread when supplied. OpenCode inventory is a follow-up; no second MCP executor. |
+| Inventory | Codex status is paginated (cursor/limit) and scoped by thread when supplied. OpenCode `mcp list` inventory is provider-qualified; no second MCP executor. |
 | Auth | Runtime owns OAuth/token storage. A Gent surfaces needs-auth and starts runtime auth; it never receives long-lived MCP tokens. |
 | Config adoption | External config is read-only until explicit adoption; writes require atomic rollback. |
 | Reload | Use runtime reload/restart; absent reload disables with an actionable message. |
@@ -30,4 +30,4 @@ Status: **MCP-002 recorded 2026-11-05.** Pins the R1 Codex/OpenCode MCP surfaces
 - Existing backend inventory assertions use Codex `mcpServerStatus/list`.
 - No live OAuth/remote MCP connector was exercised; MCP-022 remains the acceptance gate.
 
-Limitations: OpenCode MCP inventory is not yet wired into A Gent; deferred HTTP/Ollama/Gemini adapters are out of R1 MCP scope.
+Limitations: OpenCode MCP tool/resource detail and auth-state fixtures remain MCP-004 review work; deferred HTTP/Ollama/Gemini adapters are out of R1 MCP scope.

@@ -18,8 +18,19 @@ function finish(threadId, turnId, text) {
 lines.on('line', line => {
   const message = JSON.parse(line), p = message.params ?? {};
   if (!message.method) {
-    const approval = pending.get(message.id);
-    if (approval) { pending.delete(message.id); finish(approval.threadId, approval.turnId, message.result?.decision === 'accept' ? 'Approved task completed.' : 'Approval declined.'); }
+    const pendingRequest = pending.get(message.id);
+    if (pendingRequest) {
+      pending.delete(message.id);
+      if (pendingRequest.kind === 'question') {
+        const answer = message.result?.answers?.scope?.answers?.join(', ') || message.error?.message || 'No answer';
+        finish(pendingRequest.threadId, pendingRequest.turnId, `Question answer: ${answer}`);
+      } else if (pendingRequest.kind === 'form') {
+        const values = message.result?.content ? JSON.stringify(message.result.content) : message.result?.action || 'declined';
+        finish(pendingRequest.threadId, pendingRequest.turnId, `Form result: ${values}`);
+      } else {
+        finish(pendingRequest.threadId, pendingRequest.turnId, message.result?.decision === 'accept' ? 'Approved task completed.' : 'Approval declined.');
+      }
+    }
     return;
   }
   const respond = result => write({ id: message.id, result });
@@ -67,6 +78,26 @@ lines.on('line', line => {
       if (text.includes('[approval]')) {
         const requestId = `approval-${sequence}`; pending.set(requestId, { threadId: p.threadId, turnId });
         setTimeout(() => write({ id: requestId, method: 'item/commandExecution/requestApproval', params: { threadId: p.threadId, turnId, itemId: 'command', command: 'echo A Gent test', cwd: p.cwd, reason: 'Protocol fixture approval.' } }), 10);
+      } else if (text.includes('[question]')) {
+        const requestId = `question-${sequence}`; pending.set(requestId, { threadId: p.threadId, turnId, kind: 'question' });
+        setTimeout(() => write({ id: requestId, method: 'item/tool/requestUserInput', params: {
+          threadId: p.threadId, turnId, itemId: 'question', isBlocking: true,
+          questions: [{ id: 'scope', header: 'Choose a scope', question: 'Where should this run?', options: [{ label: 'Workspace', description: 'Only this folder.' }, { label: 'Account', description: 'Every workspace.' }] }],
+        } }), 10);
+      } else if (text.includes('[form]')) {
+        const requestId = `form-${sequence}`; pending.set(requestId, { threadId: p.threadId, turnId, kind: 'form' });
+        setTimeout(() => write({ id: requestId, method: 'mcpServer/elicitation/request', params: {
+          threadId: p.threadId, turnId, serverName: 'Calendar', message: 'Choose a calendar for this task.',
+          mode: 'form',
+          requestedSchema: {
+            type: 'object',
+            properties: {
+              calendar: { type: 'string', title: 'Calendar', enum: ['work', 'personal'] },
+              days: { type: 'integer', title: 'Days ahead', minimum: 1, maximum: 30, default: 7 },
+            },
+            required: ['calendar'],
+          },
+        } }), 10);
       } else if (text.includes('[slow]')) {
         thread.timer = setTimeout(() => finish(p.threadId, turnId, 'Slow task completed.'), 5000);
       } else setTimeout(() => finish(p.threadId, turnId, `A Gent test response ${thread.turns}.`), 10);

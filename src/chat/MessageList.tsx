@@ -1,7 +1,8 @@
 import { Fragment } from 'react';
-import type { Message, Run } from '../../shared/types';
+import type { Message, PendingInteraction, Run } from '../../shared/types';
 import { Alert } from '../ui/Alert';
 import { ApprovalCard } from './ApprovalCard';
+import { InteractionCard, type InteractionDecision } from './InteractionCard';
 import { DateDivider, SystemEvent } from './DateDivider';
 import { MessageBubble } from './MessageBubble';
 
@@ -13,6 +14,8 @@ export interface MessageListProps {
   runError?: string;
   onCopy: (content: string, id: string) => void;
   onApproval: (id: string, accept: boolean) => void;
+  interactions?: PendingInteraction[];
+  onInteraction: InteractionDecision;
   onOpenDetails?: () => void;
 }
 
@@ -36,6 +39,7 @@ export function MessageList(props: MessageListProps) {
           : <MessageBubble message={message} activities={activities} toolStreamView={props.toolStreamView} copied={props.copied === message.id} onCopy={props.onCopy} onOpenDetails={props.onOpenDetails} />}
       </Fragment>;
     })}
+    {(props.interactions || []).filter(item => item.kind !== 'approval').map(interaction => <InteractionCard key={interaction.id} interaction={interaction} onRespond={props.onInteraction} />)}
     {pending.map(approval => <ApprovalCard key={approval.id} approval={approval} onApproval={props.onApproval} />)}
     {props.runError && <Alert tone="danger" title="This run stopped" className="reason-run-error">{props.runError}</Alert>}
   </div>;

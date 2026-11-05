@@ -285,7 +285,19 @@ Date: 2026-11-05. Compared Codex/OpenCode MCP surfaces, MCP 2026-07-28 transport
 | BEN-009 | Connect Apps IA/add/auth/access/inspect/enable/disable/remove and catalog-honesty decisions. |
 | BEN-010 | Correlated HIL approvals/questions/forms/URL, decline/timeout, sensitive values, concurrency, accessibility. |
 
-Records: [BEN-008](../docs/benchmarks/BEN-008-mcp-runtime.md), [BEN-009](../docs/benchmarks/BEN-009-connect-apps-ux.md), [BEN-010](../docs/benchmarks/BEN-010-hil.md). MCP-002 runtime/protocol baseline is recorded in [mcp-runtime-baseline.md](../docs/mcp-runtime-baseline.md). MCP-001 app-record fields, MCP-005 managed app-record CRUD, MCP-003 conversation-scoped Codex inventory, and HIL-001 interaction routing/response API are implemented; MCP-004 OpenCode inventory is a Review item. No live OAuth connector or form journey was exercised.
+Records: [BEN-008](../docs/benchmarks/BEN-008-mcp-runtime.md), [BEN-009](../docs/benchmarks/BEN-009-connect-apps-ux.md), [BEN-010](../docs/benchmarks/BEN-010-hil.md). MCP-002 runtime/protocol baseline is recorded in [mcp-runtime-baseline.md](../docs/mcp-runtime-baseline.md). MCP-001 app-record fields, MCP-005 managed app-record CRUD, MCP-003 conversation-scoped Codex inventory, and HIL-001/HIL-002 interaction routing/question answers are implemented; MCP-004 and HIL-003 are Review items. No live OAuth connector or live HIL journey was exercised.
+
+### HIL-002/HIL-003 deterministic evidence
+
+Date: 2026-11-05. `tests/server/hil.test.ts` and the `question`/`form` Codex fixtures in `tests/server/backend.test.ts` verify:
+
+- question options are preserved and an answer outside the runtime schema is rejected with 400 while the request stays pending;
+- the accepted answer reaches Codex and completes the run; a second answer returns 409;
+- required form fields and numeric bounds are enforced before the runtime receives values;
+- accepted forms and secret answers are stored as `{ redacted: true }`, not raw values;
+- unsupported elicitation schemas decline with a visible recovery message.
+
+`npm test` passes 58/58; typecheck and production build pass with the existing chunk-size advisory. The live HIL acceptance journey remains HIL-006.
 
 ## M2 shared provider lifecycle slice
 
