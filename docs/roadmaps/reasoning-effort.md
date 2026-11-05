@@ -4,9 +4,9 @@ Updated: 2026-11-05. [Master roadmap](../project-roadmap.md) · [Task boards](RE
 
 The existing Light/Balanced/Deep choices must be replaced by the selected model's actual supported settings. Do not infer support from a model name or apply a shared provider-wide list. Unknown capabilities use provider default without an invented effort parameter.
 
-Current source: `shared/types.ts` keeps only model ID/name/description; `server/codex.ts` drops other discovery metadata and uses a global effort allowlist; `src/composer/ModelPicker.tsx`, `src/App.tsx`, `src/dialogs.tsx`, and `src/app/SidePanel.tsx` retain fixed options/default labels. The [Codex App Server reference](https://learn.chatgpt.com/docs/app-server) documents model-specific `supportedReasoningEfforts` and `defaultReasoningEffort` (checked 2026-11-05). Other adapters require their own verified metadata or explicit capability registry, not copied Codex values.
+Current source: `shared/types.ts` carries model-specific reasoning metadata; `server/codex.ts` preserves `supportedReasoningEfforts`/`defaultReasoningEffort`; the picker and composer render verified per-model enum options/defaults; unknown metadata omits the parameter. The [Codex App Server reference](https://learn.chatgpt.com/docs/app-server) documents these fields (checked 2026-11-05). Other adapters require their own verified metadata or explicit capability registry, not copied Codex values. EFF-001–007/EFF-011 are Done; EFF-008–010/012 and OpenCode variant mapping remain.
 
-All tasks start **To do**. Target **R1** is the first public macOS release. Owners are suggested roles; assign an actual DRI and reviewer before Ready. Requirements here are planned, not implemented.
+Status is maintained in the tables below. Target **R1** is the first public macOS release. Owners are suggested roles; assign an actual DRI and reviewer before Ready. Remaining requirements are planned unless the task row says Done.
 
 ## Model capability data and request mapping
 

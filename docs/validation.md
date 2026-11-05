@@ -1,7 +1,7 @@
 # A Gent — Validation Record
 
 Date: 2026-11-05\
-Host: macOS arm64\
+Host: macOS arm64 baseline; latest M3 source checks on Windows x64 (development evidence, not R1 acceptance)\
 Historical packaged-baseline Node: 22.23.1\
 Codex CLI: 0.166.0\
 Electron: 45.2.2
@@ -21,7 +21,7 @@ Date: 2026-11-05. Scope: BEN-001, FND-001, and FND-002; release contract, runtim
 | Release decisions | D-01–D-11, R1/exclusions, launch support summary, and owner acceptance recorded in [the release contract](release-contract.md). |
 | Benchmark record | [BEN-001](benchmarks/BEN-001-foundations.md) covers FND-001–012 with Reason, Codex, and OpenCode comparisons and explicit limitations. |
 | Support matrix | Initial [QA-001 matrix](support-matrix.md) maps R1 surfaces and negative states to owner/test/evidence and gate; QA-001 remains To do pending BEN-013. |
-| Documentation links | 633 repo-relative links checked across `docs/**/*.md` and `README.md`; 0 missing. One pre-existing host-absolute skill link was skipped. |
+| Documentation links | 636 repo-relative links checked across `docs/**/*.md` and `README.md`; 0 missing. One pre-existing host-absolute skill link was skipped. |
 | `git diff --check` | Pass. |
 | Live provider/MCP/OAuth/STT/skill calls, package/signing/clean-Mac checks, VoiceOver/zoom, performance | Not performed in this pass; listed as limitations in the records. |
 

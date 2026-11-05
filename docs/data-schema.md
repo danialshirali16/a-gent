@@ -10,7 +10,7 @@ Status: **FND-003 recorded 2026-11-05.** Current workspace version: **2**. The s
 | --- | --- | --- |
 | Provider/profile binding | `Agent.providerProfileId?`, `Conversation.providerBinding?` | Keeps the selected connection profile and provider session identity separate from the A Gent conversation. |
 | Model-specific effort | `Agent.reasoningEffort`, `Conversation.reasoningEffort?` | Stores the effective agent effort and an optional chat-level override; verified option metadata remains provider-supplied. |
-| App ownership/scope | `WorkspaceState.apps: AppRecord[]` | Records id, name, provider, transport, source, tool count, ownership (`managed`/`external`), enabled state, and scope (`global`/`agent`/`group`/`chat`). |
+| App ownership/scope | `WorkspaceState.apps: AppRecord[]` | Records id, name, provider, transport, source, ownership (`managed`/`external`), enabled state, scope (`global`/`agent`/`group`/`chat`), optional host/workspace, tool count, capability snapshot (tools/resources/prompts/server version/auth status), credential reference, last-checked time, and error. |
 | Skill ownership/scope | `WorkspaceState.skills: SkillRecord[]` | Records Agent Skills format, version/source path, ownership, enabled state, and scope. |
 | Non-secret speech settings | `Settings.speech?` | Records ElevenLabs provider, model, language, and credential mode (`keychain`/`session`); the API key is never part of workspace state. |
 
@@ -48,7 +48,7 @@ This is conservative: changing a model or workspace rebuilds the provider sessio
 
 - Scoped resources require a known `agent`, `group`, or `chat` ID; `global` scope must omit the scope ID.
 - `ownership` is `managed` or `external`; `enabled` defaults to true.
-- App transport is `stdio` or `http`; app tool counts are non-negative integers.
+- App transport is `stdio` or `http`; app tool counts and capability resource/prompt counts are non-negative integers; credential references are identifiers, never secret values.
 - Skills use the `agent-skills` format only.
 - Speech provider is `elevenlabs`; credential mode is `keychain` or `session`; only non-secret fields are persisted.
 - IDs are unique within each resource collection; names and IDs are bounded.
@@ -76,11 +76,11 @@ npm test
 npm run build
 ```
 
-Results for the FND-003 run: typecheck pass; 21/21 server/model-option tests pass; production build pass with the existing chunk-size advisory. The suite is now 45/45 after FND-004–FND-012 added authority, event-stream, lifecycle, session-binding, persistence, interaction, budget, diagnostics, and config/secret tests.
+Results for the FND-003 run: typecheck pass; 21/21 server/model-option tests pass; production build pass with the existing chunk-size advisory. The suite is now 62/62 after later FND, provider, MCP inventory/capability, HIL, persistence, and config/secret tests.
 
 ## Remaining work
 
 - FND-007 follow-up: remove the legacy `providerThreadId` compatibility field after the migration window and add provider/account/workspace mismatch integration cases beyond the current model-change test. Runtime routing already checks the full binding.
-- MCP/skills tasks: own the full app/skill lifecycle and may extend these records; they must not bypass the scope/ownership validation here.
+- MCP/skills tasks: own the full app/skill lifecycle. MCP-001/005 extended `AppRecord` with host/workspace, capability snapshot, credential reference, last-checked, and error metadata; new fields must not bypass scope/ownership validation.
 - FND-008 follow-up: add a second backup generation or checksum validation if field data shows one-generation recovery is insufficient; current concurrent-save/write-failure/import-rollback coverage is in [persistence](persistence.md).
 - Import/export limits for very large workspaces remain a separate product/QA concern.

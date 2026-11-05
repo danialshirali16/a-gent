@@ -92,6 +92,6 @@ Results: typecheck pass; 45/45 server/model-option tests pass; production build 
 
 - **PVD-003/PVD-004:** choose Keychain vs session-only, adopt `ConfigStore` for provider endpoints and `SecretStore` for keys, and migrate the existing `connections.json`.
 - **STT-002:** reuse the same secret interface for the ElevenLabs key; do not create a second credential file.
-- **MCP/SKL:** use owner kinds `mcp`/`skill` for app and skill credentials/configuration.
+- **MCP:** Codex/OpenCode own MCP OAuth/token storage. A Gent stores only a credential reference, auth status, and login ID—never long-lived app tokens. **SKL:** use the `skill` owner kind for skill configuration when that lifecycle exists.
 - **FND-012 follow-up:** add a Keychain-backed `SecretStore` implementation when the desktop host exposes it; keep `MemorySecretStore` as the explicit session-only mode.
 - **QA-011:** audit that config/secret files, key material, and absolute paths do not enter packages, logs, exports, or diagnostics.

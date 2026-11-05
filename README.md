@@ -14,7 +14,7 @@ Start with the [documentation index](docs/README.md). It links the [current stat
 
 As of 2026-11-05, the initial 18-component pass is complete. The source model picker follows the provider-rail reference and shows connected catalogs only. Its [modelOptions stress test](docs/model-options-stress-test.md) found seven open issues. Earlier normal-fixture and packaged-app results do not cover those cases; the latest picker source awaits a new packaged release check.
 
-Provider and MCP/Connect Apps lifecycles remain partial. The [source-based integration review](docs/integration-review.md) and [237-task completion/release roadmap](docs/project-roadmap.md) define the remaining work, including [ElevenLabs Speech-to-Text](docs/roadmaps/speech-to-text.md), [model-specific reasoning controls](docs/roadmaps/reasoning-effort.md), and [Agent skill management](docs/roadmaps/skills.md). Every delivery scope must complete its [benchmark prerequisite](docs/roadmaps/benchmarking.md) before development. Task dependencies and acceptance criteria are maintained in [the workstream boards](docs/roadmaps/README.md); the newly planned features are not implemented yet.
+Provider and MCP/Connect Apps lifecycles remain partial. The [237-task completion/release roadmap](docs/project-roadmap.md) defines the remaining work, including [ElevenLabs Speech-to-Text](docs/roadmaps/speech-to-text.md), [model-specific reasoning controls](docs/roadmaps/reasoning-effort.md), and [Agent skill management](docs/roadmaps/skills.md). M3 now has scoped Codex/OpenCode inventory, capability inspection, Codex OAuth start, runtime reload, and question/form answers; config adoption, enable/disable/removal, and full connector journeys remain. Every delivery scope must complete its [benchmark prerequisite](docs/roadmaps/benchmarking.md) before development. Task dependencies and acceptance criteria are maintained in [the workstream boards](docs/roadmaps/README.md).
 
 ## Run on this Mac
 
@@ -43,7 +43,7 @@ npm run desktop:dev
 
 In **Connections**, check the Codex connection. If Codex is not installed or signed in on the host, install the official CLI and run `codex login` in a terminal. A Gent calls the supported app-server interface and uses its account state; it does not read or copy authentication tokens. Models are discovered from that installation.
 
-The **Connected apps** section inventories the MCP connections already configured in Codex on the host. Their availability and authentication remain managed by Codex. A Gent does not register new connectors or reproduce Reason’s hosted OAuth service.
+The **Connected apps** section discovers MCP connections from Codex and OpenCode, shows runtime/auth status, inspects tools and resources, starts Codex OAuth sign-in, and can reload runtime app configuration. A Gent does not copy another client's tokens or reproduce Reason's hosted OAuth service. Adding/removing runtime config and the full connector lifecycle remain in progress.
 
 OpenCode uses the installed OpenCode CLI and the account already signed in there. Check the connection in **Connections**; if needed, run `opencode auth login` on the host.
 
@@ -51,7 +51,7 @@ Antigravity uses Google's Gemini OpenAI-compatible endpoint. Add an API key and 
 
 Ollama uses an existing local server, normally `http://127.0.0.1:11434`. API keys are kept in host memory or supplied through environment variables, and must be re-entered after a host restart. HTTP providers support chat; project tools use Codex or OpenCode.
 
-Select **Chat** for a read-only Codex session. OpenCode runs through its CLI with `--auto`; configure OpenCode permissions if you need stricter tool limits. Select **Work in project** and choose a host folder to allow workspace changes under Codex’s sandbox and approval rules. A Gent displays supported command, file, and access approval requests. Requests for richer MCP forms or interactive tool questions currently need completion in Codex itself.
+Select **Chat** for a read-only Codex session. OpenCode runs through its CLI with `--auto`; configure OpenCode permissions if you need stricter tool limits. Select **Work in project** and choose a host folder to allow workspace changes under Codex’s sandbox and approval rules. A Gent displays supported command, file, and access approval requests. Supported tool questions and MCP forms are rendered with schema validation and returned to the runtime; unsupported schemas decline with a visible recovery message.
 
 Official integration references: [Codex app-server](https://learn.chatgpt.com/docs/app-server), [non-interactive Codex](https://learn.chatgpt.com/docs/non-interactive-mode), [OpenCode CLI](https://opencode.ai/docs/cli).
 

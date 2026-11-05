@@ -28,6 +28,9 @@ Status: **FND-004 recorded 2026-11-05.** This defines who may change host-level 
 | Export/import the whole workspace | Yes | Yes | **No** | `requireHostAuthority` |
 | Create/rotate/revoke another device | Yes | **No** | **No** | `requireAdmin`; self-rotation/revocation remains allowed |
 | Rotate/revoke own device | Yes | Yes | Yes | Device route ownership check |
+| Create/update/remove managed app records | Yes | Yes | **No** | `requireHostAuthority` |
+| Start app sign-in or reload runtime app config | Yes | Yes | **No** | `requireHostAuthority`; tokens remain runtime-owned |
+| Inspect app capabilities or read sign-in status | Yes | Yes | Yes | Authenticated API; no secrets returned |
 | Future app/tool grants, skill configuration | Yes | Yes | **No by default** | To be enforced when those APIs exist (MCP/SKL tasks) |
 | Future microphone capture | Host/device-local capture only | Yes | Device-local capture only, with explicit host-minted transcription rights | To be enforced by STT-003/STT-007/STT-011 |
 
@@ -49,7 +52,7 @@ This is transport locality, not a user role stored in `devices.json`. A reverse 
 - Import replaces/merges workspace state and export contains all chats; both are host-level data operations.
 - Ordinary chat, schedules, approvals, and read-only workspace browsing are the useful remote-device workflow and remain available.
 - Device management is administrative: a compromised remote token must not mint or revoke other tokens.
-- STT and app/skill permissions are not implemented yet, so their rows are explicit future constraints rather than hidden assumptions.
+- App record mutations and sign-in/reload are host-authority operations; capability inspection is read-only. STT and per-agent app/tool grants are not implemented yet, so their rows are explicit future constraints rather than hidden assumptions.
 
 ## Verification
 

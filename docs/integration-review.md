@@ -1,6 +1,8 @@
-# Provider and Connect Apps integration review
+# Provider and Connect Apps integration review (historical baseline)
 
-Reviewed: 2026-11-05. Scope: current working-tree source, routes/types, existing test definitions, packaging/CI configuration, and current upstream integration documentation. This is a static readiness review for planning; no account login, model request, app connection, live OAuth flow, new test run, package rebuild, or publication was performed.
+Reviewed: 2026-11-05. **Historical:** this review predates the M2 provider slice and M3 MCP/Connect Apps implementation. Rows below describe the starting gaps; use [project-roadmap.md](project-roadmap.md), the owning task boards, and [validation.md](validation.md) for current status.
+
+Scope: working-tree source, routes/types, existing test definitions, packaging/CI configuration, and upstream integration documentation at review time. This is a static readiness review for planning; no account login, model request, app connection, live OAuth flow, new test run, package rebuild, or publication was performed.
 
 [Master roadmap](project-roadmap.md) · [Task boards](roadmaps/README.md) · [Current state](current-state-review.md)
 

@@ -2,11 +2,11 @@
 
 Updated: 2026-11-05. [Master roadmap](../project-roadmap.md) · [Current state](../current-state-review.md)
 
-Current state: working adapter foundations with partial product lifecycles. The provider review and evidence are in [integration-review.md](../integration-review.md). A successful catalog request does not complete provider integration. **BEN-002 shared lifecycle is accepted (2026-11-05):** [record](../benchmarks/BEN-002-provider-lifecycle.md). **R1 scope is Codex/OpenCode only:** the 2026-11-05 D-02 amendment defers HTTP/Ollama/Gemini to the distant future.
+Current state: working adapter foundations with partial product lifecycles. The historical gap baseline is [integration-review.md](../integration-review.md); current evidence is in [validation.md](../validation.md). A successful catalog request does not complete provider integration. **BEN-002 shared lifecycle is accepted (2026-11-05):** [record](../benchmarks/BEN-002-provider-lifecycle.md). **R1 scope is Codex/OpenCode only:** the 2026-11-05 D-02 amendment defers HTTP/Ollama/Gemini to the distant future.
 
 The [reasoning board](reasoning-effort.md) owns model-specific settings; the [skills board](skills.md) owns skill management and runtime support. [ElevenLabs Speech-to-Text](speech-to-text.md) is a separate transcription connection that feeds the selected Agent, regardless of its LLM provider.
 
-All task statuses start **To do**: partial existing code is reviewed in the audit, and task closure requires the acceptance evidence below. Owner values are suggested roles, not assigned people. Targets: **R1** first public macOS release; **R2** subsequent product completion. Priority/status rules and the dependency process are in the master roadmap.
+Status is maintained in the tables below: PVD-001–016, CDX-004, and OPC-002 are Done; remaining M2 work is PVD-017, CDX/OPC, and EFF-008–012. Task closure requires the acceptance evidence below. Owner values are suggested roles, not assigned people. Targets: **R1** first public macOS release; **R2** subsequent product completion. Priority/status rules and the dependency process are in the master roadmap.
 
 ## Shared provider lifecycle
 

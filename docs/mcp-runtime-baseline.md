@@ -1,6 +1,6 @@
 # MCP runtime and protocol baseline
 
-Status: **MCP-002 recorded 2026-11-05.** Pins the R1 Codex/OpenCode MCP surfaces and the MCP transport baseline; deferred providers are excluded.
+Status: **MCP-002 recorded 2026-11-05; MCP-003/004/009/015 and HIL-001/002 implemented.** Pins the R1 Codex/OpenCode MCP surfaces and transport baseline; deferred providers are excluded.
 
 [Connect Apps board](roadmaps/connect-apps.md) · [BEN-008](benchmarks/BEN-008-mcp-runtime.md) · [Runtime baseline](runtime-baselines.md)
 

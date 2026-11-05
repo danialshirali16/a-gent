@@ -23,7 +23,7 @@ Updated: 2026-11-05. Active development scope: macOS. Windows and Android remain
 | Understand provider readiness and model identity | [Provider lifecycle](provider-lifecycle.md) — states, normalization, limits |
 | Map a release surface to its test/evidence | [Support matrix](support-matrix.md) — initial QA-001 baseline |
 | Benchmark a scope before development | [Benchmark process and records](benchmarks/README.md), [25 scope prerequisites](roadmaps/benchmarking.md), and [record template](benchmarks/template.md) |
-| Understand incomplete provider/MCP/app workflows | [Integration readiness review](integration-review.md) |
+| See the pre-M2/M3 provider/MCP gap baseline | [Integration readiness review](integration-review.md) — historical, superseded by the roadmap and validation |
 | Continue UI work and the 18-component process | [UI Roadmap](ui-roadmap.md) |
 | See which checks ran and which build they cover | [Validation record](validation.md) |
 
@@ -58,7 +58,7 @@ The initial 18-component pass is complete. Product integration remains partial. 
 
 First-release boundaries, the user's new requirements, and eleven decisions are in [the master](project-roadmap.md#decisions-to-record) and the [release contract](release-contract.md). After the 2026-11-05 D-02 amendment there are **191 R1, 28 R2**, 16 paused-platform, and 2 optional-scope tasks. Counts are acceptance packages rather than effort estimates; the boards have priorities, status, suggested roles, dependencies, and completion criteria.
 
-**M0 is accepted (2026-11-05):** BEN-001, FND-001, and FND-002 are Done; D-01–D-11 and the initial QA-001 matrix are recorded. **M1 is complete (2026-11-05):** BEN-001 and FND-001–FND-012 are Done. **M2 is in progress for Codex/OpenCode only:** BEN-002–BEN-004 and BEN-021/BEN-022 are accepted; shared provider, reasoning, credential, endpoint, and selection work is implemented. **M3 is in progress:** BEN-008–BEN-010 are accepted and MCP/Connect Apps implementation is next. Cloud/OpenAI-compatible, Ollama, and Gemini/Antigravity are deferred (D-02).
+**M0 is accepted (2026-11-05):** BEN-001, FND-001, and FND-002 are Done; D-01–D-11 and the initial QA-001 matrix are recorded. **M1 is complete (2026-11-05):** BEN-001 and FND-001–FND-012 are Done. **M2 is in progress for Codex/OpenCode only:** BEN-002–BEN-004 and BEN-021/BEN-022 are accepted; shared provider, reasoning, credential, endpoint, and selection work is implemented, with PVD-017/CDX/OPC/EFF-008–012 remaining. **M3 is in progress:** BEN-008–BEN-010 are accepted; MCP-001–005/MCP-009/MCP-015 and HIL-001/HIL-002 are Done, including scoped inventory, capability inspection, Codex OAuth start, runtime reload, and question/form answers. MCP-010/011/014 and HIL-003 are Review; remaining lifecycle/config/Connect Apps tasks are To do. Cloud/OpenAI-compatible, Ollama, and Gemini/Antigravity are deferred (D-02).
 
 ## Evidence and history
 

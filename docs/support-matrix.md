@@ -1,6 +1,6 @@
 # Release acceptance support matrix
 
-Status: **Recorded baseline for M0 on 2026-11-05.** This is the initial QA-001 support matrix required by M0. It maps every advertised R1 surface, negative state, and paused platform to an owner, a test or evidence location, and the gate that still has to accept it.
+Status: **Living R1 support matrix; M0 baseline recorded 2026-11-05.** It maps every advertised R1 surface, negative state, and paused platform to an owner, a test or evidence location, and the gate that still has to accept it. Rows are updated as implementation and validation evidence lands.
 
 This is not QA-001 acceptance. QA-001 depends on BEN-013 (quality strategy), which is still To do. The matrix must be updated as benchmarks, implementations, and real-service checks produce evidence. Per the 2026-11-05 D-02 amendment, **R1 advertises Codex and OpenCode only**; OpenAI-compatible/Cloud, Antigravity/Gemini, and Ollama are deferred.
 
@@ -32,10 +32,10 @@ This is not QA-001 acceptance. QA-001 depends on BEN-013 (quality strategy), whi
 | --- | --- | --- | --- | --- | --- |
 | Codex discovery/install | Finds supported Codex CLI or gives actionable install/unsupported-version guidance | Integrations | `tests/server/backend.test.ts` "Codex discovery…"; runtime baseline script | Partial | CDX-001 |
 | Codex sign-in/account | Existing external sign-in or supported managed sign-in; expiry/account change visible | Integrations + UI | CDX-002 real account smoke; backend fake account fixture | Partial / evidence gap | CDX-002, QA-008 |
-| Codex models/effort | Catalog; selected model's verified effort options/default | Integrations + UI | `tests/server/model-options.test.ts`; `docs/benchmarks/BEN-001-foundations.md`; EFF-012 | Partial (effort metadata discarded) | CDX-004, EFF-012 |
-| Codex chat | Stream reply, tool activity, Stop, restart/resume | Host + QA | `tests/server/backend.test.ts`; `tests/ui/smoke.spec.ts`; live `gpt-6.1-sol` smoke in [validation](validation.md#m2-real-provider-smoke) | Real chat smoke verified; tool/Stop/restart journey pending | CDX-003/006, QA-005/008 |
-| Codex work mode/approvals | Command/file/permission approvals; decline; no fabricated answers | Host + UI | backend approval/interrupt cases; side-panel approval smoke; HIL tests | Partial | CDX-005, HIL-006 |
-| Codex app/MCP use | Inventory and real tool use through the runtime | Integrations + QA | backend inventory assertions; MCP-022 real journey | Partial / evidence gap | MCP-022, QA-008 |
+| Codex models/effort | Catalog; selected model's verified effort options/default | Integrations + UI | `tests/server/model-options.test.ts`; `docs/benchmarks/BEN-001-foundations.md`; EFF-012 | Verified for Codex metadata/options; macOS assistive/zoom evidence pending | CDX-004, EFF-012 |
+| Codex chat | Stream reply, tool activity, Stop, restart/resume | Host + QA | `tests/server/backend.test.ts`; `tests/ui/smoke.spec.ts`; live `gpt-6.1-sol` smoke in [validation](validation.md#m2-real-provider-smoke) | Real chat, Stop, Work-mode write, restart, and resume smoke verified; tool journey pending | CDX-003/006, QA-005/008 |
+| Codex work mode/approvals | Command/file/permission approvals; decline; no fabricated answers | Host + UI | backend approval/interrupt cases; side-panel approval smoke; HIL tests | Partial (real HIL journey pending) | CDX-005, HIL-006 |
+| Codex app/MCP use | Inventory and real tool use through the runtime | Integrations + QA | backend inventory/capability fixtures; MCP-022 real journey | Partial / evidence gap (inventory and inspection verified; real tool use pending) | MCP-022, QA-008 |
 | Codex edit/remove/restart | Disconnect/reconnect, credential clear, restart recovery | Host + UI | PVD-005/006; QA-005 | Planned | PVD-005/006, QA-005 |
 | OpenCode discovery/auth | Supported CLI/version, auth/readiness distinct from model count | Integrations | `tests/server/backend.test.ts` "OpenCode provider…"; OPC-001 probe | Partial | OPC-001 |
 | OpenCode models/effort | Catalog and verified model variants/effort | Integrations + UI | OPC-001/004; EFF-012 | Partial (no variant mapping) | OPC-004, EFF-012 |
@@ -44,19 +44,19 @@ This is not QA-001 acceptance. QA-001 depends on BEN-013 (quality strategy), whi
 | OpenAI-compatible / Cloud | **Deferred to distant future — not R1** | Integrations + UI | Not part of R1 evidence | Deferred | Requires amended scope + BEN-005 + HTTP-006 |
 | Antigravity / Gemini | **Deferred to distant future — not R1** | Integrations | Not part of R1 evidence | Deferred | Requires amended scope + BEN-007 + GEM-004 |
 | Ollama | **Deferred to distant future — not R1** | Integrations | Not part of R1 evidence | Deferred | Requires amended scope + BEN-006 + OLL-004 |
-| Provider switch/binding | Provider/account/workspace/model change cannot reuse incompatible session | Host | FND-007 fixture; QA-004 reproduction | Planned | FND-007, QA-004 |
-| Provider failures | 401/403/404/408/429/5xx, timeout, malformed catalog, empty stream, retry policy | Host + QA | PVD-016 fixtures; HTTP-002; QA-003 | Planned | PVD-016, HTTP-002, QA-003 |
+| Provider switch/binding | Provider/account/workspace/model change cannot reuse incompatible session | Host | session-binding tests; FND-007 | Verified in fixtures | QA-004 |
+| Provider failures | 401/403/404/408/429/5xx, timeout, malformed catalog, empty stream, retry policy | Host + QA | PVD-016 fixtures; HTTP-002; QA-003 | Fixture-covered for R1 adapters; real journey evidence pending | QA-003 |
 
 ## MCP and Connect Apps
 
 | Surface | R1 claim | Owner | Test / evidence location | Current status | Gate |
 | --- | --- | --- | --- | --- | --- |
-| App inventory | Scoped inventory for the selected chat/workspace, pagination, status/auth mapping | Integrations + Host | backend inventory assertions; MCP-003 | Partial (global `lastThreadId`) | MCP-003 |
-| Add local stdio app | Add/configure/validate local server | Host + UI | MCP-005–007 tests | Planned | MCP-022 |
-| Add remote HTTP/OAuth app | Add, authenticate, re-auth, scope, revoke | Host + Integrations + UI | MCP-008–012; QA-008 real OAuth | Planned / evidence gap | MCP-022, QA-008 |
+| App inventory | Scoped inventory for the selected chat/workspace, pagination, status/auth mapping | Integrations + Host | `app-inventory.test.ts`; backend inventory assertions; MCP-003/004 | Verified in fixtures | MCP-022 |
+| Add local stdio app | Add/configure/validate local server | Host + UI | MCP-005–007 tests | Config record only; runtime add/adoption pending | MCP-006/007, MCP-022 |
+| Add remote HTTP/OAuth app | Add, authenticate, re-auth, scope, revoke | Host + Integrations + UI | MCP-005/008/009; backend OAuth fixture; QA-008 real OAuth | Codex OAuth start/correlation implemented; live OAuth, re-auth, scope, and revoke pending | MCP-010/011, MCP-022 |
 | App use in run | Tool call belongs to the run; activity and errors are visible | Integrations + QA | MCP-016–020; QA-005 | Partial (runtime-owned only) | MCP-022, QA-005 |
-| App disable/remove | Disable/remove without corrupting other connections or active runs | Host + UI | MCP-013/014; QA-005 | Planned | MCP-022 |
-| User questions/forms/approvals | Correlated question/form/URL/approval; decline/timeout/restart; no fabricated answer | Host + UI | `interactions.test.ts`; backend approval correlation; HIL-001–006; QA-005 | Approvals correlated/persisted; unsupported questions/forms recorded cancelled; real answer UI pending | HIL-006, QA-005 |
+| App disable/remove | Disable/remove without corrupting other connections or active runs | Host + UI | MCP-013/014; QA-005 | Reload implemented; disable/removal policy pending | MCP-013/014, MCP-022 |
+| User questions/forms/approvals | Correlated question/form/URL/approval; decline/timeout/restart; no fabricated answer | Host + UI | `interactions.test.ts`; `hil.test.ts`; backend question/form fixtures; HIL-001–006; QA-005 | Questions/forms answered and redacted in fixtures; approvals correlated; URL flow and real HIL journey pending | HIL-004/006, QA-005 |
 | Launch app catalog | Only verified connectors advertised; custom setup otherwise | Product + QA | D-05; MCP-018 evidence | Planned (candidates only) | MCP-022, REL-008 |
 
 ## Reasoning controls

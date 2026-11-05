@@ -2,9 +2,9 @@
 
 Updated: 2026-11-05. [Master roadmap](../project-roadmap.md) · [Current state](../current-state-review.md)
 
-Current state: Codex MCP inventory plus inherited runtime tool execution; connection management is incomplete. [Integration review](../integration-review.md) distinguishes server discovery from usable app workflows. Recommended R1 architecture uses provider adapters as execution/auth owners behind a host connection service; FND-001 must confirm that choice. A provider-independent MCP executor for HTTP models is tracked separately in FUT-001.
+Current state: scoped Codex/OpenCode inventory, capability inspection, Codex OAuth start, runtime reload, and correlated question/form answers are implemented; config adoption, enable/disable/removal, per-agent access, and real lifecycle acceptance remain. The [integration review](../integration-review.md) is the historical gap baseline. R1 architecture uses provider adapters as execution/auth owners behind a host connection service (D-03). A provider-independent MCP executor for HTTP models is tracked separately in FUT-001.
 
-All task statuses start **To do**: partial existing code is reviewed in the audit, and task closure requires the acceptance evidence below. Owner values are suggested roles, not assigned people. Targets: **R1** first public macOS release; **R2** subsequent product completion. Priority/status rules and the dependency process are in the master roadmap.
+Status is maintained in the tables below: MCP-001–005/009/015 and HIL-001/002 are Done; MCP-010/011/014 and HIL-003 are Review. Task closure requires the acceptance evidence below. Owner values are suggested roles, not assigned people. Targets: **R1** first public macOS release; **R2** subsequent product completion. Priority/status rules and the dependency process are in the master roadmap.
 
 ## MCP connection service and runtime adapters
 
@@ -70,3 +70,5 @@ Development gate: **BEN-010** in [the benchmark board](benchmarking.md) must hav
 ## Gate
 
 MCP-022 is the acceptance gate. Adding a card, displaying a tool count, or storing config does not close it; authentication, scoped execution, restart, disable, and removal must work end to end.
+
+**Current position (2026-11-05):** 9 of 40 M3 tasks Done (MCP-001–005, MCP-009, MCP-015, HIL-001–002); MCP-010/011/014 and HIL-003 are Review; the remaining lifecycle, Connect Apps, and acceptance tasks are To do. No live OAuth connector or live HIL journey has been exercised.

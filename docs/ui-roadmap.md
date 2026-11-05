@@ -4,7 +4,7 @@ Status: active
 Branch: `main`
 Active scope: macOS only
 
-Current focus: **complete provider and MCP/Connect Apps workflows after the completed 18/18 component pass**. The [source-based integration review](integration-review.md) separates the implemented UI foundations from incomplete connection/authentication/access/removal flows. Product milestones and task status now belong to [the completion roadmap](project-roadmap.md) and [workstream boards](roadmaps/README.md).
+Current focus: **complete provider and MCP/Connect Apps workflows after the completed 18/18 component pass**. The [historical integration review](integration-review.md) records the starting gaps; current status belongs to [the completion roadmap](project-roadmap.md), [workstream boards](roadmaps/README.md), and [validation](validation.md).
 
 Required next UI scopes also include [model-specific Thinking options](roadmaps/reasoning-effort.md), [Agent skill management](roadmaps/skills.md), and [ElevenLabs Speech-to-Text](roadmaps/speech-to-text.md). Their acceptance is separate from the completed component pass. Every UI/product scope must first complete its [benchmark comparison and design decisions](benchmarks/README.md); the boards carry explicit BEN dependencies before development can start.
 
@@ -60,9 +60,9 @@ The older phase checkboxes below describe the broader shell implementation. They
 
 The final pass ran typecheck, 17 backend tests, production build, 18 Playwright smoke tests, 10 visual baselines, 7 axe scans, and 7 E2E workflows; see [the validation record](validation.md#component-by-component-pass) and the [bot avatar checks](validation.md#bot-avatar-replacement). It also reviewed and corrected the Search field: reset legacy input styling that caused an inner box, single focus treatment, visible Connections field, ArrowDown/Up handoff into results, larger clear target, named search landmark, and correct results spacing. Details are in [search-component.md](search-component.md).
 
-Remaining UI work includes provider setup, app authentication/access/management, real questions/forms, and catalog corrections, alongside manual accessibility and release QA. Large-workspace/SSE checks, packaged notices, distribution, and resumed platform work are tracked in the master/task boards rather than implied complete by the component pass.
+Remaining UI work includes provider setup, app authentication/access/management, URL-flow and live HIL recovery, and catalog corrections, alongside manual accessibility and release QA. Supported question/form cards and the capability/reload/sign-in Connect Apps surfaces now exist in source. Large-workspace/SSE checks, packaged notices, distribution, and resumed platform work are tracked in the master/task boards rather than implied complete by the component pass.
 
-Current continuation: use the accepted FND-001/002 contracts, then deliver one provider/app vertical slice. UI owners use PVD-005/006/009/010/012 for model/provider setup and APP-001–APP-012 plus HIL-001–HIL-006 for Connect Apps and real user interactions. UX-001–UX-007 cover final integration/accessibility. Update task status in those boards, keeping this document for component process and UI evidence.
+Current continuation: M3 has scoped inventory, capability inspection, Codex OAuth start, runtime reload, and question/form cards implemented; finish config adoption, enable/disable/removal, per-agent access, and Connect Apps onboarding (APP-001–APP-012), then HIL-004–006 and live acceptance. UI owners use PVD-005/006/009/010/012 for model/provider setup. UX-001–UX-007 cover final integration/accessibility. Update task status in those boards, keeping this document for component process and UI evidence.
 
 The catalog regression toggle remains Demo data, Worst case, Empty, One choice, 1,000 models, and Invalid IDs, with URL persistence. [The report](model-options-stress-test.md) contains field contracts, reproductions, and verification limits.
 
@@ -87,7 +87,7 @@ Implemented:
 - `src/composer/ModelPicker.tsx`, `ProviderGlyph.tsx`, and `modelOptions.ts` — connected-only provider rail, searchable model names, and persistent Thinking footer; see [the review](model-picker-review.md).
 - `src/App.tsx` — new shell composition; conversations moved out of the sidebar.
 - `src/components.tsx` — brand mark alias, spinner, activities, modal wrapper, and the shared avatar/glyph re-exports from `src/ui/Avatar.tsx`.
-- `src/dialogs/ConnectionsDialog.tsx` — Reason-style connections catalog with Codex, OpenCode, Antigravity, Cloud, Ollama, OpenAI-compatible, local apps, and host pairing.
+- `src/dialogs/ConnectionsDialog.tsx` — models/apps/host connection catalog with Codex OAuth start, app capability inspection, reload, partial-inventory notices, and host pairing.
 - `src/dialogs/SettingsDialog.tsx` — full-window settings with Appearance, Models, Devices, Data, Shortcuts, and About; model statuses come from the host.
 - `src/dialogs/AgentsDialog.tsx` — agents grid modal.
 - `src/dialogs/SchedulesDialog.tsx` — scheduled tasks modal.

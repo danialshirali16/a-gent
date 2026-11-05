@@ -16,18 +16,18 @@ ElevenLabs as the initial STT provider, model-specific effort, skill management,
 
 Every section follows **benchmark → design decisions → development → verification**. The [benchmark board](roadmaps/benchmarking.md) defines 25 scope prerequisites; [the process and record template](benchmarks/README.md) define evidence and acceptance. Every delivery task has a BEN dependency. Existing source or upstream documentation alone does not mark a benchmark complete.
 
-**M0 status (2026-11-05): accepted.** [BEN-001](benchmarks/BEN-001-foundations.md), [FND-001](release-contract.md), and [FND-002](runtime-baselines.md) are Done; D-01–D-11 and the initial [QA-001 support matrix](support-matrix.md) are recorded. **M1 is complete:** FND-003–FND-012 are Done; the foundation set (BEN-001, FND-001–FND-012) is accepted. **M2 is in progress (Codex/OpenCode only):** BEN-002–BEN-004 and BEN-021/BEN-022 are accepted; shared readiness/catalog/model-ID, adapter capability, Codex reasoning/dynamic picker, session/Keychain credentials/disconnect, inference testing, endpoint policy, chat/agent selection scope, and core model-specific reasoning controls and verification are implemented (PVD-001–016; EFF-001–007/EFF-011), and real Codex/OpenCode turns passed. Remaining M2 work is PVD-017/CDX/OPC/EFF-008–012. **M3 is in progress:** BEN-008–BEN-010 are accepted and MCP/Connect Apps tasks are being implemented. Cloud/OpenAI-compatible, Ollama, and Gemini/Antigravity are deferred by the D-02 amendment. This acceptance covers foundations/compatibility, the shared provider lifecycle, and MCP/HIL scope, not product/speech/skills/release implementation.
+**M0 status (2026-11-05): accepted.** [BEN-001](benchmarks/BEN-001-foundations.md), [FND-001](release-contract.md), and [FND-002](runtime-baselines.md) are Done; D-01–D-11 and the initial [QA-001 support matrix](support-matrix.md) are recorded. **M1 is complete:** FND-003–FND-012 are Done; the foundation set (BEN-001, FND-001–FND-012) is accepted. **M2 is in progress (Codex/OpenCode only):** BEN-002–BEN-004 and BEN-021/BEN-022 are accepted; shared readiness/catalog/model-ID, adapter capability, Codex reasoning/dynamic picker, session/Keychain credentials/disconnect, inference testing, endpoint policy, chat/agent selection scope, and core model-specific reasoning controls and verification are implemented (PVD-001–016; EFF-001–007/EFF-011), and real Codex/OpenCode turns passed. Remaining M2 work is PVD-017/CDX/OPC/EFF-008–012. **M3 is in progress:** BEN-008–BEN-010 are accepted; MCP-001–005/MCP-009/MCP-015 and HIL-001/HIL-002 are Done, including scoped inventory, capability inspection, Codex OAuth start, runtime reload, and question/form answers. MCP-010/011/014 and HIL-003 are Review; lifecycle/config and Connect Apps tasks remain. Cloud/OpenAI-compatible, Ollama, and Gemini/Antigravity are deferred by the D-02 amendment. This acceptance covers foundations/compatibility, the shared provider lifecycle, and MCP/HIL scope, not product/speech/skills/release implementation.
 
 ## Source-based assessment
 
 The [integration review](integration-review.md) records exact source locations and upstream references. This planning pass inspected code and test definitions; it did not perform new account logins, model requests, MCP connections, live OAuth checks, test-suite runs, package rebuilds, or publication.
 
 - Provider adapters exist, but setup/authentication, readiness, persistence, editing/removal, model capabilities, and negative-path verification are incomplete.
-- Connect Apps currently refreshes an inventory of MCP servers already configured in Codex. It does not provide an end-to-end add/authenticate/scope/use/disable/remove workflow.
+- Connect Apps provides scoped Codex/OpenCode inventory, capability inspection, Codex OAuth start, and runtime reload. It does not yet provide the full add/adopt/enable/disable/remove workflow.
 - Existing Codex/OpenCode runtimes may execute externally configured tools. HTTP model adapters currently provide chat without their own MCP tool loop.
-- MCP elicitation is declined and tool questions receive empty answers. Supported user input needs a real interaction flow.
+- Supported tool questions and MCP forms are answered through correlated HIL records with schema validation; unsupported schemas decline explicitly. Live HIL acceptance remains.
 - The initial **18-component UI pass** is complete. Provider/MCP product completion and release readiness are separate milestones.
-- Seven modelOptions findings and three earlier backend findings remain open. Earlier green suites/packages do not certify the latest source.
+- Seven modelOptions findings remain open. Earlier backend findings are resolved by FND-005–007 except QA-004; earlier green suites/packages do not certify the latest source.
 - Codex model capability metadata is now preserved and the picker renders per-model enum options/defaults, but OpenCode mapping, migration, cross-surface controls, and EFF-012 verification remain. There is still no implemented STT adapter or Skills manager.
 
 ## Workstream map
@@ -36,7 +36,7 @@ The [integration review](integration-review.md) records exact source locations a
 | --- | ---: | --- |
 | [Foundations](#foundation-tasks) | 12 | BEN-001 and FND-001–012 accepted; M1 complete |
 | [Provider integration completion](roadmaps/providers.md) | 44 | R1 Codex/OpenCode only; HTTP/Ollama/Gemini deferred; shared lifecycle slice implemented |
-| [MCP and Connect Apps completion](roadmaps/connect-apps.md) | 40 | BEN-008–010 accepted; lifecycle implementation next |
+| [MCP and Connect Apps completion](roadmaps/connect-apps.md) | 40 | BEN-008–010 accepted; 9 M3 tasks Done, 4 Review; lifecycle/config and onboarding next |
 | [Model-specific reasoning controls](roadmaps/reasoning-effort.md) | 12 | Fixed options/defaults need capability-driven replacement |
 | [Agent skills](roadmaps/skills.md) | 20 | Creation/import/management/runtime flow missing |
 | [ElevenLabs Speech-to-Text](roadmaps/speech-to-text.md) | 18 | Required; not implemented |
@@ -74,7 +74,7 @@ Technical choices can be resolved during their tasks, but changes to a product p
 | M0 — scope and compatibility | Benchmark foundations, agree product promises, runtime support, and owners | **Accepted 2026-11-05:** [BEN-001](benchmarks/BEN-001-foundations.md), [FND-001](release-contract.md), and [FND-002](runtime-baselines.md) accepted; D-01–D-11 and the [QA-001 support matrix](support-matrix.md) recorded |
 | M1 — reliable foundations | Stable schemas, authority, secret/config interfaces, sessions, cancellation, persistence, and pending interactions | **Accepted 2026-11-05:** FND-003 through FND-012 accepted; priority backend reproductions have an owned correction path (QA-004) |
 | M2 — providers and reasoning | Complete every advertised R1 provider and model-specific settings | **In progress:** BEN-002 shared lifecycle accepted 2026-11-05; remaining R1 provider tasks, PVD-017, and EFF-012 still required |
-| M3 — MCP and Connect Apps | Complete connection/auth/access/use/removal rather than only inventory | **In progress:** BEN-008–BEN-010 accepted 2026-11-05; MCP-022/APP-012/HIL-006 still required |
+| M3 - MCP and Connect Apps | Complete connection/auth/access/use/removal rather than only inventory | **In progress:** BEN-008–BEN-010 accepted 2026-11-05; scoped inventory, capabilities, OAuth start, reload, and HIL answers implemented; MCP-022/APP-012/HIL-006 still required |
 | M4 — product, speech, and skills | Close R1 core/UI gaps and deliver requested speech/skills journeys | R1 product tasks, STT-018, and SKL-020 accepted; the seven catalog findings closed through their owning provider tasks |
 | M5 — release quality | Verify the actual candidate and all advertised journeys | QA-012 accepted with fresh regression, failure/recovery, real-integration, performance, and packaged evidence |
 | M6 — first public release | Sign, notarize, pilot, and publish the approved candidate | REL-012 accepted; exact tag/commit, artifacts, hashes, release notes, support and rollback recorded |
