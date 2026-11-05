@@ -28,7 +28,8 @@
     "test:visual": "npm run build && playwright test --project=visual",
     "test:visual:update": "npm run build && playwright test --project=visual --update-snapshots",
     "test:a11y": "npm run build && playwright test --project=accessibility",
-    "test:e2e": "npm run build && playwright test --project=e2e"
+    "test:e2e": "npm run build && playwright test --project=e2e",
+    "runtime:baseline": "node scripts/runtime-baseline.mjs"
   },
   "dependencies": {
     "@capacitor/android": "8.6.0",

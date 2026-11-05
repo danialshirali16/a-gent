@@ -31,4 +31,4 @@ The owning delivery board is the status source for implementation. [The benchmar
 
 ## Research coverage
 
-Record required product/account access, corpus permissions, and real-service budgets in the benchmark plan. Use documented behavior or fixtures where live access is unavailable, label the limitation, and leave required real-world acceptance open. This roadmap update adds the process and tasks; it does not perform the comparisons or live-service checks.
+Record required product/account access, corpus permissions, and real-service budgets in the benchmark plan. Use documented behavior or fixtures where live access is unavailable, label the limitation, and leave required real-world acceptance open. BEN-001 ([foundations](BEN-001-foundations.md)) and BEN-002 ([shared provider lifecycle](BEN-002-provider-lifecycle.md)) are the first accepted records; they cover foundations and the shared lifecycle only. The remaining comparisons and live-service checks are still To do.

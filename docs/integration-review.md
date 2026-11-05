@@ -42,7 +42,7 @@ These are recommendations inferred from the source gaps, not implemented feature
 2. For R1, prefer the supported Codex/OpenCode runtime as the owner of its MCP execution/auth lifecycle, exposed through adapters. Avoid a second uncontrolled process/config/auth path for the same connection.
 3. Manage A Gent-owned connections explicitly; discover existing external configuration without silently overwriting it. Support reviewed adoption with atomic changes and rollback.
 4. Treat model, app, agent, workspace, host, and account identities as separate scoped records. Make effective grants and available tools observable.
-5. Keep HTTP-only model adapters accurately scoped until a tested model/tool execution loop exists. FUT-001 is required if FND-001 decides all launch models must execute MCP tools.
+5. Keep HTTP-only model adapters accurately scoped until a tested model/tool execution loop exists. FND-001 keeps FUT-001 in R2; promoting provider-independent MCP for HTTP models requires a new scope decision and benchmark.
 6. Distinguish raw MCP servers, provider-native apps, and any later plugin marketplace. The app inventory currently implements only the first subset through Codex.
 7. Preserve authoritative model reasoning capabilities and validate the effective model's native parameters. Unknown metadata uses provider default; skill instructions respect the same runtime permission boundary as other Agent input.
 8. Keep ElevenLabs transcription separate from model inference: deliberate microphone capture produces an editable draft, then explicit Send invokes the selected Agent with its model, effort, skills and tool policy.

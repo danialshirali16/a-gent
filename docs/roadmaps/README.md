@@ -15,8 +15,10 @@ Updated: 2026-11-05. The [master roadmap](../project-roadmap.md) defines milesto
 | [Paused platforms and later product completion](platforms-next.md) | 20 | Windows/Android and later product scope |
 | [Benchmark prerequisites](benchmarking.md) | 25 | Scope-specific peer/reference comparison and design decisions before development |
 
-Total: **237 tasks**. Targets: **208 R1**, **11 R2**, **16 paused platform**, **2 optional-scope** tasks. These include 25 benchmark tasks and 212 delivery tasks. Counts describe acceptance packages, not effort or percentage completion.
+Total: **237 tasks**. After the 2026-11-05 D-02 amendment: **191 R1**, **28 R2**, **16 paused platform**, **2 optional-scope** tasks. These include 25 benchmark tasks and 212 delivery tasks. Counts describe acceptance packages, not effort or percentage completion.
 
 Every new task starts To do. Existing partial implementation is documented in [the integration review](../integration-review.md); move a task to Done only when its acceptance evidence is linked in [validation](../validation.md). Update status in its owning board rather than copying task lists into other documents.
 
-All 25 delivery sections have a BEN dependency and development gate. Follow [benchmark → design decisions → development → verification](../benchmarks/README.md); an accepted scope-matched comparison is required before Ready. Start with BEN-001, then FND-001/002. Candidate peers in the benchmark board have not been assessed by this documentation update.
+**M0 accepted (2026-11-05):** BEN-001, FND-001, and FND-002 are Done; D-01–D-11 and the initial QA-001 matrix are recorded. **M1 is complete (2026-11-05):** BEN-001 and FND-001–FND-012 are Done. **M2 is in progress for Codex/OpenCode only:** BEN-002–BEN-004 and BEN-021/BEN-022 are accepted, plus shared readiness/catalog/model-ID, credentials/disconnect, inference test, and endpoint policy (PVD-001–014 Done; EFF-001–004/006/007 Done). Cloud/OpenAI-compatible, Ollama, and Gemini/Antigravity are deferred. Next: provider/effort implementation and the first Codex/app vertical slice; MCP/product/speech/skills benchmarks remain parallel tracks.
+
+All 25 delivery sections have a BEN dependency and development gate. Follow [benchmark → design decisions → development → verification](../benchmarks/README.md); an accepted scope-matched comparison is required before Ready. The remaining benchmark peers have not been assessed by this documentation update.

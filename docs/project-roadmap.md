@@ -12,9 +12,11 @@ Finish the promised provider and app workflows, complete the core local workspac
 
 **R2** retains broader product completion: multiple connection profiles, provider-independent MCP execution for HTTP models, binary attachments, recurring schedules, branching, richer files, usage, and selected team workflows. **Paused** tasks preserve Windows and Android delivery. **Optional** native/browser control and later signed updates need their own accepted scope. Speech-to-Text is required; spoken replies, voice calls, and always-listening behavior need separate scope. Reason's private cloud and billing remain outside scope.
 
-ElevenLabs as the initial STT provider, model-specific effort, skill management, and benchmarking before development are user requirements. The other recommended release boundaries and unresolved choices are recorded through FND-001 before implementation scheduling. A feature promoted into R1 brings its tests, dependencies, and release gate with it; a deferred feature remains visibly open.
+ElevenLabs as the initial STT provider, model-specific effort, skill management, and benchmarking before development are user requirements. The other release boundaries and choices are now recorded through FND-001; a feature promoted into R1 brings its tests, dependencies, and release gate with it, and a deferred feature remains visibly open.
 
 Every section follows **benchmark → design decisions → development → verification**. The [benchmark board](roadmaps/benchmarking.md) defines 25 scope prerequisites; [the process and record template](benchmarks/README.md) define evidence and acceptance. Every delivery task has a BEN dependency. Existing source or upstream documentation alone does not mark a benchmark complete.
+
+**M0 status (2026-11-05): accepted.** [BEN-001](benchmarks/BEN-001-foundations.md), [FND-001](release-contract.md), and [FND-002](runtime-baselines.md) are Done; D-01–D-11 and the initial [QA-001 support matrix](support-matrix.md) are recorded. **M1 is complete:** FND-003–FND-012 are Done; the foundation set (BEN-001, FND-001–FND-012) is accepted. **M2 is in progress (Codex/OpenCode only):** BEN-002–BEN-004 and BEN-021/BEN-022 are accepted; shared readiness/catalog/model-ID, adapter capability, Codex reasoning/dynamic picker, session/Keychain credentials/disconnect, inference testing, endpoint policy, chat/agent selection scope, and core model-specific reasoning controls and verification are implemented (PVD-001–016; EFF-001–007/EFF-011), and real Codex/OpenCode turns passed. Remaining M2 work is PVD-017/CDX/OPC/EFF-008–012. **M3 is in progress:** BEN-008–BEN-010 are accepted and MCP/Connect Apps tasks are being implemented. Cloud/OpenAI-compatible, Ollama, and Gemini/Antigravity are deferred by the D-02 amendment. This acceptance covers foundations/compatibility, the shared provider lifecycle, and MCP/HIL scope, not product/speech/skills/release implementation.
 
 ## Source-based assessment
 
@@ -26,26 +28,28 @@ The [integration review](integration-review.md) records exact source locations a
 - MCP elicitation is declined and tool questions receive empty answers. Supported user input needs a real interaction flow.
 - The initial **18-component UI pass** is complete. Provider/MCP product completion and release readiness are separate milestones.
 - Seven modelOptions findings and three earlier backend findings remain open. Earlier green suites/packages do not certify the latest source.
-- Effort options/defaults are still global, model capability metadata is discarded, and there is no implemented STT adapter or Skills manager. The three new feature boards describe required work rather than shipped behavior.
+- Codex model capability metadata is now preserved and the picker renders per-model enum options/defaults, but OpenCode mapping, migration, cross-surface controls, and EFF-012 verification remain. There is still no implemented STT adapter or Skills manager.
 
 ## Workstream map
 
 | Board | Tasks | Readiness today |
 | --- | ---: | --- |
-| [Foundations](#foundation-tasks) | 12 | Contracts, decisions, and reliability hardening required |
-| [Provider integration completion](roadmaps/providers.md) | 44 | Partial |
-| [MCP and Connect Apps completion](roadmaps/connect-apps.md) | 40 | Inventory exists; lifecycle incomplete |
+| [Foundations](#foundation-tasks) | 12 | BEN-001 and FND-001–012 accepted; M1 complete |
+| [Provider integration completion](roadmaps/providers.md) | 44 | R1 Codex/OpenCode only; HTTP/Ollama/Gemini deferred; shared lifecycle slice implemented |
+| [MCP and Connect Apps completion](roadmaps/connect-apps.md) | 40 | BEN-008–010 accepted; lifecycle implementation next |
 | [Model-specific reasoning controls](roadmaps/reasoning-effort.md) | 12 | Fixed options/defaults need capability-driven replacement |
 | [Agent skills](roadmaps/skills.md) | 20 | Creation/import/management/runtime flow missing |
 | [ElevenLabs Speech-to-Text](roadmaps/speech-to-text.md) | 18 | Required; not implemented |
 | [Core product and UI completion](roadmaps/product.md) | 22 | Working foundations; gaps remain |
 | [Quality, packaging, and release](roadmaps/quality-release.md) | 24 | Historical tests/packages; new candidate required |
 | [Paused platforms and later product completion](roadmaps/platforms-next.md) | 20 | Paused / later scope |
-| [Benchmark prerequisites](roadmaps/benchmarking.md) | 25 | Scope comparisons required before development |
+| [Benchmark prerequisites](roadmaps/benchmarking.md) | 25 | BEN-001–004/BEN-008–010/BEN-021–022 accepted; 13 R1 comparisons remain; BEN-005/006/007 deferred |
 
-**237 tracked acceptance tasks:** 208 R1, 11 R2, 16 paused-platform, and 2 optional-scope tasks. These counts include benchmark prerequisites and describe completion packages, not effort estimates or percentage completion. All start To do; partial existing code is accounted for in the review.
+**237 tracked acceptance tasks:** **191 R1, 28 R2**, 16 paused-platform, and 2 optional-scope tasks. The 2026-11-05 D-02 amendment moved 17 provider/benchmark tasks (HTTP/Ollama/Gemini plus BEN-005/006/007) from R1 to R2 “distant future.” As of 2026-11-05, BEN-001–004/BEN-008–010/BEN-021–022, FND-001–FND-012, PVD-001–016, MCP-001/MCP-002/MCP-005, HIL-001, CDX-004, OPC-002, and EFF-001–007/EFF-011 are Done. R1 provider focus is Codex/OpenCode only.
 
 ## Decisions to record
+
+**Recorded 2026-11-05:** D-01–D-11 are accepted in [the release contract](release-contract.md). The table below is retained as the trace from the original recommendation to the accepted record.
 
 | Decision | Recommended starting position | Record needed before dependent work |
 | --- | --- | --- |
@@ -67,10 +71,10 @@ Technical choices can be resolved during their tasks, but changes to a product p
 
 | Milestone | Purpose | Exit evidence |
 | --- | --- | --- |
-| M0 — scope and compatibility | Benchmark foundations, agree product promises, runtime support, and owners | BEN-001 and FND-001/002 accepted; D-01–D-11 and the QA-001 support matrix recorded |
-| M1 — reliable foundations | Stable schemas, authority, secret/config interfaces, sessions, cancellation, persistence, and pending interactions | FND-003 through FND-012 accepted; priority backend reproductions have an owned correction path |
-| M2 — providers and reasoning | Complete every advertised R1 provider and model-specific settings | R1 provider tasks, PVD-017, and EFF-012 accepted, including real supported-provider/model journeys |
-| M3 — MCP and Connect Apps | Complete connection/auth/access/use/removal rather than only inventory | MCP-022 accepted with app onboarding and human-input recovery evidence |
+| M0 — scope and compatibility | Benchmark foundations, agree product promises, runtime support, and owners | **Accepted 2026-11-05:** [BEN-001](benchmarks/BEN-001-foundations.md), [FND-001](release-contract.md), and [FND-002](runtime-baselines.md) accepted; D-01–D-11 and the [QA-001 support matrix](support-matrix.md) recorded |
+| M1 — reliable foundations | Stable schemas, authority, secret/config interfaces, sessions, cancellation, persistence, and pending interactions | **Accepted 2026-11-05:** FND-003 through FND-012 accepted; priority backend reproductions have an owned correction path (QA-004) |
+| M2 — providers and reasoning | Complete every advertised R1 provider and model-specific settings | **In progress:** BEN-002 shared lifecycle accepted 2026-11-05; remaining R1 provider tasks, PVD-017, and EFF-012 still required |
+| M3 — MCP and Connect Apps | Complete connection/auth/access/use/removal rather than only inventory | **In progress:** BEN-008–BEN-010 accepted 2026-11-05; MCP-022/APP-012/HIL-006 still required |
 | M4 — product, speech, and skills | Close R1 core/UI gaps and deliver requested speech/skills journeys | R1 product tasks, STT-018, and SKL-020 accepted; the seven catalog findings closed through their owning provider tasks |
 | M5 — release quality | Verify the actual candidate and all advertised journeys | QA-012 accepted with fresh regression, failure/recovery, real-integration, performance, and packaged evidence |
 | M6 — first public release | Sign, notarize, pilot, and publish the approved candidate | REL-012 accepted; exact tag/commit, artifacts, hashes, release notes, support and rollback recorded |
@@ -93,30 +97,30 @@ QA and packaging preparation start alongside implementation after their own benc
 
 ## Foundation tasks
 
-Development gate: **BEN-001** in [the benchmark board](roadmaps/benchmarking.md) must have an accepted, scope-matched record before these tasks enter Ready or implementation.
+Development gate: **BEN-001** is accepted for this scope (2026-11-05). **All foundation tasks FND-001–FND-012 are Done.** Provider/MCP/product/speech/skills work now moves to its own benchmarks and delivery boards.
 
 | ID | Target | Priority | Status | Owner | Depends on | Task and acceptance |
 | --- | --- | --- | --- | --- | --- | --- |
-| FND-001 | R1 | P0 | To do | Product | BEN-001 | **Confirm the release contract and open decisions.** Done when: D-01 through D-11 record choices, the requested speech/model-effort/skills and benchmark requirements, launch support matrix, exclusions, and owner acceptance; no unfinished feature is relabeled complete. |
-| FND-002 | R1 | P0 | To do | Integrations | BEN-001, FND-001 | **Capture runtime versions and capability/schema baselines.** Done when: Supported Node/Electron/Codex/OpenCode versions and generated/probed interfaces are recorded with fixtures; unsupported methods have a defined fallback. |
-| FND-003 | R1 | P0 | To do | Host | BEN-001, FND-001 | **Version the durable data and integration schemas.** Done when: Provider/profile bindings, app/skill ownership and scope, model-specific effort, non-secret speech settings, and migrations preserve existing workspaces with rollback/import tests. |
-| FND-004 | R1 | P0 | To do | Host + Product | BEN-001, FND-001 | **Define host/device authority and tool access boundaries.** Done when: Provider/STT credentials, endpoint changes, local process setup, app/tool grants, skill configuration, microphone capture versus remote transcription-session rights, and device management have explicit roles enforced by API tests. |
-| FND-005 | R1 | P0 | To do | Host | BEN-001, FND-004 | **Bind event streams to authenticated devices.** Done when: Rotation/revocation closes affected active streams and rejects subsequent requests; unrelated devices remain connected. |
-| FND-006 | R1 | P0 | To do | Host | BEN-001, FND-003 | **Define durable run and interruption lifecycle.** Done when: Pending/running/waiting/interrupted/failure transitions, reservation release, process termination confirmation, and shutdown recovery are consistent across adapters. |
-| FND-007 | R1 | P0 | To do | Host | BEN-001, FND-003 | **Isolate provider session bindings.** Done when: Provider/account/workspace/model changes cannot reuse an incompatible session ID; existing conversation bindings migrate or rebuild deliberately. |
-| FND-008 | R1 | P0 | To do | Host | BEN-001, FND-003 | **Verify atomic persistence and recovery contracts.** Done when: Concurrent saves, write failures, valid backup retention, imports/migrations, locks, and restart produce recoverable state without silently losing data. |
-| FND-009 | R1 | P0 | To do | Host | BEN-001, FND-003, FND-004, FND-006 | **Add correlated pending interaction state.** Done when: Approval/question/form/URL requests belong to a specific host/run/thread and survive or cancel correctly across refresh, restart, and host switch. |
-| FND-010 | R1 | P0 | To do | Host | BEN-001, FND-006 | **Define timeout budgets and cancellation primitives.** Done when: Shared startup/catalog/auth/tool/interaction/stream/shutdown budgets and cleanup primitives have tests; each feature board applies them to its own lifecycle. |
-| FND-011 | R1 | P1 | To do | Host + QA | BEN-001, FND-003 | **Standardize diagnostics and error events.** Done when: Request/run/provider/app IDs support debugging; user-facing errors recover; tokens, keys, private arguments, and arbitrary provider error text are redacted. |
-| FND-012 | R1 | P0 | To do | Host | BEN-001, FND-003, FND-004 | **Define shared config/secret storage interfaces.** Done when: Typed config and credential references have ownership, atomic updates, rollback, export exclusion, and migration tests before new integrations depend on them. |
+| FND-001 | R1 | P0 | Done | Product | BEN-001 | **Confirm the release contract and open decisions.** Accepted 2026-11-05: D-01–D-11, R1 boundaries, launch support matrix, exclusions, and owner acceptance are recorded in [the release contract](release-contract.md); no unfinished feature is relabeled complete. |
+| FND-002 | R1 | P0 | Done | Integrations | BEN-001, FND-001 | **Capture runtime versions and capability/schema baselines.** Accepted 2026-11-05: Node/Electron/Codex/OpenCode versions, generated Codex schema, OpenCode OpenAPI, fixtures, and unsupported-method fallbacks are recorded in [the runtime baseline](runtime-baselines.md) and verified by `scripts/runtime-baseline.mjs`. |
+| FND-003 | R1 | P0 | Done | Host | BEN-001, FND-001 | **Version the durable data and integration schemas.** Accepted 2026-11-05: workspace v2 adds provider/profile bindings, scoped app/skill records, chat effort, and non-secret speech settings; v1 migration, backup recovery, export stripping, and merge rules pass. Record: [durable workspace schema](data-schema.md). |
+| FND-004 | R1 | P0 | Done | Host + Product | BEN-001, FND-001 | **Define host/device authority and tool access boundaries.** Accepted 2026-11-05: administrator, host desktop, and remote-device roles are defined; provider credentials, endpoints, defaults, speech, import/export, and device management are host-authority operations enforced by API tests. Future app/skill/STT boundaries are explicit. Record: [authority model](authority-model.md). |
+| FND-005 | R1 | P0 | Done | Host | BEN-001, FND-004 | **Bind event streams to authenticated devices.** Accepted 2026-11-05: SSE clients carry the authenticated device ID; rotation/revocation closes affected streams and invalidates old tokens; unrelated device streams remain connected. Record: [authority model](authority-model.md#verification). |
+| FND-006 | R1 | P0 | Done | Host | BEN-001, FND-003 | **Define durable run and interruption lifecycle.** Accepted 2026-11-05: reservation holds until provider cleanup; Codex waits for turn/exit; OpenCode escalates SIGTERM→SIGKILL and settles only after child exit; shutdown persists active messages as interrupted. Record: [run lifecycle](run-lifecycle.md). |
+| FND-007 | R1 | P0 | Done | Host | BEN-001, FND-003 | **Isolate provider session bindings.** Accepted 2026-11-05: runtime reuse requires matching provider/kind/profile/workspace/model and a non-empty thread; mismatches and legacy thread IDs clear the binding and rebuild deliberately. Record: [durable workspace schema](data-schema.md#runtime-session-reuse-fnd-007). |
+| FND-008 | R1 | P0 | Done | Host | BEN-001, FND-003 | **Verify atomic persistence and recovery contracts.** Accepted 2026-11-05: writes are snapshotted and serialized, fsynced temp files replace atomically, one backup generation is retained, failed imports roll back, and lock/restart/corrupt-primary recovery pass. Record: [persistence](persistence.md). |
+| FND-009 | R1 | P0 | Done | Host | BEN-001, FND-003, FND-004, FND-006 | **Add correlated pending interaction state.** Accepted 2026-11-05: interaction records carry host/run/conversation/provider/thread identity; approvals persist and resolve, unsupported questions/forms are recorded cancelled, pending records expire on restart, and hosts are isolated. Record: [interactions](interactions.md). |
+| FND-010 | R1 | P0 | Done | Host | BEN-001, FND-006 | **Define timeout budgets and cancellation primitives.** Accepted 2026-11-05: shared startup/catalog/auth/tool/session/interrupt/stream/interaction/shutdown/termination/heartbeat budgets and budgetSignal/combineBudget/withBudget helpers are applied across adapters and covered by tests. Record: [timeouts](timeouts.md). |
+| FND-011 | R1 | P1 | Done | Host + QA | BEN-001, FND-003 | **Standardize diagnostics and error events.** Accepted 2026-11-05: request IDs on HTTP/SSE errors, run/provider correlation, structured error envelope, redaction of tokens/keys/credentials/provider text, and focused tests. Record: [diagnostics](diagnostics.md). |
+| FND-012 | R1 | P0 | Done | Host | BEN-001, FND-003, FND-004 | **Define shared config/secret storage interfaces.** Accepted 2026-11-05: owner-scoped ConfigStore with versioning/migration/atomic rollback, SecretStore with memory and encrypted-file backends, export exclusion, and tests. Record: [config and secrets](config-secrets.md). |
 
 ## Recommended execution order
 
-1. Complete BEN-001, then FND-001/002; assign actual owners, capture versions, and agree D-01–D-11 and the launch support matrix.
-2. Establish schema/authority/run/session foundations. Prioritize SSE revocation, confirmed OpenCode termination, and provider binding so new integrations inherit reliable behavior.
-3. Complete the relevant provider/reasoning benchmarks, then shared readiness, credentials, catalog normalization, model-specific effort, and selection semantics. Preserve the supplied picker layout.
+1. **Done (2026-11-05):** BEN-001, FND-001, and FND-002; D-01–D-11, versions/fixtures, and the launch support matrix are recorded.
+2. **Done (2026-11-05):** FND-003–FND-012; schema, authority, SSE binding, run lifecycle, session binding, persistence, interactions, timeouts, diagnostics, and config/secret foundations. Start the scoped provider/MCP/product benchmarks next.
+3. **Done for the R1 Codex/OpenCode scope:** BEN-002–BEN-004 and BEN-021/BEN-022, plus shared readiness/catalog/model-ID. Next: credentials, provider journeys, model-specific effort, and selection semantics. BEN-005/006/007 are deferred.
 4. Benchmark and deliver one vertical slice: Codex setup → selected model/valid effort → one app connection → authentication/access → real tool use → interruption/restart → disable/remove. Include a question/form case.
-5. Complete the skills comparisons, then create/import → enable for an Agent → actual use → edit/update → disable/remove; finish OpenCode and HTTP/Ollama/Google provider journeys after their scoped benchmarks.
+5. Complete the skills comparisons, then create/import → enable for an Agent → actual use → edit/update → disable/remove; finish the OpenCode journey after BEN-004.
 6. Benchmark ElevenLabs API, recording UX, and evaluation methods; connect the key → speak → edit transcript → Send through the selected Agent. Verify cleanup, quality/cost, and signed-Mac microphone behavior.
 7. Finish R1 core, Connect Apps, and accessibility after their comparisons. Repeat adversarial catalog, effort, app, speech, and skill fixtures.
 8. Complete QA/release benchmarks, then candidate verification, signing, clean-machine install/upgrade, and pilot checks; publish only the reviewed artifact set.
@@ -150,7 +154,7 @@ A UI control, successful catalog fetch, fixture pass, or old screenshot is not s
 
 ### Tracking and progress
 
-Maintain task status in the owning board, decisions in this master, current behavior in current-state-review, and executed evidence in validation. Report completed versus total **R1 acceptance tasks**, the active vertical slice, remaining P0/P1 items, and concrete blockers. Do not use speculative overall completion percentages.
+Maintain task status in the owning board, decisions in this master and [the release contract](release-contract.md), current behavior in current-state-review, and executed evidence in validation. Report completed versus total **R1 acceptance tasks**, the active vertical slice, remaining P0/P1 items, and concrete blockers. Do not use speculative overall completion percentages. Current position: **51 of 191 R1 tasks Done** (BEN-001–004/BEN-008–010/BEN-021–022, FND-001–FND-012, PVD-001–PVD-016, MCP-001/MCP-002/MCP-005, HIL-001, CDX-004, OPC-002, EFF-001–EFF-007/EFF-011); M3 benchmarks accepted, app-record CRUD and HIL routing implemented. **M1 is complete, M2 is in progress for Codex/OpenCode.** Next: provider/effort implementation and the first Codex/app vertical slice.
 
 Use issue tracking later if useful, retaining these IDs and acceptance criteria. Creating this roadmap does not create external issues, run production changes, or authorize publication.
 
@@ -176,6 +180,24 @@ R1 shipping does not close R2, paused, or optional tasks. Original cross-platfor
 ## Evidence and document ownership
 
 - [Integration review](integration-review.md): source-based current gaps and checked upstream references.
+- [Release contract](release-contract.md): FND-001 decisions D-01–D-11, R1 boundaries, owners, and support summary.
+- [Runtime baseline](runtime-baselines.md): FND-002 versions, generated interfaces, fixtures, and unsupported-method fallbacks.
+- [Durable workspace schema](data-schema.md): FND-003 v2 fields, migration/rollback/import behavior, and tests.
+- [Authority model](authority-model.md): FND-004 roles, API boundary, future app/skill/STT constraints, and tests.
+- [Run lifecycle](run-lifecycle.md): FND-006 states, Stop/termination rules, shutdown recovery, and tests.
+- [Persistence](persistence.md): FND-008 atomic writes, backup/recovery, import transaction, locks, and tests.
+- [Interactions](interactions.md): FND-009 correlated approvals/questions/forms, restart expiry, host isolation, and tests.
+- [Timeouts](timeouts.md): FND-010 shared budgets, cancellation primitives, adapter mapping, and tests.
+- [Diagnostics](diagnostics.md): FND-011 request/run/provider correlation, redaction, error envelope, and tests.
+- [Config and secrets](config-secrets.md): FND-012 owner-scoped config, credential interfaces, encryption, migration, and tests.
+- [Support matrix](support-matrix.md): initial QA-001 mapping of advertised surfaces and negative states to owners/tests/evidence.
+- [BEN-001 record](benchmarks/BEN-001-foundations.md): foundation comparison and acceptance.
+- [BEN-002 record](benchmarks/BEN-002-provider-lifecycle.md): shared provider lifecycle contract and acceptance.
+- [BEN-003 record](benchmarks/BEN-003-codex-integration.md): Codex login, model capability, turn/Stop, approvals, and CDX mapping.
+- [BEN-004 record](benchmarks/BEN-004-opencode-integration.md): OpenCode auth, sessions, events, permissions, Stop/cleanup, and OPC mapping.
+- [BEN-021 record](benchmarks/BEN-021-reasoning-capability.md): model-specific reasoning capability contract and EFF mapping.
+- [BEN-022 record](benchmarks/BEN-022-thinking-controls.md): picker/cross-surface Thinking-control decisions and EFF mapping.
+- [Provider lifecycle implementation](provider-lifecycle.md): readiness states, capabilities, normalization, limits, and API guard.
 - [Task boards](roadmaps/README.md): detailed tasks and status.
 - [Benchmark process and records](benchmarks/README.md): scope comparisons, design decisions, reviewer acceptance, and recheck triggers.
 - [Current state](current-state-review.md): implemented behavior and unresolved issues.

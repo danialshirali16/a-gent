@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { CalendarClock, ChevronDown, FolderPlus, MoreHorizontal, PanelLeftClose, Pencil, Plug, Plus, Search, Settings2, Trash2, UsersRound } from 'lucide-react';
+import { isProviderReady } from '../../shared/providers';
 import type { Agent, Conversation, Group, ProviderInfo, Run } from '../../shared/types';
 import { AgentGlyph, IconButton } from '../components';
 import { Menu } from '../ui/Menu';
@@ -28,7 +29,7 @@ export interface SidebarProps {
 export function Sidebar(props: SidebarProps) {
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
   const primary = props.agents.find(agent => agent.id === 'primary') || props.agents[0];
-  const connected = props.providers.some(provider => provider.status === 'connected');
+  const connected = props.providers.some(isProviderReady);
   const primaryIsGrouped = primary && props.agentGroups.some(group => group.id === primary.agentGroupId);
   const groupedAgents = props.agentGroups.map(group => ({ group, agents: props.agents.filter(agent => agent.agentGroupId === group.id) }));
   const unassigned = props.agents.filter(agent => agent.id !== primary?.id && (!agent.agentGroupId || !props.agentGroups.some(group => group.id === agent.agentGroupId)));

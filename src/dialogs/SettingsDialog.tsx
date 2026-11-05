@@ -1,3 +1,4 @@
+import { providerReadiness, readinessLabel } from '../../shared/providers';
 import { Input } from '../ui/Input';
 import { Field } from '../ui/Field';
 import { Switch } from '../ui/Checkbox';
@@ -154,7 +155,7 @@ export function SettingsDialog({ state, providers, api, connection, onError, onR
           <h2>Models</h2>
           <p className="settings-lead">Use the agents and model connections available on this host.</p>
           <div className="settings-group">
-            {providers.map(provider => <div className="settings-model-row" key={provider.id}><div><strong>{provider.name}</strong><small>{provider.detail}</small></div><Badge tone={provider.status === 'connected' ? 'success' : provider.status === 'error' ? 'danger' : provider.status === 'available' ? 'info' : 'neutral'} dot>{provider.status === 'connected' ? 'Connected' : provider.status === 'available' ? 'Available' : provider.status === 'error' ? 'Connection error' : 'Not connected'}</Badge></div>)}
+            {providers.map(provider => <div className="settings-model-row" key={provider.id}><div><strong>{provider.name}</strong><small>{provider.detail}</small></div><Badge tone={providerReadiness(provider) === 'ready' ? 'success' : providerReadiness(provider) === 'error' ? 'danger' : providerReadiness(provider) === 'needs-auth' ? 'warning' : providerReadiness(provider) === 'checking' ? 'info' : 'neutral'} dot>{readinessLabel(provider)}</Badge></div>)}
             <div className="settings-model-row"><div><strong>Default model</strong><small>{state.settings.defaultProviderId} · {state.settings.defaultModelId || 'Provider default'}</small></div></div>
             <Button variant="secondary" size="sm" onClick={onOpenConnections}><Plug size={14} />Manage models and connections</Button>
           </div>

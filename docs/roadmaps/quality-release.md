@@ -12,6 +12,8 @@ Task status is **To do** until its evidence is accepted. Owners are suggested ro
 
 Development gate: **BEN-013** in [the benchmark board](benchmarking.md) must have an accepted, scope-matched record before these tasks enter Ready or implementation.
 
+QA-001's initial support matrix was recorded for M0 on 2026-11-05 in [the support matrix](../support-matrix.md). QA-001 itself remains **To do**: BEN-013 is still required, and every row must be accepted or explicitly excluded before the task closes.
+
 | ID | Target | Priority | Status | Owner | Depends on | Task and acceptance |
 | --- | --- | --- | --- | --- | --- | --- |
 | QA-001 | R1 | P0 | To do | QA | BEN-013, FND-001, FND-002 | **Create the release acceptance matrix.** Done when: Every advertised provider, transport, auth flow, model-specific effort mode, ElevenLabs speech and skill journey, platform, and negative state maps to an owner, test, and evidence location. |

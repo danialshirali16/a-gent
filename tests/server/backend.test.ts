@@ -6,13 +6,16 @@ import { fileURLToPath } from 'node:url';
 import { createServer, request as httpRequest } from 'node:http';
 import { startServer } from '../../server/index.js';
 import { StateStore, validateImport } from '../../server/store.js';
+import { InteractionStore } from '../../server/interactions.js';
 import { ProviderManager } from '../../server/providers.js';
 import { RunManager } from '../../server/runs.js';
 import { CodexBridge, type ProviderRequest } from '../../server/codex.js';
+import { OpenCodeBridge } from '../../server/opencode.js';
 import { locateCodex } from '../../server/codex-discovery.js';
 import type { Run, ServerEvent } from '../../shared/types.js';
 import { agentAvatarTypes, avatarActivityForRuns, legacyAvatarTypeByIcon, resolveAgentAvatarType } from '../../shared/agentAvatars.js';
 
+process.env.AGENT_ALLOW_LOCAL_PROVIDER_ENDPOINTS = '1';
 const fixture = join(dirname(fileURLToPath(import.meta.url)), 'fake-codex.mjs');
 const opencodeFixture = join(dirname(fileURLToPath(import.meta.url)), 'fake-opencode.mjs');
 const scratch = process.env.AGENT_TEST_TMP_DIR ?? join(process.cwd(), 'work');
@@ -193,7 +196,7 @@ test('workspace files are read-only and cannot escape the selected workspace', a
     const root = await get('agentId=primary');
     assert.equal(root.status, 200);
     assert.equal(root.body.path, '');
-    assert.ok(root.body.root.endsWith('/workspace'));
+    assert.ok(/[\\/]workspace$/.test(root.body.root));
     assert.deepEqual(root.body.entries.map((entry: any) => entry.name).sort(), ['README.md', 'escape.txt', 'src'].sort());
     assert.equal(root.body.entries.find((entry: any) => entry.name === 'README.md').type, 'file');
     assert.equal(root.body.entries.find((entry: any) => entry.name === 'src').type, 'directory');
@@ -345,6 +348,147 @@ test('device tokens can be created, self-managed, rotated, revoked, and survive 
   }
 });
 
+test('device rotation and revocation close that device event stream', async () => {
+  const directory = await mkdtemp(join(scratch, 'agent-sse-device-test-'));
+  const staticDir = join(directory, 'static'); await mkdir(staticDir); await writeFile(join(staticDir, 'index.html'), '<!doctype html><html><head></head><body>A Gent</body></html>');
+  const previousProbe = process.env.AGENT_SKIP_PROVIDER_PROBE;
+  process.env.AGENT_SKIP_PROVIDER_PROBE = '1';
+  const handle = await startServer({ port: 0, dataDir: directory, staticDir, dev: false });
+  const call = async (token: string, path: string, body?: unknown, method = body === undefined ? 'GET' : 'POST') => {
+    const response = await fetch(`${handle.url}/api${path}`, { method, headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
+    return { status: response.status, body: await response.json() as any };
+  };
+  const openStream = async (token: string) => {
+    const controller = new AbortController();
+    const response = await fetch(`${handle.url}/api/events`, { headers: { Authorization: `Bearer ${token}` }, signal: controller.signal });
+    assert.equal(response.status, 200);
+    assert.ok(response.body);
+    const reader = response.body.getReader();
+    const connected = await reader.read();
+    assert.equal(connected.done, false);
+    return { controller, reader };
+  };
+  try {
+    const device = await call(handle.token, '/devices', { name: 'Streaming device' }, 'POST');
+    const other = await call(handle.token, '/devices', { name: 'Unrelated device' }, 'POST');
+    assert.equal(device.status, 201);
+    assert.equal(other.status, 201);
+    const first = await openStream(device.body.token);
+    const unrelated = await openStream(other.body.token);
+    const rotated = await call(handle.token, `/devices/${device.body.device.id}/rotate`, {}, 'POST');
+    assert.equal(rotated.status, 200);
+    const closedAfterRotate = await Promise.race([
+      first.reader.read(),
+      pause(2000).then(() => { throw new Error('The old device stream stayed open after rotation.'); }),
+    ]);
+    assert.equal(closedAfterRotate.done, true);
+    first.controller.abort();
+
+    await call(handle.token, '/settings', { theme: 'light' }, 'PATCH');
+    const unrelatedEvent = await Promise.race([
+      unrelated.reader.read(),
+      pause(2000).then(() => { throw new Error('An unrelated device stream was closed or stalled.'); }),
+    ]);
+    assert.equal(unrelatedEvent.done, false);
+    assert.match(new TextDecoder().decode(unrelatedEvent.value), /"type":"state"/);
+
+    const second = await openStream(rotated.body.token);
+    const revoked = await call(handle.token, `/devices/${other.body.device.id}`, undefined, 'DELETE');
+    assert.equal(revoked.status, 200);
+    const closedAfterRevoke = await Promise.race([
+      unrelated.reader.read(),
+      pause(2000).then(() => { throw new Error('The device stream stayed open after revocation.'); }),
+    ]);
+    assert.equal(closedAfterRevoke.done, true);
+    unrelated.controller.abort();
+    second.controller.abort();
+  } finally {
+    await handle.close(); await rm(directory, { recursive: true, force: true });
+    if (previousProbe === undefined) delete process.env.AGENT_SKIP_PROVIDER_PROBE; else process.env.AGENT_SKIP_PROVIDER_PROBE = previousProbe;
+  }
+});
+
+test('host authority separates desktop devices from remote devices for credentials and workspace data', async () => {
+  const directory = await mkdtemp(join(scratch, 'agent-authority-test-'));
+  const staticDir = join(directory, 'static'); await mkdir(staticDir); await writeFile(join(staticDir, 'index.html'), '<!doctype html><html><head></head><body>A Gent</body></html>');
+  const previousProbe = process.env.AGENT_SKIP_PROVIDER_PROBE;
+  process.env.AGENT_SKIP_PROVIDER_PROBE = '1';
+  const handle = await startServer({ port: 0, dataDir: directory, staticDir, dev: false });
+  const call = async (token: string, path: string, body?: unknown, method = body === undefined ? 'GET' : 'POST', headers: Record<string, string> = {}) => {
+    const response = await fetch(`${handle.url}/api${path}`, { method, headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', ...headers }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
+    return { status: response.status, body: await response.json() as any };
+  };
+  try {
+    const device = await call(handle.token, '/devices', { name: 'Remote Mac' }, 'POST');
+    assert.equal(device.status, 201);
+    const remote = { 'X-Forwarded-For': '192.168.1.25' };
+
+    assert.equal((await call(device.body.token, '/bootstrap')).status, 200);
+    assert.equal((await call(device.body.token, '/export')).status, 200, 'the local desktop device can export');
+    assert.equal((await call(device.body.token, '/settings', { defaultProviderId: 'opencode' }, 'PATCH')).status, 200, 'the local desktop device can change host defaults');
+    assert.equal((await call(device.body.token, '/settings', { defaultProviderId: 'codex' }, 'PATCH', remote)).status, 403, 'remote devices cannot change host defaults');
+    assert.equal((await call(device.body.token, '/settings', { speech: { provider: 'elevenlabs', credentialMode: 'session' } }, 'PATCH', remote)).status, 403, 'remote devices cannot change speech settings');
+    assert.equal((await call(device.body.token, '/providers/codex/connect', {}, 'POST', remote)).status, 403, 'remote devices cannot change provider credentials');
+    assert.equal((await call(device.body.token, '/export', undefined, 'GET', remote)).status, 403, 'remote devices cannot export the workspace');
+    assert.equal((await call(device.body.token, '/import', {}, 'POST', remote)).status, 403, 'remote devices cannot import a workspace');
+    assert.equal((await call(device.body.token, '/settings', { theme: 'light' }, 'PATCH', remote)).status, 200, 'remote devices may change their ordinary UI preference');
+    assert.equal((await call(handle.token, '/export', undefined, 'GET', remote)).status, 200, 'the administrator token can export remotely');
+    assert.equal((await call(handle.token, '/settings', { defaultProviderId: 'codex' }, 'PATCH', remote)).status, 200, 'the administrator token can change defaults remotely');
+    assert.equal((await call(device.body.token, '/devices', { name: 'Another' }, 'POST')).status, 403, 'device tokens cannot create devices even on the host');
+  } finally {
+    await handle.close(); await rm(directory, { recursive: true, force: true });
+    if (previousProbe === undefined) delete process.env.AGENT_SKIP_PROVIDER_PROBE; else process.env.AGENT_SKIP_PROVIDER_PROBE = previousProbe;
+  }
+});
+
+test('provider sessions are reused only for a matching binding and rebuilt when the model changes', async () => {
+  const directory = await mkdtemp(join(scratch, 'agent-binding-test-'));
+  const staticDir = join(directory, 'static'); await mkdir(staticDir); await writeFile(join(staticDir, 'index.html'), '<!doctype html><html><head></head><body>A Gent</body></html>');
+  const saved = { command: process.env.AGENT_CODEX_COMMAND, args: process.env.AGENT_CODEX_ARGS, probe: process.env.AGENT_SKIP_PROVIDER_PROBE };
+  process.env.AGENT_CODEX_COMMAND = process.execPath;
+  process.env.AGENT_CODEX_ARGS = JSON.stringify([fixture]);
+  process.env.AGENT_SKIP_PROVIDER_PROBE = '1';
+  const handle = await startServer({ port: 0, dataDir: directory, staticDir, dev: false });
+  const call = async (path: string, body?: unknown, method = body === undefined ? 'GET' : 'POST') => {
+    const response = await fetch(`${handle.url}/api${path}`, { method, headers: { Authorization: `Bearer ${handle.token}`, 'Content-Type': 'application/json' }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
+    return { status: response.status, body: await response.json() as any };
+  };
+  const waitForRun = async (runId: string) => waitFor(async () => (await call('/bootstrap')).body, data => data.runs.find((run: any) => run.id === runId)?.status === 'completed');
+  try {
+    assert.equal((await call('/providers/codex/connect', {})).body.readiness, 'ready');
+    assert.equal((await call('/agents/primary', { modelId: 'test-model' }, 'PATCH')).status, 200);
+    const conversation = await call('/conversations', { agentId: 'primary' });
+    assert.equal(conversation.status, 201);
+    const first = await call(`/conversations/${conversation.body.id}/messages`, { content: 'First turn' });
+    assert.equal(first.status, 202);
+    await waitForRun(first.body.id);
+    let state = (await call('/bootstrap')).body.state;
+    let chat = state.conversations.find((item: any) => item.id === conversation.body.id);
+    assert.equal(chat.providerThreadId, 'test-thread-1');
+    assert.equal(chat.providerBinding.providerId, 'codex');
+    assert.equal(chat.providerBinding.providerKind, 'codex');
+    assert.equal(chat.providerBinding.modelId, 'test-model');
+    assert.match(chat.providerBinding.workspaceId, /[\\/]workspace$/);
+
+    const second = await call(`/conversations/${conversation.body.id}/messages`, { content: 'Second turn' });
+    await waitForRun(second.body.id);
+    state = (await call('/bootstrap')).body.state;
+    chat = state.conversations.find((item: any) => item.id === conversation.body.id);
+    assert.equal(chat.providerThreadId, 'test-thread-1', 'same binding reuses the provider session');
+
+    assert.equal((await call('/agents/primary', { modelId: 'test-model-2' }, 'PATCH')).status, 200);
+    const third = await call(`/conversations/${conversation.body.id}/messages`, { content: 'Third turn' });
+    await waitForRun(third.body.id);
+    state = (await call('/bootstrap')).body.state;
+    chat = state.conversations.find((item: any) => item.id === conversation.body.id);
+    assert.notEqual(chat.providerThreadId, 'test-thread-1', 'a model change rebuilds the provider session');
+    assert.equal(chat.providerBinding.modelId, 'test-model-2');
+  } finally {
+    await handle.close(); await rm(directory, { recursive: true, force: true });
+    for (const [key, value] of [['AGENT_CODEX_COMMAND', saved.command], ['AGENT_CODEX_ARGS', saved.args], ['AGENT_SKIP_PROVIDER_PROBE', saved.probe]] as const) { if (value === undefined) delete process.env[key]; else process.env[key] = value; }
+  }
+});
+
 test('authenticated API persists CRUD, streams real adapter lifecycle, approves, interrupts, and schedules exactly once', async () => {
   const directory = await mkdtemp(join(scratch, 'agent-api-test-'));
   const saved = { command: process.env.AGENT_CODEX_COMMAND, args: process.env.AGENT_CODEX_ARGS, probe: process.env.AGENT_SKIP_PROVIDER_PROBE, trace: process.env.AGENT_TEST_CODEX_TRACE };
@@ -373,6 +517,11 @@ test('authenticated API persists CRUD, streams real adapter lifecycle, approves,
     assert.equal(hostileHostStatus, 403);
     const initial = await api('/bootstrap'); assert.equal(initial.status, 200); assert.equal(initial.body.state.agents.length, 4); assert.equal(initial.body.state.conversations.length, 0);
     const connected = await api('/providers/codex/connect', {}); assert.equal(connected.body.status, 'connected'); assert.equal(connected.body.models[0].id, 'test-model');
+    assert.equal((await api('/providers/codex/test', { modelId: 'test-model' })).status, 400, 'live test requires explicit confirmation');
+    const liveTest = await api('/providers/codex/test', { modelId: 'test-model', confirm: true });
+    assert.equal(liveTest.body.ok, true);
+    assert.equal(liveTest.body.provider.verifiedBy, 'inference');
+    assert.match(liveTest.body.response, /A Gent test response/);
     const apps = await api('/apps');
     assert.deepEqual(apps.body, [{ name: 'Calendar', status: 'connected', toolsCount: 1 }, { name: 'Files', status: 'needs-auth', toolsCount: 0 }]);
     assert.ok(!JSON.stringify(apps.body).includes('must-not-leak'));
@@ -380,9 +529,23 @@ test('authenticated API persists CRUD, streams real adapter lifecycle, approves,
     const agent = (await api('/agents', { name: 'Test Agent', instructions: 'Test instructions', color: '#112233', providerId: 'codex' })).body;
     assert.equal(agent.name, 'Test Agent');
     const group = (await api('/groups', { name: 'Product' })).body;
+    const appRecordResponse = await api('/app-records', { name: 'Fixture app', scope: 'agent', scopeId: agent.id, ownership: 'external', enabled: true, providerId: 'codex', transport: 'stdio', credentialRef: 'provider:codex:fixture' });
+    assert.equal(appRecordResponse.status, 201);
+    assert.equal(appRecordResponse.body.scopeId, agent.id);
+    assert.equal((await api(`/app-records/${appRecordResponse.body.id}`, { enabled: false }, 'PATCH')).body.enabled, false);
+    assert.equal((await api(`/app-records/${appRecordResponse.body.id}`, undefined, 'DELETE')).status, 200);
     const conversation = (await api('/conversations', { agentId: agent.id, groupId: group.id })).body;
     assert.equal(conversation.groupId, group.id);
     assert.equal((await api(`/conversations/${conversation.id}`, { groupId: 'missing' }, 'PATCH')).status, 404);
+    const otherConversation = (await api('/conversations', { agentId: agent.id })).body;
+    assert.equal((await api(`/conversations/${conversation.id}`, { providerId: 'codex', modelId: 'test-model-2', reasoningEffort: 'low' }, 'PATCH')).status, 200);
+    let scopedState = (await api('/bootstrap')).body.state;
+    assert.equal(scopedState.conversations.find((item: any) => item.id === conversation.id).modelId, 'test-model-2');
+    assert.equal(scopedState.conversations.find((item: any) => item.id === otherConversation.id).modelId, undefined, 'switching one chat does not change another');
+    assert.equal(scopedState.agents.find((item: any) => item.id === agent.id).modelId, '', 'chat selection does not mutate the agent default');
+    assert.equal((await api(`/conversations/${conversation.id}`, { modelId: 'missing-model' }, 'PATCH')).status, 409);
+    scopedState = (await api('/bootstrap')).body.state;
+    assert.equal(scopedState.conversations.find((item: any) => item.id === conversation.id).modelId, 'test-model-2', 'failed save keeps the previous chat selection');
 
     const stream = await fetch(`${handle.url}/api/events`, { headers: { Authorization: `Bearer ${handle.token}` }, signal: streamAbort.signal });
     const reader = stream.body!.getReader();
@@ -419,8 +582,16 @@ test('authenticated API persists CRUD, streams real adapter lifecycle, approves,
     const approvalRun = (await api(`/conversations/${conversation.id}/messages`, { content: '[approval]', mode: 'work' })).body;
     const waiting = await waitFor(async () => (await api('/bootstrap')).body, data => data.runs.some((run: any) => run.id === approvalRun.id && run.status === 'waiting'));
     const approval = waiting.runs.find((run: any) => run.id === approvalRun.id).approvals[0];
+    const pendingInteraction = waiting.interactions.find((item: any) => item.id === approval.id);
+    assert.equal(pendingInteraction.runId, approvalRun.id);
+    assert.equal(pendingInteraction.conversationId, conversation.id);
+    assert.equal(pendingInteraction.providerId, 'codex');
+    assert.equal(pendingInteraction.threadId, waiting.state.conversations.find((item: any) => item.id === conversation.id).providerThreadId);
+    assert.equal(pendingInteraction.kind, 'approval');
+    assert.equal(pendingInteraction.status, 'pending');
     assert.equal(approval.command, 'echo A Gent test');
     assert.equal((await api(`/approvals/${approval.id}`, { decision: 'accept' })).status, 200);
+    await waitFor(async () => (await api('/bootstrap')).body, data => data.interactions?.some((item: any) => item.id === approval.id && item.status === 'accepted'));
     await waitFor(async () => (await api('/bootstrap')).body, data => data.runs.some((run: any) => run.id === approvalRun.id && run.status === 'completed'));
     assert.equal((await api(`/approvals/${approval.id}`, { decision: 'accept' })).status, 409);
 
@@ -434,7 +605,8 @@ test('authenticated API persists CRUD, streams real adapter lifecycle, approves,
     assert.equal(scheduled.state.schedules.find((s: any) => s.id === schedule.id).enabled, false);
     const exportResponse = await api('/export'); assert.equal(exportResponse.status, 200);
     const exportedText = JSON.stringify(exportResponse.body); assert.ok(!exportedText.includes(handle.token)); assert.ok(!exportedText.includes('apiKey'));
-    assert.equal((await api('/import', { ...exportResponse.body, version: 2 })).status, 400);
+    assert.equal((await api('/import', { ...exportResponse.body, version: 99 })).status, 400);
+    assert.equal((await api('/import', { ...exportResponse.body, version: 2 })).status, 200);
     assert.equal((await api(`/groups/${group.id}`, undefined, 'DELETE')).status, 200);
     bootstrap = (await api('/bootstrap')).body;
     assert.equal(bootstrap.state.conversations.find((c: any) => c.id === conversation.id).groupId, null);
@@ -457,7 +629,8 @@ test('simultaneous messages reserve one conversation and preserve the accepted p
     run: async (_providerId: string, request: ProviderRequest) => { const text = [...request.conversation.messages].reverse().find(message => message.role === 'user')!.content; prompts.push(text); await completion; request.callbacks.delta(text); },
     close: async () => { release(); },
   } as unknown as ProviderManager;
-  const manager = new RunManager(store, provider, () => {});
+  const interactions = new InteractionStore(directory, 'test-host'); await interactions.load();
+  const manager = new RunManager(store, provider, () => {}, interactions);
   try {
     const results = await Promise.allSettled([manager.send(conversation.id, { content: 'First prompt' }), manager.send(conversation.id, { content: 'Second prompt' })]);
     assert.equal(results.filter(result => result.status === 'fulfilled').length, 1);
@@ -499,6 +672,106 @@ test('Codex shutdown observes child exit after escalating an ignored graceful st
   }
 });
 
+test('OpenCode shutdown waits for child exit after termination escalation', async () => {
+  const directory = await mkdtemp(join(scratch, 'agent-opencode-shutdown-')), pidFile = join(directory, 'pid');
+  const bridge = new OpenCodeBridge({ command: process.execPath, args: [opencodeFixture, '--ignore-shutdown', '--pid-file', pidFile] });
+  const controller = new AbortController();
+  const now = new Date().toISOString();
+  let pid: number | undefined;
+  try {
+    const request: ProviderRequest = {
+      agent: { id: 'primary', name: 'A Gent', description: '', instructions: '', color: '#f39161', icon: 'spark', providerId: 'opencode', modelId: 'opencode/test-model', reasoningEffort: '', createdAt: now },
+      conversation: { id: 'chat', agentId: 'primary', title: 'Test', createdAt: now, updatedAt: now, messages: [{ id: 'm', role: 'user', content: '[hold]', createdAt: now }] },
+      modelId: 'opencode/test-model', mode: 'chat', workspace: directory, signal: controller.signal,
+      callbacks: { delta: () => {}, activity: () => {}, approval: () => {}, thread: () => {} },
+    };
+    const run = bridge.run(request).then(() => 'resolved', error => error as Error);
+    await waitFor(async () => { try { return await readFile(pidFile, 'utf8'); } catch { return ''; } }, text => text.length > 0);
+    pid = Number(await readFile(pidFile, 'utf8'));
+    controller.abort();
+    const result = await run;
+    assert.ok(result instanceof Error);
+    assert.match(result.message, /interrupted|shutdown/);
+    assert.throws(() => process.kill(pid!, 0), (error: NodeJS.ErrnoException) => error.code === 'ESRCH', 'interrupt resolves only after the child has exited');
+  } finally {
+    if (pid) { try { process.kill(pid, 'SIGKILL'); } catch {} }
+    await bridge.close().catch(() => {});
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test('OpenCode Stop keeps the chat reserved until the child has exited', async () => {
+  const directory = await mkdtemp(join(scratch, 'agent-opencode-stop-test-'));
+  const staticDir = join(directory, 'static'); await mkdir(staticDir); await writeFile(join(staticDir, 'index.html'), '<!doctype html><html><head></head><body>A Gent</body></html>');
+  const pidFile = join(directory, 'opencode-pid');
+  const saved = { command: process.env.AGENT_OPENCODE_COMMAND, args: process.env.AGENT_OPENCODE_ARGS, probe: process.env.AGENT_SKIP_PROVIDER_PROBE };
+  process.env.AGENT_OPENCODE_COMMAND = process.execPath;
+  process.env.AGENT_OPENCODE_ARGS = JSON.stringify([opencodeFixture, '--ignore-shutdown', '--pid-file', pidFile]);
+  process.env.AGENT_SKIP_PROVIDER_PROBE = '1';
+  const handle = await startServer({ port: 0, dataDir: directory, staticDir, dev: false });
+  const api = async (path: string, body?: unknown, method = body === undefined ? 'GET' : 'POST') => {
+    const response = await fetch(`${handle.url}/api${path}`, { method, headers: { Authorization: `Bearer ${handle.token}`, 'Content-Type': 'application/json' }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
+    return { status: response.status, body: await response.json() as any };
+  };
+  let pid: number | undefined;
+  try {
+    assert.equal((await api('/providers/opencode/connect', {})).body.readiness, 'ready');
+    const agent = await api('/agents', { name: 'OpenCode Stop', providerId: 'opencode', modelId: 'opencode/test-model' });
+    assert.equal(agent.status, 201);
+    const conversation = await api('/conversations', { agentId: agent.body.id });
+    assert.equal(conversation.status, 201);
+    const run = await api(`/conversations/${conversation.body.id}/messages`, { content: '[hold]' });
+    assert.equal(run.status, 202);
+    await waitFor(async () => { try { return await readFile(pidFile, 'utf8'); } catch { return ''; } }, text => text.length > 0);
+    pid = Number(await readFile(pidFile, 'utf8'));
+    assert.equal((await api(`/runs/${run.body.id}/interrupt`, {})).body.status, 'interrupted');
+    assert.equal((await api(`/conversations/${conversation.body.id}/messages`, { content: 'Too early' })).status, 409, 'chat stays reserved while the child is terminating');
+    const status = await waitFor(async () => (await api(`/conversations/${conversation.body.id}/messages`, { content: 'After stop' })).status, value => value !== 409);
+    assert.equal(status, 202);
+    assert.throws(() => process.kill(pid!, 0), (error: NodeJS.ErrnoException) => error.code === 'ESRCH', 'the chat is released only after the child exits');
+  } finally {
+    if (pid) { try { process.kill(pid, 'SIGKILL'); } catch {} }
+    await handle.close().catch(() => {});
+    await rm(directory, { recursive: true, force: true });
+    for (const [key, value] of [['AGENT_OPENCODE_COMMAND', saved.command], ['AGENT_OPENCODE_ARGS', saved.args], ['AGENT_SKIP_PROVIDER_PROBE', saved.probe]] as const) { if (value === undefined) delete process.env[key]; else process.env[key] = value; }
+  }
+});
+
+test('host shutdown terminates an active OpenCode run and persists it as interrupted', async () => {
+  const directory = await mkdtemp(join(scratch, 'agent-opencode-shutdown-run-'));
+  const staticDir = join(directory, 'static'); await mkdir(staticDir); await writeFile(join(staticDir, 'index.html'), '<!doctype html><html><head></head><body>A Gent</body></html>');
+  const pidFile = join(directory, 'opencode-pid');
+  const saved = { command: process.env.AGENT_OPENCODE_COMMAND, args: process.env.AGENT_OPENCODE_ARGS, probe: process.env.AGENT_SKIP_PROVIDER_PROBE };
+  process.env.AGENT_OPENCODE_COMMAND = process.execPath;
+  process.env.AGENT_OPENCODE_ARGS = JSON.stringify([opencodeFixture, '--ignore-shutdown', '--pid-file', pidFile]);
+  process.env.AGENT_SKIP_PROVIDER_PROBE = '1';
+  const handle = await startServer({ port: 0, dataDir: directory, staticDir, dev: false });
+  const api = async (path: string, body?: unknown, method = body === undefined ? 'GET' : 'POST') => {
+    const response = await fetch(`${handle.url}/api${path}`, { method, headers: { Authorization: `Bearer ${handle.token}`, 'Content-Type': 'application/json' }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
+    return { status: response.status, body: await response.json() as any };
+  };
+  let pid: number | undefined;
+  try {
+    assert.equal((await api('/providers/opencode/connect', {})).body.readiness, 'ready');
+    const agent = await api('/agents', { name: 'OpenCode Shutdown', providerId: 'opencode', modelId: 'opencode/test-model' });
+    const conversation = await api('/conversations', { agentId: agent.body.id });
+    assert.equal((await api(`/conversations/${conversation.body.id}/messages`, { content: '[hold]' })).status, 202);
+    await waitFor(async () => { try { return await readFile(pidFile, 'utf8'); } catch { return ''; } }, text => text.length > 0);
+    pid = Number(await readFile(pidFile, 'utf8'));
+    await handle.close();
+    assert.throws(() => process.kill(pid!, 0), (error: NodeJS.ErrnoException) => error.code === 'ESRCH', 'shutdown waits for the active child to exit');
+    const persisted = JSON.parse(await readFile(join(directory, 'state.json'), 'utf8')) as any;
+    const savedConversation = persisted.conversations.find((item: any) => item.id === conversation.body.id);
+    assert.equal(savedConversation.messages.at(-1).status, 'interrupted');
+    assert.equal(savedConversation.messages.at(-1).content, '');
+  } finally {
+    if (pid) { try { process.kill(pid, 'SIGKILL'); } catch {} }
+    await handle.close().catch(() => {});
+    await rm(directory, { recursive: true, force: true });
+    for (const [key, value] of [['AGENT_OPENCODE_COMMAND', saved.command], ['AGENT_OPENCODE_ARGS', saved.args], ['AGENT_SKIP_PROVIDER_PROBE', saved.probe]] as const) { if (value === undefined) delete process.env[key]; else process.env[key] = value; }
+  }
+});
+
 test('OpenCode provider discovers models and streams a continued CLI session', async () => {
   const directory = await mkdtemp(join(scratch, 'agent-opencode-test-'));
   const staticDir = join(directory, 'static'); await mkdir(staticDir); await writeFile(join(staticDir, 'index.html'), '<!doctype html><html><head></head><body>A Gent</body></html>');
@@ -515,6 +788,8 @@ test('OpenCode provider discovers models and streams a continued CLI session', a
     const connected = await api('/providers/opencode/connect', {});
     assert.equal(connected.body.status, 'connected');
     assert.deepEqual(connected.body.models.map((model: any) => model.id), ['opencode/test-model', 'opencode/second-model']);
+    const apps = await api('/apps');
+    assert.ok(apps.body.some((app: any) => app.name === 'computer-use' && app.providerId === 'opencode' && app.source === 'runtime'));
     const agent = (await api('/agents', { name: 'OpenCode Agent', providerId: 'opencode', modelId: 'opencode/test-model' })).body;
     const conversation = (await api('/conversations', { agentId: agent.id })).body;
     const first = await api(`/conversations/${conversation.id}/messages`, { content: 'Hello OpenCode' });
