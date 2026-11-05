@@ -1,6 +1,6 @@
 # V1-08 — Owner acceptance procedure (macOS arm64)
 
-Status: **Prepared for the V1-07 candidate; not yet accepted.** This procedure is for Danial's Mac only. It closes V1-08 only after the exact artifact below passes and the result is recorded in [validation](validation.md#personal-v1-implementation-pass-2026-11-05). Source, browser, fixture, and real-Codex checks do not substitute for this pass.
+Status: **Prepared for the V1-07 candidate; not yet accepted.** This procedure is for Danial's Mac only. It closes V1-08 only after the exact artifact below passes and the result is recorded in [validation](validation.md#macos-arm64-source-and-candidate-pass-2026-11-06). Source, browser, fixture, and real-Codex checks do not substitute for this pass.
 
 ## Candidate under review
 
@@ -53,12 +53,12 @@ Record **Pass**, **Fail**, or **Blocked** for every row. A failure that affects 
 - [ ] The app opens without a terminal, shows the A Gent home screen, and the local host starts on `127.0.0.1`.
 - [ ] Quit with **⌘Q**, then relaunch from Finder. The app opens normally and does not ask for a pairing token.
 
-Expected: Finder launch, automatic desktop pairing, no manual token entry. Record any Gatekeeper/quarantine dialog rather than disabling security globally.
+Expected: Finder launch, automatic desktop pairing, no manual token entry. Record any Gatekeeper/quarantine dialog rather than disabling security globally. The candidate is not Developer ID signed or notarized; `codesign --verify` may report an incomplete ad-hoc signature. That is a known personal-build limitation, not a release claim.
 
 ### 2. Codex setup and recovery
 
 - [ ] Open **Connections**: only Codex is offered; paused providers and Connected Apps management are not advertised.
-- [ ] Click **Check connection**. The Codex card becomes ready and lists models.
+- [ ] Open **Manage** on the Codex card, then click **Check connection**. The card becomes ready and lists models.
 - [ ] Choose a model. The composer shows the effective model; a second chat keeps its own selection.
 - [ ] (Optional failure check) Temporarily rename the `codex` executable or sign out, then reopen/check. The app gives install/login guidance and recovers after restoring the CLI/login.
 
@@ -154,7 +154,7 @@ Expected: install/upgrade/quit/relaunch behavior is explicit and data stays outs
 
 ## Result record
 
-Copy this into [validation](validation.md#personal-v1-implementation-pass-2026-11-05) (or attach a filled copy) after the pass:
+Copy this into [validation](validation.md#macos-arm64-source-and-candidate-pass-2026-11-06) (or attach a filled copy) after the pass:
 
 ```text
 Candidate: A Gent 1.0.0, commit <sha>, DMG SHA-256 <hash>, ZIP SHA-256 <hash>

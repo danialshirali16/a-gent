@@ -4,8 +4,8 @@
   "platform": "macOS arm64",
   "minimumMacOS": "13.0",
   "branch": "codex/v1-macos-release",
-  "buildCommit": null,
-  "recordedAt": null,
+  "buildCommit": "c5dde0405d4becd71f3f6dc124a7cf2676792202",
+  "recordedAt": "2026-11-06T01:28:00Z",
   "buildHost": {
     "model": "MacBookPro17,1",
     "chip": "Apple M1",
@@ -22,19 +22,29 @@
   "artifacts": {
     "dmg": {
       "path": "release/A-Gent-1.0.0-mac-arm64.dmg",
-      "sizeBytes": null,
-      "sha256": null
+      "sizeBytes": 139709892,
+      "sha256": "04ea7ba47c19e09f62fd2aa65933230b38fae6cc2146a887a4e9cb05d59d7851"
     },
     "zip": {
       "path": "release/A-Gent-1.0.0-mac-arm64.zip",
-      "sizeBytes": null,
-      "sha256": null
+      "sizeBytes": 133386114,
+      "sha256": "5cea7a8115698dfde570e13c94fbc1f0c1eb4df5fb8b9b4515675112b65d5532"
+    },
+    "app": {
+      "path": "release/mac-arm64/A Gent.app",
+      "uncompressedSizeBytes": 322969898,
+      "treeSha256": "59b86ca263d8c03e4d23b1499b9523ff3503e7e40a9122ce41d2fcd9e88e4984",
+      "treeSha256Note": "SHA-256 of the sorted per-file SHA-256 list; not a signing identity."
     }
   },
   "ci": {
     "workflow": "Build A Gent",
     "artifact": "A-Gent-macos",
-    "runUrl": null
+    "runUrl": "https://github.com/danialshirali16/a-gent/actions/runs/42116559054",
+    "conclusion": "success",
+    "artifactSizeBytes": 658485676,
+    "artifactSha256": "02b7d02e7309448462259ddc405f8ccbed793c6f09a9645a86dc61c8ad409e9d",
+    "downloadUrl": "https://github.com/danialshirali16/a-gent/actions/runs/42116559054/artifacts/13457416638"
   },
   "openChecks": [
     "live native Codex question path",

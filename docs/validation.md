@@ -34,7 +34,7 @@ Scope: V1-06 source/browser/real-Codex checks and V1-07 package build/inspection
 | `node scripts/runtime-baseline.mjs --strict` | Codex 0.166.0 matches the fixture; 106 client methods, 10 server requests, and 26 schema files pass. Strict exit is non-zero only because installed OpenCode 1.17.9 differs from the paused 2.2.5 baseline. |
 | `npm run desktop:runtime` | Pass; Electron 45.2.2 installed. |
 | `npm run desktop:mac` | Pass; `A-Gent-1.0.0-mac-arm64.dmg` and `.zip` built for arm64. |
-| Package inspection | `A Gent.app` is arm64, version 1.0.0, bundle id `com.agent.desktop`, minimum macOS 13.0; ICNS hash matches `electron/assets/icon.icns`; asar contains `dist/`, `dist-server/`, `electron/`, `README.md`, 58 docs Markdown files, `package.json`, and `dist/THIRD_PARTY_NOTICES.txt`; no workspace, `.token`, `state.json`, `connections.json`, or `.data` was found. |
+| Package inspection | `A Gent.app` is arm64, version 1.0.0, bundle id `com.agent.desktop`, minimum macOS 13.0; ICNS hash matches `electron/assets/icon.icns`; asar contains `dist/`, `dist-server/`, `electron/`, `README.md`, 59 docs Markdown files, `package.json`, and `dist/THIRD_PARTY_NOTICES.txt`; no workspace, `.token`, `state.json`, `connections.json`, or `.data` was found. |
 | DMG/ZIP contents | DMG mounts with `A Gent.app` and an `Applications` link; ZIP expands the same app. |
 | Signing | Unsigned/ad-hoc only (`identity: null`); `spctl` on this host reported `override=security disabled`, so this is not ordinary Gatekeeper evidence. No notarization claim. |
 | `npm run test:visual`/install/launch | Visual passes in Chrome; Finder launch, native dialog, install/upgrade/quit/relaunch, and Gatekeeper behavior were not exercised. |
@@ -49,7 +49,7 @@ All live checks used the external signed-in Codex CLI with an isolated data dire
 | First chat | Prompt “Reply with exactly OK. Do not use tools.” completed with `OK` and a persisted provider thread. |
 | Continuation | “Reply with exactly DONE. Do not use tools.” completed with `DONE` on the same persisted thread. |
 | Chat read-only | A request to create a file completed with `CHAT-READ-ONLY`; no file was created and no approval was raised. |
-| Work mode | A requested `work-check.txt` containing `hello` was created inside the disposable workspace; the run completed. This host was slow/variable at times but did not reproduce a stuck run. |
+| Work mode | A requested `work-check.txt` containing `hello` was created inside the disposable workspace; the run completed. This host showed variable multi-minute latency (one turn took ~14 minutes) but no permanent hang. |
 | Stop | `interrupt` returned `stopping`; a send while stopping returned 409; the run settled `interrupted` in about 1 s; the next prompt completed with `AFTER`. |
 | Approval decline | An outside-workspace home-directory write raised one native command approval. Decline completed the run and left the target file absent. |
 | Approval accept | Repeating the request and accepting created only the target file with `hello`; the file was removed afterward. |
