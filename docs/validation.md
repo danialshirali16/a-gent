@@ -1,8 +1,79 @@
 # A Gent — Validation Record
 
-Updated: 2026-11-05. Latest implementation source: branch `codex/v1-macos-release` from `be7b52e`. The latest command/runtime checks used Windows x64; the prior assessment used Linux x64. Earlier macOS/Windows results below retain their original scope. No current Mac package exists, and source/browser/real-runtime results do not certify one.
+Updated: 2026-11-06. Latest implementation source: branch `codex/v1-macos-release` from `be7b52e`. The latest command/runtime/package checks ran on a macOS arm64 (Apple M1) host with Node 24.12.0; the earlier implementation pass used Windows x64 and the assessment used Linux x64. Earlier results below retain their original scope. The Mac package is built and inspected, but install/relaunch, native-question, VoiceOver/zoom, and owner V1-08 acceptance remain open.
 
 [Active v1 path](project-roadmap.md#recommended-execution-order) · [Contract](release-contract.md) · [Candidate matrix](support-matrix.md) · [Current state](current-state-review.md)
+
+## macOS arm64 source and candidate pass 2026-11-06
+
+Scope: V1-06 source/browser/real-Codex checks and V1-07 package build/inspection on the candidate branch `codex/v1-macos-release`. The exact build commit, sizes, and SHA-256 values are recorded in `release-artifacts/A-Gent-1.0.0-macos-arm64.json` and `SHA256SUMS.txt`. This is actual Apple-silicon evidence, but it is not a packaged-app acceptance pass.
+
+### Environment
+
+| Item | Value |
+| --- | --- |
+| Host | MacBook Pro (MacBookPro17,1), Apple M1, 8 GB |
+| OS | macOS 27.2 (26B123) |
+| Node / npm | 24.12.0 / 11.6.2 |
+| Electron | 45.2.2 |
+| Codex CLI | 0.166.0, signed in externally (8 models; first `gpt-6.1-sol`) |
+| OpenCode CLI | 1.17.9 installed; differs from the paused 2.2.5 fixture and is not a v1 gate |
+
+### Commands and results
+
+| Check | Result and scope |
+| --- | --- |
+| `npm ci --no-audit --no-fund` | Pass; 536 packages from the lockfile. |
+| `npm run typecheck` | Pass. |
+| `npm test` | 73/73 pass, including core-failure, draft, HIL, persistence, provider, and package-content regressions. |
+| `npm run build` | Pass; existing >500 kB Vite chunk advisory remains. |
+| `npm run test:ui` | 22/22 smoke pass in macOS Chrome against the fixture host. |
+| `npm run test:e2e` | 7/7 pass. |
+| `npm run test:a11y` | 7/7 axe scans pass with 0 violations and 0 serious/critical findings. |
+| `npm run test:visual` | 10/10 pass after reviewing and regenerating the darwin baselines for the intentional `Connections` label (V1 scope). No unrelated layout change. |
+| `node scripts/runtime-baseline.mjs --strict` | Codex 0.166.0 matches the fixture; 106 client methods, 10 server requests, and 26 schema files pass. Strict exit is non-zero only because installed OpenCode 1.17.9 differs from the paused 2.2.5 baseline. |
+| `npm run desktop:runtime` | Pass; Electron 45.2.2 installed. |
+| `npm run desktop:mac` | Pass; `A-Gent-1.0.0-mac-arm64.dmg` and `.zip` built for arm64. |
+| Package inspection | `A Gent.app` is arm64, version 1.0.0, bundle id `com.agent.desktop`, minimum macOS 13.0; ICNS hash matches `electron/assets/icon.icns`; asar contains `dist/`, `dist-server/`, `electron/`, `README.md`, 58 docs Markdown files, `package.json`, and `dist/THIRD_PARTY_NOTICES.txt`; no workspace, `.token`, `state.json`, `connections.json`, or `.data` was found. |
+| DMG/ZIP contents | DMG mounts with `A Gent.app` and an `Applications` link; ZIP expands the same app. |
+| Signing | Unsigned/ad-hoc only (`identity: null`); `spctl` on this host reported `override=security disabled`, so this is not ordinary Gatekeeper evidence. No notarization claim. |
+| `npm run test:visual`/install/launch | Visual passes in Chrome; Finder launch, native dialog, install/upgrade/quit/relaunch, and Gatekeeper behavior were not exercised. |
+
+### Real Codex probes
+
+All live checks used the external signed-in Codex CLI with an isolated data directory and disposable workspace. No account token was copied into the workspace or repository.
+
+| Scenario | Result |
+| --- | --- |
+| Discovery/account | Codex ready with 8 models; no OpenCode or other provider connection required. |
+| First chat | Prompt “Reply with exactly OK. Do not use tools.” completed with `OK` and a persisted provider thread. |
+| Continuation | “Reply with exactly DONE. Do not use tools.” completed with `DONE` on the same persisted thread. |
+| Chat read-only | A request to create a file completed with `CHAT-READ-ONLY`; no file was created and no approval was raised. |
+| Work mode | A requested `work-check.txt` containing `hello` was created inside the disposable workspace; the run completed. This host was slow/variable at times but did not reproduce a stuck run. |
+| Stop | `interrupt` returned `stopping`; a send while stopping returned 409; the run settled `interrupted` in about 1 s; the next prompt completed with `AFTER`. |
+| Approval decline | An outside-workspace home-directory write raised one native command approval. Decline completed the run and left the target file absent. |
+| Approval accept | Repeating the request and accepting created only the target file with `hello`; the file was removed afterward. |
+| Native question | Not exercised. The live Codex question path was not reachable in the retained Chat/Work flow; deterministic HIL fixtures pass. This remains open. |
+| VoiceOver / actual macOS zoom | Not exercised. Keyboard smoke/focus checks pass; VoiceOver and OS zoom/reflow remain open. |
+
+The `/tmp` path is intentionally writable under the current `excludeSlashTmp: false` turn policy, so it did not raise an approval. The recorded approval scenario uses a home-directory path outside the workspace.
+
+### Candidate artifacts
+
+| Artifact | Record |
+| --- | --- |
+| `release/A-Gent-1.0.0-mac-arm64.dmg` | Size and SHA-256 in `release-artifacts/A-Gent-1.0.0-macos-arm64.json` / `SHA256SUMS.txt`. |
+| `release/A-Gent-1.0.0-mac-arm64.zip` | Size and SHA-256 in the same manifest. |
+| `release/mac-arm64/A Gent.app` | Inspected bundle; the manifest records its size. A bundle digest is not a notarization identity. |
+
+CI artifact: the `A-Gent-macos` artifact attached to the GitHub Actions run for the build commit (expires per repository policy). The local `release/` paths are the directly inspected copies. The manifest itself is repository evidence and is not part of the packaged app.
+
+### Open V1-06/V1-07 items
+
+- Native Codex question path (live, not fixtures).
+- VoiceOver and actual macOS zoom/reflow.
+- Packaged install/upgrade/quit/relaunch, Finder launch, native folder dialog, Gatekeeper/quarantine behavior.
+- Danial's V1-08 acceptance of the exact artifact; no release-readiness or public-publication claim.
 
 ## Personal v1 implementation pass 2026-11-05
 

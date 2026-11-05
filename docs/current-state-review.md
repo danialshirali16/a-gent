@@ -1,6 +1,6 @@
 # Current project state
 
-Updated: 2026-11-05. Original assessment source: fc634674f45bb578c68f8963758eef786aec82ac. Current implementation branch: `codex/v1-macos-release` from `be7b52e`. **Approved direction: personal macOS v1.0, Codex only; source implementation and real-Codex checks are in place, while Mac package acceptance remains open.**
+Updated: 2026-11-06. Original assessment source: fc634674f45bb578c68f8963758eef786aec82ac. Current implementation branch: `codex/v1-macos-release` from `be7b52e`. **Approved direction: personal macOS v1.0, Codex only; source, macOS/Node 24, browser, and real-Codex checks are in place, and a 1.0.0 arm64 candidate is built and inspected. Native-question, VoiceOver/zoom, packaged install/relaunch, and owner V1-08 acceptance remain open.**
 
 [Active roadmap](project-roadmap.md#recommended-execution-order) · [Release contract](release-contract.md) · [237-task triage](roadmaps/v1-triage.md) · [Validation](validation.md) · [Support matrix](support-matrix.md)
 
@@ -8,7 +8,7 @@ Updated: 2026-11-05. Original assessment source: fc634674f45bb578c68f8963758eef7
 
 Danial approved the smaller personal release: packaged Finder launch, external Codex setup, streamed text chat, persisted conversations/drafts, native project folders, correct approvals/Stop, and recoverable failures. Use default reasoning and initially one active run per host. OpenCode, full MCP/Connected Apps, skills, STT, custom reasoning, extra providers, expanded scheduling/uploads, Windows/Android, and public distribution are paused.
 
-Follow V1-01 through V1-08 in the roadmap. **V1-02 baseline and the V1-03/V1-04/V1-05 source path are implemented on branch `codex/v1-macos-release`.** The next work is V1-06 acceptance on the actual Mac and packaging in V1-07. Danial's chip/macOS version is still unconfirmed; existing arm64/macOS 13+ packaging is provisional for his machine.
+Follow V1-01 through V1-08 in the roadmap. **V1-02 baseline, the V1-03/V1-04/V1-05 source path, and the V1-06 macOS/Node 24 source checks are implemented on branch `codex/v1-macos-release`.** The V1-07 build host is an Apple M1 MacBook Pro on macOS 27.2 with Node 24.12.0; the 1.0.0 arm64 DMG/ZIP has been built and inspected. The remaining work is the live native-question path, VoiceOver/actual zoom, packaged install/upgrade/quit/relaunch, and Danial's V1-08 acceptance on his exact machine.
 
 The retained source is now gated to Codex, provider-default reasoning, and one active run per host. The UI exposes only Codex connections and no custom Thinking controls or Connected Apps management; paused API mutations return 409 while saved data remains. Startup now rejects unsupported Codex versions with actionable guidance. Mac Finder/package behavior is still unverified.
 
@@ -25,7 +25,7 @@ The retained source is now gated to Codex, provider-default reasoning, and one a
 | Reasoning | Codex metadata is preserved, but v1 dispatch uses provider default and rejects new custom-effort mutations. Saved effort values remain in the workspace. |
 | Skills/STT | Schema records/settings exist; no dedicated skills manager/native adapter or audio capture/transcription flow. Both paused. Inherited skill instructions are withheld from Codex runs. |
 | Other product | Basic text attachments and one-time schedules exist; full semantics/recovery and richer content remain incomplete/deferred. |
-| Package | Source and lockfile are now 1.0.0; a Windows unpacked content check passed. No current macOS .app/DMG/ZIP, Finder launch, native dialog, Gatekeeper, or owner Mac acceptance exists. |
+| Package | Source and lockfile are 1.0.0. A Windows unpacked content check and a fresh macOS arm64 `.app`/DMG/ZIP build/inspection pass. The Mac package is unsigned/ad-hoc, contains the expected dist/server/electron/docs/notices and no workspace/token/state, and has recorded hashes. Finder launch, native dialog, install/upgrade/quit/relaunch, Gatekeeper behavior, and owner acceptance remain open. |
 
 ## Known core findings
 
@@ -67,7 +67,7 @@ The six development fixtures remain in src/dev. Start a fresh npm run dev host a
 
 ## Validation boundaries
 
-The [2026-11-05 implementation record](validation.md#personal-v1-implementation-pass-2026-11-05) records the fresh Windows x64 baseline, 73/73 server tests, 22/22 browser smoke, 7/7 E2E, 7/7 axe, real Codex chat/continuation/host-restart/Stop/Work/approval probes, and the Windows unpacked content check. The [personal-v1 assessment record](validation.md#personal-v1-readiness-assessment) records the earlier limitations:
+The [2026-11-05 implementation record](validation.md#personal-v1-implementation-pass-2026-11-05) now includes the fresh macOS arm64/Node 24 pass: 73/73 server tests, 22/22 browser smoke, 7/7 E2E, 7/7 axe, 10/10 visual, real Codex chat/continuation/Chat-read-only/Work/Stop probes, and an inspected 1.0.0 DMG/ZIP with hashes. Native question, VoiceOver/actual zoom, install/upgrade/quit/relaunch, and owner V1-08 acceptance remain open. The [personal-v1 assessment record](validation.md#personal-v1-readiness-assessment) records the earlier limitations:
 
 - Linux x64, Node 24.22.1/npm 11.9.0: npm registry requests returned 403; standard installation/build/typecheck/test/start/package commands were blocked.
 - 40 existing tests passed through a supplemental Node TypeScript resolver, not normal npm test/typecheck.
@@ -81,4 +81,4 @@ Historical 62 backend/42 UI check records and old artifact checksums retain thei
 
 [V1 triage](roadmaps/v1-triage.md) owns 69 CONTINUE / 163 PAUSE / 5 CUT/RETHINK decisions across all 237 IDs. Old public targets/dependencies remain reference metadata, not personal-v1 gates. Review annotations in the owning boards correct contradicted Done claims; recording scope does not finish runtime tasks.
 
-Next: V1-06 finish the actual-Mac/manual portions (native question, Finder, VoiceOver/zoom), V1-07 build and inspect the macOS candidate, then Danial's V1-08 packaged-app pass. See the [Mac guide](macos-v1-testing.md) for setup, data/backup, tokens, and the packaged test procedure.
+Next: finish V1-06's native-question and VoiceOver/actual-zoom checks, verify V1-07 install/upgrade/quit/relaunch behavior, then run Danial's V1-08 pass on the exact artifact. See the [V1-08 procedure](v1-08-owner-acceptance.md) and the [Mac guide](macos-v1-testing.md) for setup, data/backup, and tokens.

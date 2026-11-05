@@ -1,0 +1,47 @@
+{
+  "product": "A Gent",
+  "version": "1.0.0",
+  "platform": "macOS arm64",
+  "minimumMacOS": "13.0",
+  "branch": "codex/v1-macos-release",
+  "buildCommit": null,
+  "recordedAt": null,
+  "buildHost": {
+    "model": "MacBookPro17,1",
+    "chip": "Apple M1",
+    "memory": "8 GB",
+    "os": "macOS 27.2 (26B123)"
+  },
+  "buildRuntime": {
+    "node": "24.12.0",
+    "npm": "11.6.2",
+    "electron": "45.2.2",
+    "codex": "0.166.0"
+  },
+  "signing": "unsigned/ad-hoc; no Developer ID or notarization",
+  "artifacts": {
+    "dmg": {
+      "path": "release/A-Gent-1.0.0-mac-arm64.dmg",
+      "sizeBytes": null,
+      "sha256": null
+    },
+    "zip": {
+      "path": "release/A-Gent-1.0.0-mac-arm64.zip",
+      "sizeBytes": null,
+      "sha256": null
+    }
+  },
+  "ci": {
+    "workflow": "Build A Gent",
+    "artifact": "A-Gent-macos",
+    "runUrl": null
+  },
+  "openChecks": [
+    "live native Codex question path",
+    "VoiceOver",
+    "actual macOS zoom/reflow",
+    "packaged Finder launch and Gatekeeper behavior",
+    "install/upgrade/quit/relaunch",
+    "owner V1-08 acceptance"
+  ]
+}

@@ -1,6 +1,6 @@
 # Personal macOS v1.0 setup and test guide
 
-Status: **Acceptance procedure, 2026-11-05; source checks and real Codex probes pass, but a current Mac candidate has not been built or accepted.** Follow the [roadmap](project-roadmap.md#recommended-execution-order), [release contract](release-contract.md), and [support matrix](support-matrix.md). [Current state](current-state-review.md) and [validation](validation.md#personal-v1-implementation-pass-2026-11-05) distinguish source/browser/real-runtime evidence from the required Mac package pass.
+Status: **Build/test guide, updated 2026-11-06. Source, macOS/Node 24, browser, and real Codex probes pass; a 1.0.0 arm64 DMG/ZIP has been built and inspected, but packaged install/relaunch and owner acceptance remain open.** Use the focused [V1-08 owner procedure](v1-08-owner-acceptance.md) for the actual pass. Follow the [roadmap](project-roadmap.md#recommended-execution-order), [release contract](release-contract.md), and [support matrix](support-matrix.md). [Current state](current-state-review.md) and [validation](validation.md#personal-v1-implementation-pass-2026-11-05) distinguish source/browser/real-runtime evidence from the required Mac package pass.
 
 ## Before building
 
@@ -27,7 +27,7 @@ Run from the checkout. These are required checks, not results of this documentat
 
 Use supported runtime-baseline probing and recorded compatibility evidence. Standard npm commands must execute; a supplemental runner alone cannot accept the candidate. Review screenshot changes rather than automatically accepting new baselines. Mac visual baselines cannot be certified by Linux/Windows screenshots.
 
-Current source evidence from the Windows x64 development host (not a Mac acceptance result): `npm ci` succeeded; typecheck and build pass; 73/73 server tests, 22/22 browser smoke, 7/7 E2E, and 7/7 axe scans pass. The checked-in visual baselines are macOS-only and were not rerun. Real Codex chat/continuation/host-restart/Stop/Work/approval probes passed against the signed-in CLI with an isolated workspace; native question, Finder, native folder dialog, VoiceOver/zoom, and the packaged Mac app remain required.
+Current evidence includes both the Windows x64 development host and a fresh macOS arm64/Node 24.12.0 pass: `npm ci`, typecheck, build, 73/73 server tests, 22/22 browser smoke, 7/7 E2E, 7/7 axe, and 10/10 visual checks pass. Real Codex chat/continuation/Chat-read-only/Work/Stop probes passed against the signed-in 0.166.0 CLI with an isolated workspace. Native question, Finder, native folder dialog, VoiceOver/actual macOS zoom, packaged install/upgrade/quit/relaunch, and owner acceptance remain required. The 1.0.0 arm64 DMG/ZIP and SHA-256 values are recorded in [validation](validation.md#personal-v1-implementation-pass-2026-11-05).
 
 Build configuration emits arm64 A Gent.app plus DMG/ZIP under `release` with version 1.0.0 and macOS 13.0 minimum. Record actual paths and hashes rather than assuming old artifact names. Signing/notarization is deferred for this personal candidate.
 

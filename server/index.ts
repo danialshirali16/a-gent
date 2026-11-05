@@ -222,11 +222,14 @@ export async function startServer(options: ServerOptions = {}): Promise<ServerHa
     if (store.state.agents.length >= 500) throw new InputError('This workspace has reached its 500 agent limit.');
     const patch = agentPatch(req.body);
     if (!patch.name) throw new InputError('Give your agent a name.');
-    requireCodex(patch.providerId);
+    // A saved workspace may still point its default at a paused runtime; the
+    // new agent must resolve to Codex rather than inherit that reference.
+    const effectiveProviderId = patch.providerId || store.state.settings.defaultProviderId;
+    requireCodex(effectiveProviderId);
     requireProviderDefaultReasoning(patch.reasoningEffort);
-    if (patch.providerId) providers.get(patch.providerId);
+    providers.get(effectiveProviderId);
     checkAgentGroup(patch.agentGroupId);
-    const agent: Agent = { id: id(), name: patch.name, description: '', instructions: 'You are a helpful assistant.', color: '#f39161', icon: 'custom', providerId: store.state.settings.defaultProviderId, modelId: store.state.settings.defaultModelId, reasoningEffort: '', createdAt: now(), ...patch };
+    const agent: Agent = { id: id(), name: patch.name, description: '', instructions: 'You are a helpful assistant.', color: '#f39161', icon: 'custom', providerId: effectiveProviderId, modelId: store.state.settings.defaultModelId, reasoningEffort: '', createdAt: now(), ...patch };
     store.state.agents.push(agent); await publish(); res.status(201).json(agent);
   });
   app.patch('/api/agents/:id', async (req, res) => {
@@ -243,9 +246,12 @@ export async function startServer(options: ServerOptions = {}): Promise<ServerHa
   app.post('/api/conversations', async (req, res) => {
     if (store.state.conversations.length >= 5000) throw new InputError('This workspace has reached its 5,000 chat limit.');
     const data = object(req.body), patch = conversationPatch(data); checkGroup(patch.groupId);
-    requireCodex(patch.providerId);
+    const agent = store.getAgent(string(data.agentId, 'Agent ID', 100));
+    const effectiveProviderId = patch.providerId || agent.providerId || store.state.settings.defaultProviderId;
+    requireCodex(effectiveProviderId);
     requireProviderDefaultReasoning(patch.reasoningEffort);
-    const conversation = store.createConversation(string(data.agentId, 'Agent ID', 100), patch);
+    providers.get(effectiveProviderId);
+    const conversation = store.createConversation(agent.id, { ...patch, providerId: effectiveProviderId });
     await publish(); res.status(201).json(conversation);
   });
   app.patch('/api/conversations/:id', async (req, res) => {

@@ -129,19 +129,19 @@ A Gent does not require an A Gent account, a subscription, or a cloud workspace.
 
 ## Questions
 
-****<br>
+**Do I need an account or a subscription?**<br>
 No. You need the Codex CLI installed and signed in, but you do not need to build or configure A Gent.
 
-****<br>
+**Where does my data go?**<br>
 Your host runs locally. Codex receives the conversation and project context you ask it to work on, under your Codex account and the sandbox you selected.
 
-****<br>
+**Does Stop really stop the work?**<br>
 A Gent waits for the model and any running tools to finish, so a stopped run cannot keep working in the background.
 
-****<br>
+**Can I use it from another device?**<br>
 Not in this preview. Remote-device setup is deferred.
 
-****<br>
+**Something went wrong. Where do I report it?**<br>
 [Open an issue](https://github.com/danialshirali16/a-gent/issues) with what you expected, what happened, and your macOS version.
 
 ---

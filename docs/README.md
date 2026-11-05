@@ -1,6 +1,6 @@
 # A Gent documentation
 
-Updated: 2026-11-05. **Approved focus: personal macOS v1.0 with Codex.** The V1-02 baseline and V1-03/V1-04/V1-05 source path are implemented; fixture, browser, and real Codex checks pass. A current packaged Mac candidate and V1-08 acceptance remain open.
+Updated: 2026-11-06. **Approved focus: personal macOS v1.0 with Codex.** The V1-02 baseline and V1-03/V1-04/V1-05 source path are implemented; fixture, browser, macOS, and real Codex checks pass. A 1.0.0 arm64 candidate is built and inspected; owner V1-08 acceptance remains open.
 
 ## Start here
 
@@ -12,6 +12,7 @@ Updated: 2026-11-05. **Approved focus: personal macOS v1.0 with Codex.** The V1-
 | Check implemented behavior and open failures | [Current state](current-state-review.md) |
 | Map a retained flow to required evidence | [Personal candidate support matrix](support-matrix.md) |
 | Build, install, back up, and test the candidate | [Mac test guide](macos-v1-testing.md) |
+| Run the focused owner acceptance pass | [V1-08 owner procedure](v1-08-owner-acceptance.md) |
 | Run current source and learn existing controls | [Project README](../README.md) |
 | Check executed commands and their limits | [Validation record](validation.md) |
 | Consult full original criteria/status | [Detailed task boards](roadmaps/README.md) |
@@ -21,7 +22,7 @@ Updated: 2026-11-05. **Approved focus: personal macOS v1.0 with Codex.** The V1-
 
 ## Active release path
 
-V1-02 baseline → V1-03 scope enforcement → V1-04 core correctness → V1-05 daily-use recovery are complete in current source. Next: finish V1-06 Mac/manual checks and real-runtime/native gaps, build/inspect the V1-07 Mac candidate, then Danial's V1-08 packaged-app pass.
+V1-02 baseline → V1-03 scope enforcement → V1-04 core correctness → V1-05 daily-use recovery are complete in current source. V1-06 now has fresh macOS/Node 24 source, browser, and real-Codex evidence; native-question, VoiceOver, and actual macOS zoom/reflow checks remain open. V1-07 has a built and inspected 1.0.0 arm64 DMG/ZIP candidate; install/upgrade/quit/relaunch behavior and Danial's V1-08 packaged pass remain open.
 
 OpenCode, full MCP/Connected Apps, custom reasoning, Agent skill management, ElevenLabs STT, other inference providers, scheduling/content expansion, Windows/Android, and public distribution are paused. The retained UI/API is now gated to Codex, provider-default reasoning, and one active run per host. The expected macOS 13+ arm64 baseline still needs confirmation against Danial's chip/OS.
 
@@ -46,7 +47,7 @@ The [D-11 exception](release-contract.md#d-11-benchmark-policy) waives new two-p
 
 ## Evidence and history
 
-- [Validation](validation.md): latest implementation pass has fresh npm ci, 73 server tests, 22 browser smoke, 7 E2E, 7 axe, real Codex chat/Stop/Work/approval probes, and a Windows unpacked content check; no Mac artifact exists.
+- [Validation](validation.md): the macOS arm64/Node 24 pass has fresh npm ci, typecheck, 73 server tests, 22 browser smoke, 7 E2E, 7 axe, 10 visual checks, real Codex chat/continuation/Stop/Work probes, and an inspected 1.0.0 DMG/ZIP with SHA-256 hashes. Native question, VoiceOver/zoom, install/upgrade/quit/relaunch, and owner V1-08 acceptance remain open.
 - [Screenshots](screenshots/README.md): historical scoped visual evidence.
 - [Reverse-engineering findings](reverse-engineering.md): inspected reference and limits.
 - [Original public R1 roadmap](archive/project-roadmap-public-r1-2026-11-05.md), [contract](archive/release-contract-public-r1-2026-11-05.md), and [support matrix](archive/support-matrix-public-r1-2026-11-05.md): preserved previous scope and gates.
