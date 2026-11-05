@@ -1,6 +1,6 @@
 # Provider readiness and model identity
 
-**Active scope:** [personal macOS v1](release-contract.md), Codex only/default reasoning. Existing source is broader and not yet gated. PVD-006/010/011/015/016 are Review after the audit: blank-field clearing, scroll/count copy, saved-ID slicing, stale Forget probes, and incomplete contract coverage remain. [V1-03–06](project-roadmap.md#recommended-execution-order) owns the retained corrections; this implementation reference is not release acceptance.
+**Active scope:** [personal macOS v1](release-contract.md), Codex only/default reasoning. Source now gates the API/UI to Codex and provider-default dispatch. The audit corrections for stale Forget probes, scroll/count copy, saved-ID slicing, initial-save reservation, and truthful Stop are implemented with regressions; contract/real-Codex evidence is recorded in [validation](validation.md#personal-v1-implementation-pass-2026-11-05). This implementation reference is not Mac package acceptance.
 
 Status: **M2 implementation record with personal-v1 review corrections, 2026-11-05.** Implements the BEN-002 lifecycle contract for readiness, capability typing, catalog normalization, model-ID limits, and API-boundary readiness checks. Provider-specific journeys remain their own tasks.
 
@@ -43,7 +43,7 @@ Every provider carries typed capabilities. Speech-to-text is deliberately absent
 - OpenCode probe transitions `checking` → `ready` when models are found (detail explicitly says inference still needs a test), `needs-auth` when empty, or `error`.
 - HTTP/Ollama connect transitions `checking` → `ready` with models, `degraded` when connected without a model, or `error`.
 - Model catalogs use `normalizeModels()`: empty IDs rejected, duplicate IDs removed, blank names fall back to IDs, descriptions bounded, catalog capped at 200, IDs capped at 200.
-- Shared MODEL_ID_LIMIT bounds discovery, connect, persistence/import, dispatch, and the form; saved connection loading still slices IDs and must adopt preserve-or-reject behavior.
+- Shared MODEL_ID_LIMIT bounds discovery, connect, persistence/import, dispatch, and the form. Saved connection loading now preserves an exact valid ID or rejects an over-limit one instead of slicing it.
 - `RunManager.send()` rejects a provider that is not `ready` with a `409` before creating a streaming message. Explicit model/enum/unsupported-effort validation exists; personal-v1 dispatch must use provider default and gate custom controls.
 - Provider cards/settings show lifecycle labels (`Ready`, `Checking`, `Sign-in needed`, `Connection error`, etc.) and the model picker filters with `isProviderReady`.
 - Provider cards hydrate the saved endpoint and manual model ID; a connect response with error readiness keeps the form open and shows the redacted detail instead of closing.
@@ -107,4 +107,4 @@ Results: typecheck pass; 51/51 server/model-option tests pass; production build 
 
 ## Personal v1 review limits
 
-Disconnect does not invalidate a pending probe generation: the audit reproduced configured → ready after Forget. Native runtime Forget resets A Gent state and is not CLI sign-out. Current startup probes Codex only; OpenCode requires an explicit check. Actual account changes are not represented by a fresh account identity in every session binding. Automatic effort-save failures and effective chat/default display still need work; custom effort is paused. Follow the support matrix rather than treating these source mechanisms as end-to-end acceptance.
+Disconnect now advances the probe generation, so a late Codex result cannot restore readiness after Forget; the regression passes. Native runtime Forget resets A Gent state and is not CLI sign-out. Startup checks the Codex 0.166.x version before catalog/account discovery; OpenCode is paused and its connect/test routes are gated. Account changes remain only as precise as the profile field. Custom effort is gated and v1 dispatch ignores saved effort; the SidePanel shows effective Codex/model/mode. Follow the support matrix for Mac package acceptance.

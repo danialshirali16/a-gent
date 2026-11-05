@@ -4,7 +4,7 @@ Updated: 2026-11-05. **Active direction: personal macOS v1.0 with Codex.** The 1
 
 Follow the [ordered V1-01–V1-08 path](project-roadmap.md#recommended-execution-order), [contract](release-contract.md), and [task triage](roadmaps/v1-triage.md). Core provider setup, model/default accuracy, drafts, streaming/Stop/recovery, native project selection, and approval/question accessibility are the retained UI work. Full connectors, custom reasoning, skills, speech, scheduling/uploads expansion, and Windows/Android are paused.
 
-Scope gating is required implementation, not already completed: source still exposes deferred providers/custom reasoning. The approved [benchmark exception](release-contract.md#d-11-benchmark-policy) applies to retained UI corrections; fresh tests and actual Mac evidence remain required.
+Scope gating is implemented in source: Connections/Agent settings expose Codex only, custom Thinking controls are removed, provider-default reasoning is dispatched, and paused Connected Apps mutations are gated. The approved [benchmark exception](release-contract.md#d-11-benchmark-policy) applies to retained UI corrections; fresh Mac visual/VoiceOver evidence remains required.
 
 The [picker assessment](model-options-stress-test.md#current-status-after-provider-changes) distinguishes implemented ingestion/disambiguation/Unicode fixes from raw-fixture failures and remaining scroll/count/bounds work. The old blanket “seven open” wording is superseded.
 

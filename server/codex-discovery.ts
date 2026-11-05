@@ -4,6 +4,30 @@ import { homedir } from 'node:os';
 import path from 'node:path';
 
 export interface CodexLaunch { command: string; args?: string[]; }
+
+/** Extract the app-server build from its initialize user agent, e.g. `a_gent/0.166.0 (...)`. */
+export function parseCodexVersion(userAgent: unknown): string | undefined {
+  if (typeof userAgent !== 'string') return undefined;
+  const match = /\b(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)\b/.exec(userAgent);
+  return match?.[1];
+}
+
+/**
+ * Personal v1 is verified against the 0.166 minor. Patch releases are accepted
+ * because the protocol schema remains compatible; pre-releases and other
+ * minors are rejected with an actionable message instead of failing later.
+ */
+export function codexCompatibility(version: string | undefined): { supported: boolean; detail: string } {
+  if (!version) return { supported: false, detail: 'Could not determine the Codex CLI version. Reinstall the supported Codex CLI (0.166.x), run codex login, then reconnect.' };
+  const match = /^(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?$/.exec(version);
+  if (!match) return { supported: false, detail: `The installed Codex CLI reports an unreadable version (${version}). Install Codex 0.166.x, then reconnect.` };
+  if (match[4]) return { supported: false, detail: `Codex ${version} is a pre-release build. A Gent v1 requires the stable Codex 0.166.x CLI; install a stable release, then reconnect.` };
+  if (Number(match[1]) !== 0 || Number(match[2]) !== 166) {
+    return { supported: false, detail: `Codex ${version} is not supported by this A Gent release. Install Codex 0.166.x, run codex login, then reconnect.` };
+  }
+  return { supported: true, detail: `Codex ${version} is compatible with this release.` };
+}
+
 export interface CodexDiscoveryOptions {
   platform?: NodeJS.Platform;
   arch?: string;

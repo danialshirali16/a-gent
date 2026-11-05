@@ -2,6 +2,11 @@ name: Build A Gent
 
 on:
   workflow_dispatch:
+    inputs:
+      include_paused_platforms:
+        description: Run paused Windows and Android jobs
+        type: boolean
+        default: false
   push:
     branches: [main]
     tags: ['v*']
@@ -39,15 +44,8 @@ jobs:
           name: visual-regression-diff
           path: test-results/
 
-  desktop:
-    strategy:
-      matrix:
-        include:
-          - os: macos-latest
-            command: desktop:mac
-          - os: windows-latest
-            command: desktop:win
-    runs-on: ${{ matrix.os }}
+  desktop-macos:
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -57,15 +55,38 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
-      - run: npm run ${{ matrix.command }}
+      - run: npm run desktop:runtime
+      - run: npm run desktop:mac
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
       - uses: actions/upload-artifact@v4
         with:
-          name: A-Gent-${{ matrix.os }}
+          name: A-Gent-macos
+          path: release/*
+
+  desktop-windows:
+    if: github.event_name == 'workflow_dispatch' && inputs.include_paused_platforms == true
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run desktop:runtime
+      - run: npm run desktop:win
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: A-Gent-windows
           path: release/*
 
   android:
+    if: github.event_name == 'workflow_dispatch' && inputs.include_paused_platforms == true
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

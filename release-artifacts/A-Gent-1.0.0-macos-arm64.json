@@ -1,0 +1,76 @@
+{
+  "product": "A Gent",
+  "version": "1.0.0",
+  "platform": "macOS arm64",
+  "minimumMacOS": "13.0",
+  "branch": "codex/v1-macos-release",
+  "buildCommit": "c5dde0405d4becd71f3f6dc124a7cf2676792202",
+  "recordedAt": "2026-11-06T01:28:00Z",
+  "buildHost": {
+    "model": "MacBookPro17,1",
+    "chip": "Apple M1",
+    "memory": "8 GB",
+    "os": "macOS 27.2 (26B123)"
+  },
+  "buildRuntime": {
+    "node": "24.12.0",
+    "npm": "11.6.2",
+    "electron": "45.2.2",
+    "codex": "0.166.0"
+  },
+  "signing": "unsigned/ad-hoc; no Developer ID or notarization",
+  "artifacts": {
+    "appBundle": {
+      "treeSha256": "59b86ca263d8c03e4d23b1499b9523ff3503e7e40a9122ce41d2fcd9e88e4984",
+      "uncompressedSizeBytes": 322969898,
+      "note": "Sorted per-file SHA-256 tree digest; identical for the local build and the .app inside the downloaded CI DMG. Not a signing identity."
+    },
+    "localBuild": {
+      "dmg": {
+        "path": "release/A-Gent-1.0.0-mac-arm64.dmg",
+        "sizeBytes": 139709892,
+        "sha256": "04ea7ba47c19e09f62fd2aa65933230b38fae6cc2146a887a4e9cb05d59d7851"
+      },
+      "zip": {
+        "path": "release/A-Gent-1.0.0-mac-arm64.zip",
+        "sizeBytes": 133386114,
+        "sha256": "5cea7a8115698dfde570e13c94fbc1f0c1eb4df5fb8b9b4515675112b65d5532"
+      }
+    },
+    "ciDownload": {
+      "artifactZip": {
+        "name": "A-Gent-macos.zip",
+        "sizeBytes": 658485676,
+        "sha256": "02b7d02e7309448462259ddc405f8ccbed793c6f09a9645a86dc61c8ad409e9d"
+      },
+      "dmg": {
+        "path": "A-Gent-1.0.0-mac-arm64.dmg",
+        "sizeBytes": 139709919,
+        "sha256": "78e112feb9e310d8557cf26b28502186cbc1e0a6c6ab064827d55091ff3c48d8"
+      },
+      "zip": {
+        "path": "A-Gent-1.0.0-mac-arm64.zip",
+        "sizeBytes": 133386114,
+        "sha256": "683e8940d80eda6eb371cffb8addcb241d406112fbf1c1c5867fd134722674cd"
+      },
+      "note": "Use the DMG or ZIP from the artifact zip; do not use the artifact zip's extracted mac-arm64 directory, which may dereference framework symlinks."
+    }
+  },
+  "ci": {
+    "workflow": "Build A Gent",
+    "artifact": "A-Gent-macos",
+    "runUrl": "https://github.com/danialshirali16/a-gent/actions/runs/42116559054",
+    "conclusion": "success",
+    "artifactSizeBytes": 658485676,
+    "artifactSha256": "02b7d02e7309448462259ddc405f8ccbed793c6f09a9645a86dc61c8ad409e9d",
+    "downloadUrl": "https://github.com/danialshirali16/a-gent/actions/runs/42116559054/artifacts/13457416638"
+  },
+  "openChecks": [
+    "live native Codex question path",
+    "VoiceOver",
+    "actual macOS zoom/reflow",
+    "packaged Finder launch and Gatekeeper behavior",
+    "install/upgrade/quit/relaunch",
+    "owner V1-08 acceptance"
+  ]
+}

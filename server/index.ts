@@ -7,11 +7,12 @@ import { dirname, join, resolve, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import type { Agent, Attachment, DeviceInfo, Schedule, SendMessageInput, ServerEvent, ServerHandle, ServerOptions, WorkspaceFileEntry } from '../shared/types.js';
 import { MODEL_ID_LIMIT } from '../shared/providers.js';
+import { APP_VERSION } from '../shared/version.js';
 import { BUDGETS } from './budgets.js';
 import { redact, requestIdFrom } from './diagnostics.js';
 import { DeviceStore } from './devices.js';
 import { InteractionStore } from './interactions.js';
-import { agentPatch, conversationPatch, id, InputError, now, object, schedulePatch, settingsPatch, StateStore, string } from './store.js';
+import { agentPatch, conversationPatch, exportWorkspace, id, InputError, now, object, schedulePatch, settingsPatch, StateStore, string } from './store.js';
 import { ProviderManager } from './providers.js';
 import { RunManager } from './runs.js';
 
@@ -183,6 +184,15 @@ export async function startServer(options: ServerOptions = {}): Promise<ServerHa
     }
   };
   const hostOnlySettings = new Set(['defaultProviderId', 'defaultModelId', 'speech']);
+  const requireCodex = (providerId: string | undefined) => {
+    if (providerId && providerId !== 'codex') throw new InputError('Codex is the only runtime available in this A Gent release. Existing saved selections are preserved; choose Codex to continue.', 409);
+  };
+  const requireProviderDefaultReasoning = (effort: string | undefined) => {
+    if (effort) throw new InputError('Custom reasoning is not available in this A Gent release. A Gent uses the provider default.', 409);
+  };
+  const requireUnpausedSurface = (surface: string) => {
+    throw new InputError(`${surface} management is paused in this A Gent release. Existing saved data is preserved.`, 409);
+  };
   const checkGroup = (groupId?: string | null) => { if (groupId && !store.state.groups.some(group => group.id === groupId)) throw new InputError('Group not found.', 404); };
   const checkAgentGroup = (groupId?: string | null) => { if (groupId && !store.state.agentGroups.some(group => group.id === groupId)) throw new InputError('Agent group not found.', 404); };
   const workspaceFor = (conversationId?: string, agentId?: string): string => {
@@ -195,7 +205,7 @@ export async function startServer(options: ServerOptions = {}): Promise<ServerHa
     throw new InputError('Choose an agent or conversation before browsing files.');
   };
 
-  app.get('/api/health', (_req, res) => { res.json({ ok: true, name: 'A Gent', version: '0.1.0' }); });
+  app.get('/api/health', (_req, res) => { res.json({ ok: true, name: 'A Gent', version: APP_VERSION, runtime: 'codex', reasoning: 'provider-default', maxConcurrentRuns: 1 }); });
   app.get('/api/bootstrap', (_req, res) => { res.json({ state: store.state, providers: providers.providers, runs: [...runs.runs.values()], interactions: runs.getInteractions() }); });
   app.get('/api/events', (_req, res) => {
     const auth = res.locals.auth as RequestAuth;
@@ -212,15 +222,22 @@ export async function startServer(options: ServerOptions = {}): Promise<ServerHa
     if (store.state.agents.length >= 500) throw new InputError('This workspace has reached its 500 agent limit.');
     const patch = agentPatch(req.body);
     if (!patch.name) throw new InputError('Give your agent a name.');
-    if (patch.providerId) providers.get(patch.providerId);
+    // A saved workspace may still point its default at a paused runtime; the
+    // new agent must resolve to Codex rather than inherit that reference.
+    const effectiveProviderId = patch.providerId || store.state.settings.defaultProviderId;
+    requireCodex(effectiveProviderId);
+    requireProviderDefaultReasoning(patch.reasoningEffort);
+    providers.get(effectiveProviderId);
     checkAgentGroup(patch.agentGroupId);
-    const agent: Agent = { id: id(), name: patch.name, description: '', instructions: 'You are a helpful assistant.', color: '#f39161', icon: 'custom', providerId: store.state.settings.defaultProviderId, modelId: store.state.settings.defaultModelId, reasoningEffort: '', createdAt: now(), ...patch };
+    const agent: Agent = { id: id(), name: patch.name, description: '', instructions: 'You are a helpful assistant.', color: '#f39161', icon: 'custom', providerId: effectiveProviderId, modelId: store.state.settings.defaultModelId, reasoningEffort: '', createdAt: now(), ...patch };
     store.state.agents.push(agent); await publish(); res.status(201).json(agent);
   });
   app.patch('/api/agents/:id', async (req, res) => {
     const agent = store.state.agents.find(agent => agent.id === req.params.id);
     if (!agent) throw new InputError('Agent not found.', 404);
     const patch = agentPatch(req.body);
+    requireCodex(patch.providerId);
+    requireProviderDefaultReasoning(patch.reasoningEffort);
     if (patch.providerId) providers.get(patch.providerId);
     checkAgentGroup(patch.agentGroupId);
     if (agent.id === 'primary' && patch.archived) throw new InputError('Your primary A Gent stays in this workspace.');
@@ -229,19 +246,23 @@ export async function startServer(options: ServerOptions = {}): Promise<ServerHa
   app.post('/api/conversations', async (req, res) => {
     if (store.state.conversations.length >= 5000) throw new InputError('This workspace has reached its 5,000 chat limit.');
     const data = object(req.body), patch = conversationPatch(data); checkGroup(patch.groupId);
-    const conversation = store.createConversation(string(data.agentId, 'Agent ID', 100), patch);
+    const agent = store.getAgent(string(data.agentId, 'Agent ID', 100));
+    const effectiveProviderId = patch.providerId || agent.providerId || store.state.settings.defaultProviderId;
+    requireCodex(effectiveProviderId);
+    requireProviderDefaultReasoning(patch.reasoningEffort);
+    providers.get(effectiveProviderId);
+    const conversation = store.createConversation(agent.id, { ...patch, providerId: effectiveProviderId });
     await publish(); res.status(201).json(conversation);
   });
   app.patch('/api/conversations/:id', async (req, res) => {
     const conversation = store.getConversation(String(req.params.id)), patch = conversationPatch(req.body); checkGroup(patch.groupId);
+    requireCodex(patch.providerId);
+    requireProviderDefaultReasoning(patch.reasoningEffort);
     const effectiveProviderId = patch.providerId || conversation.providerId || store.getAgent(conversation.agentId).providerId;
+    requireCodex(effectiveProviderId);
     const provider = providers.get(effectiveProviderId);
     const effectiveModelId = patch.modelId !== undefined ? patch.modelId : conversation.modelId;
     if (effectiveModelId && provider.models.length && !provider.models.some(model => model.id === effectiveModelId)) throw new InputError('Choose a model available from this provider.', 409);
-    const model = effectiveModelId ? provider.models.find(item => item.id === effectiveModelId) : undefined;
-    const effectiveEffort = patch.reasoningEffort !== undefined ? patch.reasoningEffort : conversation.reasoningEffort;
-    if (effectiveEffort && model?.reasoning?.kind === 'enum' && !model.reasoning.options.some(option => option.value === effectiveEffort)) throw new InputError('The selected reasoning option is not supported by this model.', 409);
-    if (effectiveEffort && model?.reasoning?.kind === 'unsupported') throw new InputError('This model does not support a reasoning setting.', 409);
     Object.assign(conversation, patch, { updatedAt: now() }); await publish(); res.json(conversation);
   });
   app.post('/api/conversations/:id/messages', async (req, res) => { res.status(202).json(await runs.send(String(req.params.id), messageInput(req.body))); });
@@ -317,6 +338,7 @@ export async function startServer(options: ServerOptions = {}): Promise<ServerHa
   app.patch('/api/settings', async (req, res) => {
     const patch = settingsPatch(req.body);
     if (Object.keys(patch).some(key => hostOnlySettings.has(key))) requireHostAuthority(req, res);
+    requireCodex(patch.defaultProviderId);
     if (patch.defaultProviderId) providers.get(patch.defaultProviderId);
     Object.assign(store.state.settings, patch); await publish(); res.json(store.state.settings);
   });
@@ -406,6 +428,7 @@ export async function startServer(options: ServerOptions = {}): Promise<ServerHa
   });
   app.post('/api/apps/:id/auth', async (req, res) => {
     requireHostAuthority(req, res);
+    requireUnpausedSurface('Connected App sign-in');
     const data = object(req.body);
     let scopes: string[] | undefined;
     if (data.scopes !== undefined) {
@@ -423,18 +446,19 @@ export async function startServer(options: ServerOptions = {}): Promise<ServerHa
   });
   app.post('/api/apps/reload', async (req, res) => {
     requireHostAuthority(req, res);
-    await providers.reloadApps();
-    res.json({ ok: true });
+    requireUnpausedSurface('Connected App');
   });
   app.get('/api/app-records', (_req, res) => { res.json(store.state.apps); });
   app.post('/api/app-records', async (req, res) => {
     requireHostAuthority(req, res);
+    requireUnpausedSurface('Connected App');
     const data = object(req.body), timestamp = now();
     const record = await store.saveApp({ ...data, id: data.id === undefined ? id() : string(data.id, 'App ID', 100), createdAt: timestamp, updatedAt: timestamp });
     await publish(); res.status(201).json(record);
   });
   app.patch('/api/app-records/:id', async (req, res) => {
     requireHostAuthority(req, res);
+    requireUnpausedSurface('Connected App');
     const appId = String(req.params.id), existing = store.state.apps.find(item => item.id === appId);
     if (!existing) throw new InputError('App record not found.', 404);
     const record = await store.saveApp({ ...existing, ...object(req.body), id: appId, updatedAt: now() }, appId);
@@ -442,18 +466,19 @@ export async function startServer(options: ServerOptions = {}): Promise<ServerHa
   });
   app.delete('/api/app-records/:id', async (req, res) => {
     requireHostAuthority(req, res);
+    requireUnpausedSurface('Connected App');
     if (!(await store.removeApp(String(req.params.id)))) throw new InputError('App record not found.', 404);
     await publish(); res.json({ ok: true });
   });
-  app.post('/api/providers/:id/connect', async (req, res) => { requireHostAuthority(req, res); res.json(await providers.connect(String(req.params.id), req.body ?? {})); });
+  app.post('/api/providers/:id/connect', async (req, res) => { requireHostAuthority(req, res); const providerId = String(req.params.id); requireCodex(providerId); res.json(await providers.connect(providerId, req.body ?? {})); });
   app.post('/api/providers/:id/disconnect', async (req, res) => {
     requireHostAuthority(req, res);
     const providerId = String(req.params.id);
-    if ([...runs.runs.values()].some(run => run.providerId === providerId && ['running', 'waiting'].includes(run.status))) throw new InputError('Stop active runs for this provider before disconnecting.', 409);
+    if ([...runs.runs.values()].some(run => run.providerId === providerId && ['running', 'waiting', 'stopping'].includes(run.status))) throw new InputError('Stop active runs for this provider before disconnecting.', 409);
     res.json(await providers.disconnect(providerId));
   });
-  app.post('/api/providers/:id/test', async (req, res) => { requireHostAuthority(req, res); res.json(await providers.test(String(req.params.id), req.body ?? {})); });
-  app.get('/api/export', (req, res) => { requireHostAuthority(req, res); res.setHeader('Content-Disposition', 'attachment; filename="a-gent-workspace.json"'); res.json(store.state); });
+  app.post('/api/providers/:id/test', async (req, res) => { requireHostAuthority(req, res); const providerId = String(req.params.id); requireCodex(providerId); res.json(await providers.test(providerId, req.body ?? {})); });
+  app.get('/api/export', (req, res) => { requireHostAuthority(req, res); res.setHeader('Content-Disposition', 'attachment; filename="a-gent-workspace.json"'); res.json(exportWorkspace(store.state)); });
   app.post('/api/import', async (req, res) => { requireHostAuthority(req, res); await store.merge(req.body); await publish(); res.json(store.state); });
   app.use('/api', (_req, res) => { res.status(404).json({ error: 'A Gent API endpoint not found.' }); });
 

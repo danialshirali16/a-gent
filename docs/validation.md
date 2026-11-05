@@ -1,8 +1,137 @@
 # A Gent — Validation Record
 
-Updated: 2026-11-05. Latest assessment source: fc634674f45bb578c68f8963758eef786aec82ac. The latest audit used Linux x64; earlier macOS/Windows results below retain their original scope. Documentation changes do not certify a new application build.
+Updated: 2026-11-06. Latest implementation source: branch `codex/v1-macos-release` from `be7b52e`. The latest command/runtime/package checks ran on a macOS arm64 (Apple M1) host with Node 24.12.0; the earlier implementation pass used Windows x64 and the assessment used Linux x64. Earlier results below retain their original scope. The Mac package is built and inspected, but install/relaunch, native-question, VoiceOver/zoom, and owner V1-08 acceptance remain open.
 
 [Active v1 path](project-roadmap.md#recommended-execution-order) · [Contract](release-contract.md) · [Candidate matrix](support-matrix.md) · [Current state](current-state-review.md)
+
+## macOS arm64 source and candidate pass 2026-11-06
+
+Scope: V1-06 source/browser/real-Codex checks and V1-07 package build/inspection on the candidate branch `codex/v1-macos-release`. The exact build commit, sizes, and SHA-256 values are recorded in `release-artifacts/A-Gent-1.0.0-macos-arm64.json` and `SHA256SUMS.txt`. This is actual Apple-silicon evidence, but it is not a packaged-app acceptance pass.
+
+### Environment
+
+| Item | Value |
+| --- | --- |
+| Host | MacBook Pro (MacBookPro17,1), Apple M1, 8 GB |
+| OS | macOS 27.2 (26B123) |
+| Node / npm | 24.12.0 / 11.6.2 |
+| Electron | 45.2.2 |
+| Codex CLI | 0.166.0, signed in externally (8 models; first `gpt-6.1-sol`) |
+| OpenCode CLI | 1.17.9 installed; differs from the paused 2.2.5 fixture and is not a v1 gate |
+
+### Commands and results
+
+| Check | Result and scope |
+| --- | --- |
+| `npm ci --no-audit --no-fund` | Pass; 536 packages from the lockfile. |
+| `npm run typecheck` | Pass. |
+| `npm test` | 73/73 pass, including core-failure, draft, HIL, persistence, provider, and package-content regressions. |
+| `npm run build` | Pass; existing >500 kB Vite chunk advisory remains. |
+| `npm run test:ui` | 22/22 smoke pass in macOS Chrome against the fixture host. |
+| `npm run test:e2e` | 7/7 pass. |
+| `npm run test:a11y` | 7/7 axe scans pass with 0 violations and 0 serious/critical findings. |
+| `npm run test:visual` | 10/10 pass after reviewing and regenerating the darwin baselines for the intentional `Connections` label (V1 scope). No unrelated layout change. |
+| `node scripts/runtime-baseline.mjs --strict` | Codex 0.166.0 matches the fixture; 106 client methods, 10 server requests, and 26 schema files pass. Strict exit is non-zero only because installed OpenCode 1.17.9 differs from the paused 2.2.5 baseline. |
+| `npm run desktop:runtime` | Pass; Electron 45.2.2 installed. |
+| `npm run desktop:mac` | Pass; `A-Gent-1.0.0-mac-arm64.dmg` and `.zip` built for arm64. |
+| Package inspection | `A Gent.app` is arm64, version 1.0.0, bundle id `com.agent.desktop`, minimum macOS 13.0; ICNS hash matches `electron/assets/icon.icns`; asar contains `dist/`, `dist-server/`, `electron/`, `README.md`, 59 docs Markdown files, `package.json`, and `dist/THIRD_PARTY_NOTICES.txt`; no workspace, `.token`, `state.json`, `connections.json`, or `.data` was found. |
+| DMG/ZIP contents | DMG mounts with `A Gent.app` and an `Applications` link; ZIP expands the same app. |
+| Signing | Unsigned/ad-hoc only (`identity: null`); `spctl` on this host reported `override=security disabled`, so this is not ordinary Gatekeeper evidence. No notarization claim. |
+| `npm run test:visual`/install/launch | Visual passes in Chrome; Finder launch, native dialog, install/upgrade/quit/relaunch, and Gatekeeper behavior were not exercised. |
+
+The first record-commit CI run exposed a flaky dark-mode axe scan: Chromium reported the new root `--ui-ink` before the shell's inherited color recalculated, so axe briefly saw light text on a dark background. The audit now polls the painted `.reason-app` color (commit `a374158`); 35/35 repeated accessibility checks pass locally, and the fix is included in the current CI run.
+
+### Real Codex probes
+
+All live checks used the external signed-in Codex CLI with an isolated data directory and disposable workspace. No account token was copied into the workspace or repository.
+
+| Scenario | Result |
+| --- | --- |
+| Discovery/account | Codex ready with 8 models; no OpenCode or other provider connection required. |
+| First chat | Prompt “Reply with exactly OK. Do not use tools.” completed with `OK` and a persisted provider thread. |
+| Continuation | “Reply with exactly DONE. Do not use tools.” completed with `DONE` on the same persisted thread. |
+| Chat read-only | A request to create a file completed with `CHAT-READ-ONLY`; no file was created and no approval was raised. |
+| Work mode | A requested `work-check.txt` containing `hello` was created inside the disposable workspace; the run completed. This host showed variable multi-minute latency (one turn took ~14 minutes) but no permanent hang. |
+| Stop | `interrupt` returned `stopping`; a send while stopping returned 409; the run settled `interrupted` in about 1 s; the next prompt completed with `AFTER`. |
+| Approval decline | An outside-workspace home-directory write raised one native command approval. Decline completed the run and left the target file absent. |
+| Approval accept | Repeating the request and accepting created only the target file with `hello`; the file was removed afterward. |
+| Native question | Not exercised. The live Codex question path was not reachable in the retained Chat/Work flow; deterministic HIL fixtures pass. This remains open. |
+| VoiceOver / actual macOS zoom | Not exercised. Keyboard smoke/focus checks pass; VoiceOver and OS zoom/reflow remain open. |
+
+The `/tmp` path is intentionally writable under the current `excludeSlashTmp: false` turn policy, so it did not raise an approval. The recorded approval scenario uses a home-directory path outside the workspace.
+
+### Candidate artifacts
+
+| Artifact | Record |
+| --- | --- |
+| Local `release/A-Gent-1.0.0-mac-arm64.dmg` | Size and SHA-256 in `release-artifacts/A-Gent-1.0.0-macos-arm64.json` / `LOCAL-SHA256SUMS.txt`. |
+| Local `release/A-Gent-1.0.0-mac-arm64.zip` | Size and SHA-256 in the same manifest. |
+| CI `A-Gent-macos` artifact zip | 658,485,676 bytes; SHA-256 `02b7d02e7309448462259ddc405f8ccbed793c6f09a9645a86dc61c8ad409e9d`; `CI-SHA256SUMS.txt`. |
+| CI-extracted DMG / ZIP | SHA-256 values in `SHA256SUMS.txt`; the CI DMG's app tree hash matches the local app (`59b86ca2…`). |
+| `.app` bundle | Inspected in both builds; identical content tree hash `59b86ca263d8c03e4d23b1499b9523ff3503e7e40a9122ce41d2fcd9e88e4984`. A bundle digest is not a notarization identity. |
+
+CI artifact: the `A-Gent-macos` artifact attached to the GitHub Actions run for the build commit (expires per repository policy). The artifact's extracted `mac-arm64` directory can have dereferenced framework symlinks; use its DMG or ZIP. The manifest itself is repository evidence and is not part of the packaged app.
+
+### Open V1-06/V1-07 items
+
+- Native Codex question path (live, not fixtures).
+- VoiceOver and actual macOS zoom/reflow.
+- Packaged install/upgrade/quit/relaunch, Finder launch, native folder dialog, Gatekeeper/quarantine behavior.
+- Danial's V1-08 acceptance of the exact artifact; no release-readiness or public-publication claim.
+
+## Personal v1 implementation pass 2026-11-05
+
+Scope: V1-02 baseline plus the V1-03/V1-04/V1-05 source path on branch `codex/v1-macos-release`, created from `be7b52e` (current `main`). This record distinguishes commands that ran on the Windows development host from the still-required Mac package/V1-08 evidence. It does not accept a release candidate.
+
+### Environment and clean baseline
+
+| Check | Result and scope |
+| --- | --- |
+| Host | Windows 11 x64 (10.0.26300), Node v26.12.1, npm 11.20.0, Codex CLI 0.166.0, OpenCode 2.2.5. Electron 45.2.2 installed through `npm run desktop:runtime`. This is a development host, not the owner Mac. |
+| Registry reachability | `npm ping` returned PONG from registry.npmjs.org. The prior Linux 403 was not reproduced here. |
+| `npm ci --no-audit --no-fund` | Pass; 535 packages installed from the lockfile. `npm ls --depth=0` resolved the pinned dependency set. |
+| `npm run typecheck` | Pass. |
+| `npm test` | 73/73 pass, including the new core-failure and draft regressions. |
+| `npm run build` | Pass; the existing Vite >500 kB chunk advisory remains. |
+| `node scripts/runtime-baseline.mjs --strict` | Pass on this host: Codex 0.166.0 and OpenCode 2.2.5 matched fixture versions; required Codex methods and selected schema hashes passed. OpenCode OpenAPI was not probed (`fetch failed`). |
+| `npm run test:ui` | 22/22 browser smoke tests pass in Windows Chrome against the fixture host. |
+| `npm run test:e2e` | 7/7 browser E2E workflows pass. |
+| `npm run test:a11y` | 7/7 axe scans pass with 0 violations and 0 serious/critical findings. |
+| `npm run test:visual` | Not run. Checked-in baselines are macOS `darwin`; a Windows screenshot comparison cannot certify the Mac candidate. |
+| `npm run desktop:pack` | Windows x64 unpacked package built at `release/win-unpacked`. `app.asar` contains `dist/`, `dist-server/`, `electron/`, docs, README, and package version 1.0.0; no workspace state, `.token`, `.data`, or provider secret was found. This is a packaging-content check, not a Mac artifact or Finder/Gatekeeper test. |
+| `npm run desktop:mac` | Not run: this host is Windows x64. No current `.app`, DMG, ZIP, checksum, or Mac install result exists. |
+
+### Real Codex probes and source behavior
+
+All live checks used the signed-in external Codex CLI and isolated temporary data directories. No account token was copied into the workspace or repository. They are real-runtime evidence, separate from the deterministic fixtures.
+
+| Scenario | Result |
+| --- | --- |
+| CLI/account discovery | `CodexBridge.info()` returned authenticated with 8 models; first catalog ID `gpt-6.1-sol`. |
+| Runtime policy | A real app-server thread with the source policy config reported all four configured external MCP servers as `disabled`: `chrome-devtools`, `codebase-memory-mcp`, `node_repl`, `open-design`. Features `apps`, `plugins`, `hooks`, and `multi_agent` were disabled, and skill instructions were withheld. `codex debug prompt-input` with the same policy flags produced zero skill entries. |
+| First real chat | `gpt-6.1-sol`, prompt “Reply with exactly OK. Do not use tools.” completed with `OK`; a provider thread was persisted. |
+| Continuation | Second prompt “Reply with exactly DONE. Do not use tools.” completed with `DONE` on the same provider thread. |
+| Restart/continue | Host closed and restarted against the same isolated data directory; the next prompt completed with `TWO` on the same persisted provider thread (`ONE` before restart). |
+| Real Stop | A long answer in Chat mode returned `stopping` immediately; an attempted send while stopping returned 409; the run settled as `interrupted`; the next prompt completed with `AFTER`. |
+| Real Work mode | A disposable workspace write completed and produced `work-check.txt` containing `hello`. |
+| Real Chat read-only | A request to create a file in Chat mode completed without creating it; the model explained that Chat mode is read-only. |
+| Real approval decline | A `require_escalated` PowerShell write outside the workspace raised one native command approval. Declining completed the run and left the target file absent. |
+| Real approval accept | Repeating the same request and accepting the approval created only the requested file with `hello`; the temporary directory was then removed. |
+| Real native question | Not exercised. The supported QA question path is covered by deterministic HIL fixtures; Codex's live request-user-input path was not reachable in the retained Chat/Work mode test. This remains a V1-06/manual-package check. |
+
+The live probes did not exercise VoiceOver, actual Mac zoom/reflow, Finder launch, native folder dialog, Quit/relaunch, Gatekeeper, or the packaged Mac app. Machine-readable evidence: [2026-11-05 implementation probe](benchmarks/evidence/2026-11-05-v1-implementation.json).
+
+### Source changes verified by this pass
+
+- Initial persistence failure now rolls back the reservation and both messages; a retry is not permanently 409 (`tests/server/v1-regressions.test.ts`).
+- Forget invalidates in-flight probes, so a late Codex result cannot restore readiness.
+- Stop reports `stopping` until provider cleanup, rejects concurrent sends, and only then exposes `interrupted`; shutdown waits for active-run finalizers before saving.
+- Export strips `providerThreadId`, `providerBinding`, and app `credentialRef`; import already strips runtime bindings.
+- v1 dispatch ignores saved reasoning metadata and sends provider-default reasoning; custom reasoning API/UI paths are gated while saved values remain.
+- Only Codex is accepted at provider/agent/conversation/default settings boundaries; paused provider, app-record, app-sign-in, and app-reload mutations return 409 while saved data remains.
+- Drafts are device-local (Electron/browser local storage), scoped by host and chat/agent; navigation, failed send, offline/reconnect, and reload preserve them. They are not part of workspace export.
+- Codex compatibility accepts the verified 0.166.x line and rejects prerelease/other minors with actionable install guidance.
+- The browser suite verifies model selection/effective state, Stop, offline stream reconnect/resynchronization, and draft retention.
 
 ## Personal v1 readiness assessment
 

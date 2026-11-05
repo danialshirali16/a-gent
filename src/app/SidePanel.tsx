@@ -29,6 +29,10 @@ export interface SidePanelProps {
   conversations: Conversation[];
   groups: Group[];
   currentRun?: Run;
+  effectiveProviderName: string;
+  effectiveModelId: string;
+  mode: 'chat' | 'work';
+  stopping?: boolean;
   onSelectConversation: (conversation: Conversation) => void;
   onNewChat: () => void;
   onCreateGroup: () => void;
@@ -55,8 +59,8 @@ export function SidePanel(props: SidePanelProps) {
     || [...(props.conversation?.messages || [])].reverse().find(message => message.role === 'assistant')?.activities
     || [];
   const workspace = props.conversation?.workspacePath || props.agent?.workspacePath || '';
-  const status = props.currentRun ? (props.currentRun.status === 'waiting' ? 'Waiting for approval' : 'Working') : 'Ready';
-  const statusTone = props.currentRun ? (props.currentRun.status === 'waiting' ? 'warning' : 'info') : 'success';
+  const status = props.stopping || props.currentRun?.status === 'stopping' ? 'Stopping' : props.currentRun ? (props.currentRun.status === 'waiting' ? 'Waiting for approval' : 'Working') : 'Ready';
+  const statusTone = props.stopping || props.currentRun?.status === 'stopping' ? 'warning' : props.currentRun ? (props.currentRun.status === 'waiting' ? 'warning' : 'info') : 'success';
   const pendingApprovals = props.currentRun?.approvals.filter(approval => approval.status === 'pending') || [];
 
   return <aside className="reason-sidepanel" aria-label="Session details">
@@ -85,8 +89,10 @@ export function SidePanel(props: SidePanelProps) {
             </div>
           </div>
           <div className="reason-session-rows">
-            <div className="reason-session-row"><span>Model</span><span>{props.agent.modelId || 'Provider default'}</span></div>
-            <div className="reason-session-row"><span>Effort</span><span>{props.agent.reasoningEffort || 'Provider default'}</span></div>
+            <div className="reason-session-row"><span>Connection</span><span>{props.effectiveProviderName}</span></div>
+            <div className="reason-session-row"><span>Model</span><span>{props.effectiveModelId || 'Provider default'}</span></div>
+            <div className="reason-session-row"><span>Reasoning</span><span>Provider default</span></div>
+            <div className="reason-session-row"><span>Mode</span><span>{props.mode === 'work' ? 'Work · sandboxed' : 'Chat · read-only'}</span></div>
             <div className="reason-session-row"><span>Workspace</span><span title={workspace}>{workspace || 'Host default'}</span></div>
             <div className="reason-session-row"><span>Conversation</span><span title={props.conversation?.title}>{props.conversation?.title || 'New conversation'}</span></div>
             <div className="reason-session-row"><span>Status</span><StatusIndicator label={status} tone={statusTone} pulse={!!props.currentRun} /></div>

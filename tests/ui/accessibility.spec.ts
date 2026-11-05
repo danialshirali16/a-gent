@@ -22,6 +22,14 @@ async function setTheme(page: Page, theme: 'light' | 'dark') {
   }, theme);
   await expect.poll(() => page.evaluate(() => document.documentElement.dataset.theme)).toBe(theme);
   await expect.poll(() => page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--ui-ink').trim())).toBe(theme === 'dark' ? '#f5f5f5' : '#1c1c1c');
+  // A root custom-property change can reach getComputedStyle(:root) before Chromium
+  // recalculates the inherited color on the shell. Wait for the painted element,
+  // not just the variable, so axe never scans a half-applied theme.
+  const expectedColor = theme === 'dark' ? 'rgb(245, 245, 245)' : 'rgb(28, 28, 28)';
+  await expect.poll(() => page.evaluate(() => {
+    const shell = document.querySelector('.reason-app');
+    return shell ? getComputedStyle(shell).color : '';
+  })).toBe(expectedColor);
   await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
 }
 
@@ -53,7 +61,7 @@ test('settings dialog passes axe', async ({ page }, testInfo) => {
 test('connections dialog passes axe', async ({ page }, testInfo) => {
   await home(page);
   await setTheme(page, 'light');
-  await page.getByRole('button', { name: 'Connect apps' }).click();
+  await page.getByRole('button', { name: 'Connections' }).click();
   await expect(page.getByRole('dialog', { name: 'Connections' })).toBeVisible();
   await audit(page, testInfo, 'connections', 'dialog[open]');
 });

@@ -15,9 +15,9 @@ test('Reason-style shell, rail, settings, and connections', async ({ page }) => 
   await expect(page.getByRole('heading', { name: 'Appearance' })).toBeVisible();
   await page.getByRole('button', { name: 'Close dialog' }).click();
 
-  await page.getByRole('button', { name: 'Connect apps' }).click();
+  await page.getByRole('button', { name: 'Connections' }).click();
   await expect(page.getByRole('heading', { name: 'Connections' })).toBeVisible();
-  await expect(page.getByRole('tab', { name: 'Models' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Codex' })).toBeVisible();
   await page.getByRole('button', { name: 'Close dialog' }).click();
 });
 
@@ -45,6 +45,55 @@ test('chat streams a reply through the fake Codex adapter', async ({ page }) => 
   await expect(terminal.getByText('Connecting to your model')).toBeVisible();
 });
 
+test('Stop stays truthful until provider cleanup and then releases the chat', async ({ page }) => {
+  await page.goto('/');
+  const token = await page.evaluate(() => (window as any).__AGENT_CONFIG__?.token as string | undefined);
+  const status = await page.evaluate(async next => (await fetch('/api/providers/codex/connect', { method: 'POST', headers: { Authorization: `Bearer ${next}`, 'Content-Type': 'application/json' }, body: '{}' })).status, token!);
+  expect(status).toBe(200);
+  await page.getByRole('textbox', { name: 'Message A Gent' }).fill('[stop-slow]');
+  await page.getByRole('button', { name: 'Send message' }).click();
+  await page.getByRole('button', { name: 'Stop reply' }).click();
+  await expect(page.locator('.reason-composer-status .chip', { hasText: 'Stopping…' })).toBeVisible();
+  await expect(page.getByText('Stopped by you')).toBeVisible({ timeout: 10000 });
+  await expect(page.getByRole('button', { name: 'Send message' })).toBeVisible();
+  await page.getByRole('textbox', { name: 'Message A Gent' }).fill('After stop');
+  await page.getByRole('button', { name: 'Send message' }).click();
+  await expect(page.getByRole('main').getByText(/A Gent test response/).last()).toBeVisible({ timeout: 15000 });
+});
+
+test('a dropped stream reconnects and resynchronizes the running chat', async ({ page, context }) => {
+  await page.goto('/');
+  const token = await page.evaluate(() => (window as any).__AGENT_CONFIG__?.token as string | undefined);
+  const status = await page.evaluate(async next => (await fetch('/api/providers/codex/connect', { method: 'POST', headers: { Authorization: `Bearer ${next}`, 'Content-Type': 'application/json' }, body: '{}' })).status, token!);
+  expect(status).toBe(200);
+  await page.getByRole('textbox', { name: 'Message A Gent' }).fill('[slow]');
+  await page.getByRole('button', { name: 'Send message' }).click();
+  await expect(page.getByRole('main').getByText('[slow]')).toBeVisible({ timeout: 10000 });
+  await expect(page.getByRole('button', { name: 'Stop reply' })).toBeVisible();
+  await page.waitForTimeout(300);
+  await context.setOffline(true);
+  await expect(page.getByText('Reconnecting')).toBeVisible({ timeout: 15000 });
+  await context.setOffline(false);
+  await expect(page.getByText('Reconnecting')).not.toBeVisible({ timeout: 15000 });
+  await expect(page.getByRole('main').getByText('Slow task completed.')).toBeVisible({ timeout: 15000 });
+  await expect(page.getByRole('button', { name: 'Send message' })).toBeVisible();
+});
+
+test('unsent drafts survive agent navigation and reload', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Product Designer', exact: true }).click();
+  const composer = page.getByRole('textbox', { name: 'Message Product Designer' });
+  await composer.fill('Draft that must survive navigation');
+  await page.getByRole('button', { name: 'Software Engineer', exact: true }).click();
+  await expect(page.getByRole('textbox', { name: 'Message Software Engineer' })).toHaveValue('');
+  await page.getByRole('button', { name: 'Product Designer', exact: true }).click();
+  await expect(composer).toHaveValue('Draft that must survive navigation');
+  await page.reload();
+  await expect(composer).toHaveValue('Draft that must survive navigation');
+  await composer.fill('');
+  await page.waitForTimeout(400);
+});
+
 test('mobile drawer opens and closes', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
@@ -55,24 +104,14 @@ test('mobile drawer opens and closes', async ({ page }) => {
 });
 
 
-test('settings device tokens can be created and rotated', async ({ page }) => {
+test('settings do not advertise deferred remote-device setup', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: /Personal workspace/ }).click();
   await page.getByRole('button', { name: 'Devices' }).click();
   await expect(page.getByRole('heading', { name: 'Devices', exact: true })).toBeVisible();
-  await page.getByLabel('Device name').fill('Playwright Phone');
-  await page.getByRole('button', { name: 'Create', exact: true }).click();
-  await expect(page.getByText('New token for Playwright Phone')).toBeVisible();
-  const token = await page.locator('.device-token-value code').textContent();
-  expect(token).toMatch(/^agt_/);
-  await page.getByRole('button', { name: 'Done' }).click();
-  const row = page.locator('.device-row', { hasText: 'Playwright Phone' });
-  await expect(row).toBeVisible();
-  await row.getByRole('button', { name: 'Rotate' }).click();
-  await expect(page.getByText('New token for Playwright Phone')).toBeVisible();
-  const rotated = await page.locator('.device-token-value code').textContent();
-  expect(rotated).toMatch(/^agt_/);
-  expect(rotated).not.toBe(token);
+  await expect(page.getByText(/remote-device setup is deferred/i)).toBeVisible();
+  await expect(page.getByLabel('Device name')).toHaveCount(0);
+  await expect(page.getByText('Create a pairing token')).toHaveCount(0);
 });
 
 
@@ -278,7 +317,7 @@ test('dialogs close with Escape and restore focus', async ({ page }) => {
 
 test('model picker supports keyboard navigation', async ({ page }) => {
   await page.goto('/');
-  const trigger = page.getByRole('button', { name: /Codex Balanced/ });
+  const trigger = page.locator('.reason-model-pill');
   await trigger.focus();
   await page.keyboard.press('ArrowDown');
   await expect(page.getByRole('dialog', { name: 'Choose a model' })).toBeVisible();
@@ -288,6 +327,24 @@ test('model picker supports keyboard navigation', async ({ page }) => {
   await expect(trigger).toBeFocused();
 });
 
+
+test('model selection shows the effective chat choice and persists', async ({ page }) => {
+  await page.goto('/');
+  const token = await page.evaluate(() => (window as any).__AGENT_CONFIG__?.token as string | undefined);
+  const status = await page.evaluate(async next => (await fetch('/api/providers/codex/connect', { method: 'POST', headers: { Authorization: `Bearer ${next}`, 'Content-Type': 'application/json' }, body: '{}' })).status, token!);
+  expect(status).toBe(200);
+  await page.getByRole('button', { name: 'Research Partner', exact: true }).click();
+  await page.locator('.reason-model-pill').click();
+  await page.getByRole('option', { name: 'Test model 2' }).click();
+  await expect(page.locator('.reason-model-pill')).toContainText('Test model 2');
+  await expect(page.locator('.model-picker-thinking-unavailable')).toHaveText('Provider default');
+  await page.reload();
+  await expect(page.locator('.reason-model-pill')).toContainText('Test model 2');
+  await page.getByRole('button', { name: 'Open side panel' }).click();
+  await page.getByRole('tab', { name: 'Session', exact: true }).click();
+  await expect(page.locator('.reason-session-row', { hasText: 'Model' })).toContainText('Test model 2');
+  await expect(page.locator('.reason-session-row', { hasText: 'Reasoning' })).toContainText('Provider default');
+});
 
 test('dialogs keep keyboard focus inside', async ({ page }) => {
   await page.goto('/');
@@ -325,15 +382,15 @@ test('loads the Inter Latin variable font only', async ({ page }) => {
 });
 
 
-test('connections lists OpenCode, Cloud, and Antigravity providers', async ({ page }) => {
+test('connections list only the retained Codex runtime', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('button', { name: 'Connect apps' }).click();
+  await page.getByRole('button', { name: 'Connections' }).click();
   await expect(page.getByRole('heading', { name: 'Connections' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'OpenCode' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Cloud' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Antigravity' })).toBeVisible();
-  const opencode = page.locator('.provider-card', { hasText: 'OpenCode' });
-  await expect(opencode.getByRole('button', { name: 'Check connection' })).toBeVisible();
-  const cloud = page.locator('.provider-card', { hasText: 'Cloud' });
-  await expect(cloud.getByRole('button', { name: 'Connect provider' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Codex', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'OpenCode' })).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Cloud' })).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Antigravity' })).toHaveCount(0);
+  const codex = page.locator('.provider-card', { hasText: 'Codex' });
+  await codex.getByRole('button', { name: 'Manage' }).click();
+  await expect(codex.getByRole('button', { name: 'Check connection' })).toBeVisible();
 });

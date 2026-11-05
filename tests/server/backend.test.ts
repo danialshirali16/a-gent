@@ -1,5 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { existsSync } from 'node:fs';
 import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
 import { dirname, join, win32 } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -61,6 +62,7 @@ test('avatar shapes migrate, validate, persist, and round-trip', async () => {
 
   const run = (agentId: string, status: Run['status'], startedAt: string): Run => ({ id: `${agentId}-${status}-${startedAt}`, conversationId: 'chat', agentId, messageId: 'message', status, providerId: 'codex', modelId: '', startedAt, activities: [], approvals: [] });
   assert.equal(avatarActivityForRuns([run('a', 'running', '2026-01-01T00:00:00.000Z')]).get('a'), 'working');
+  assert.equal(avatarActivityForRuns([run('a', 'stopping', '2026-01-01T00:00:00.000Z')]).get('a'), 'working');
   assert.equal(avatarActivityForRuns([run('a', 'waiting', '2026-01-01T00:00:00.000Z')]).get('a'), 'default');
   for (const status of ['completed', 'failed', 'interrupted'] as const) assert.equal(avatarActivityForRuns([run('a', status, '2026-01-01T00:00:00.000Z')]).get('a'), undefined);
   assert.equal(avatarActivityForRuns([run('a', 'running', '2026-01-01T00:00:00.000Z'), run('a', 'completed', '2026-01-01T01:00:00.000Z')]).get('a'), undefined);
@@ -425,7 +427,8 @@ test('host authority separates desktop devices from remote devices for credentia
 
     assert.equal((await call(device.body.token, '/bootstrap')).status, 200);
     assert.equal((await call(device.body.token, '/export')).status, 200, 'the local desktop device can export');
-    assert.equal((await call(device.body.token, '/settings', { defaultProviderId: 'opencode' }, 'PATCH')).status, 200, 'the local desktop device can change host defaults');
+    assert.equal((await call(device.body.token, '/settings', { defaultProviderId: 'codex' }, 'PATCH')).status, 200, 'the local desktop device can change host defaults');
+    assert.equal((await call(device.body.token, '/settings', { defaultProviderId: 'opencode' }, 'PATCH')).status, 409, 'paused providers are gated at the API boundary');
     assert.equal((await call(device.body.token, '/settings', { defaultProviderId: 'codex' }, 'PATCH', remote)).status, 403, 'remote devices cannot change host defaults');
     assert.equal((await call(device.body.token, '/settings', { speech: { provider: 'elevenlabs', credentialMode: 'session' } }, 'PATCH', remote)).status, 403, 'remote devices cannot change speech settings');
     assert.equal((await call(device.body.token, '/providers/codex/connect', {}, 'POST', remote)).status, 403, 'remote devices cannot change provider credentials');
@@ -515,6 +518,8 @@ test('authenticated API persists CRUD, streams real adapter lifecycle, approves,
       request.on('error', reject); request.end();
     });
     assert.equal(hostileHostStatus, 403);
+    const health = await api('/health');
+    assert.deepEqual({ version: health.body.version, runtime: health.body.runtime, reasoning: health.body.reasoning, maxConcurrentRuns: health.body.maxConcurrentRuns }, { version: '1.0.0', runtime: 'codex', reasoning: 'provider-default', maxConcurrentRuns: 1 });
     const initial = await api('/bootstrap'); assert.equal(initial.status, 200); assert.equal(initial.body.state.agents.length, 4); assert.equal(initial.body.state.conversations.length, 0);
     const connected = await api('/providers/codex/connect', {}); assert.equal(connected.body.status, 'connected'); assert.equal(connected.body.models[0].id, 'test-model');
     assert.equal((await api('/providers/codex/test', { modelId: 'test-model' })).status, 400, 'live test requires explicit confirmation');
@@ -550,30 +555,21 @@ test('authenticated API persists CRUD, streams real adapter lifecycle, approves,
     assert.ok(!JSON.stringify(capabilities.body).includes('must-not-leak'));
     assert.equal((await api(`/apps/${encodeURIComponent('codex:Missing')}/capabilities`)).status, 404);
     const login = await api(`/apps/${encodeURIComponent('codex:Files')}/auth`, { scopes: ['read', 'write'] });
-    assert.equal(login.status, 200);
-    assert.match(login.body.authorizationUrl, /^https:\/\//);
-    assert.equal(login.body.status, 'pending');
-    assert.ok(login.body.loginId);
-    const loginState = await waitFor(async () => (await api(`/apps/auth/${encodeURIComponent(login.body.loginId)}`)).body, state => state.status === 'success');
-    assert.equal(loginState.status, 'success');
-    const failedLogin = await api(`/apps/${encodeURIComponent('codex:Broken')}/auth`, {});
-    const failedState = await waitFor(async () => (await api(`/apps/auth/${encodeURIComponent(failedLogin.body.loginId)}`)).body, state => state.status === 'failed');
-    assert.match(failedState.error, /Access denied/);
-    assert.equal((await api('/apps/reload', {})).status, 200);
+    assert.equal(login.status, 409, 'Connected App sign-in is paused');
+    assert.match(login.body.error, /paused/);
+    assert.equal((await api('/apps/reload', {})).status, 409, 'Connected App reload is paused');
     assert.equal((await api('/agents', { name: 'Bad', color: 'red' })).status, 400);
     const agent = (await api('/agents', { name: 'Test Agent', instructions: 'Test instructions', color: '#112233', providerId: 'codex' })).body;
     assert.equal(agent.name, 'Test Agent');
+    assert.equal((await api('/agents', { name: 'Paused Agent', providerId: 'opencode' })).status, 409);
     const group = (await api('/groups', { name: 'Product' })).body;
-    const appRecordResponse = await api('/app-records', { name: 'Fixture app', scope: 'agent', scopeId: agent.id, ownership: 'external', enabled: true, providerId: 'codex', transport: 'stdio', credentialRef: 'provider:codex:fixture' });
-    assert.equal(appRecordResponse.status, 201);
-    assert.equal(appRecordResponse.body.scopeId, agent.id);
-    assert.equal((await api(`/app-records/${appRecordResponse.body.id}`, { enabled: false }, 'PATCH')).body.enabled, false);
-    assert.equal((await api(`/app-records/${appRecordResponse.body.id}`, undefined, 'DELETE')).status, 200);
+    assert.equal((await api('/app-records', { name: 'Fixture app', scope: 'agent', scopeId: agent.id, ownership: 'external', enabled: true, providerId: 'codex', transport: 'stdio', credentialRef: 'provider:codex:fixture' })).status, 409, 'Connected App records are paused');
     const conversation = (await api('/conversations', { agentId: agent.id, groupId: group.id })).body;
     assert.equal(conversation.groupId, group.id);
     assert.equal((await api(`/conversations/${conversation.id}`, { groupId: 'missing' }, 'PATCH')).status, 404);
     const otherConversation = (await api('/conversations', { agentId: agent.id })).body;
-    assert.equal((await api(`/conversations/${conversation.id}`, { providerId: 'codex', modelId: 'test-model-2', reasoningEffort: 'low' }, 'PATCH')).status, 200);
+    assert.equal((await api(`/conversations/${conversation.id}`, { providerId: 'codex', modelId: 'test-model-2' }, 'PATCH')).status, 200);
+    assert.equal((await api(`/conversations/${conversation.id}`, { reasoningEffort: 'high' }, 'PATCH')).status, 409, 'custom reasoning is paused');
     let scopedState = (await api('/bootstrap')).body.state;
     assert.equal(scopedState.conversations.find((item: any) => item.id === conversation.id).modelId, 'test-model-2');
     assert.equal(scopedState.conversations.find((item: any) => item.id === otherConversation.id).modelId, undefined, 'switching one chat does not change another');
@@ -598,6 +594,17 @@ test('authenticated API persists CRUD, streams real adapter lifecycle, approves,
     const deltaIndex = events.findIndex(event => event.type === 'delta');
     const initialMessageIndex = events.findIndex(event => event.type === 'state' && event.state.conversations.some(c => c.id === conversation.id && c.messages.some(message => message.id === sent.body.messageId)));
     assert.ok(initialMessageIndex >= 0 && initialMessageIndex < deltaIndex, 'initial assistant state precedes deltas');
+    const traceLines = (await readFile(trace, 'utf8')).trim().split('\n').map(line => JSON.parse(line));
+    const threadCall = traceLines.find(line => line.method === 'thread/start');
+    assert.equal(threadCall.config.features.apps, false, 'plugin apps cannot widen the run');
+    assert.equal(threadCall.config.features.plugins, false);
+    assert.equal(threadCall.config.features.hooks, false);
+    assert.equal(threadCall.config.skills.include_instructions, false, 'inherited skill instructions are withheld');
+    assert.equal(threadCall.config.mcp_servers.Calendar.enabled, false, 'inherited MCP servers are disabled per session');
+    assert.equal(threadCall.config.mcp_servers.Files.enabled, false);
+    assert.equal(threadCall.approvalPolicy.granular.skill_approval, true);
+    const turnCall = traceLines.find(line => line.method === 'turn/start');
+    assert.equal(turnCall.effort, undefined, 'provider-default reasoning sends no effort override');
     let bootstrap = (await api('/bootstrap')).body;
     assert.equal(bootstrap.state.conversations.find((c: any) => c.id === conversation.id).messages.at(-1).content, 'A Gent test response 1.');
     const scopedApps = await api(`/apps?conversationId=${conversation.id}`);
@@ -608,7 +615,7 @@ test('authenticated API persists CRUD, streams real adapter lifecycle, approves,
 
     const pendingRun = (await api(`/conversations/${conversation.id}/messages`, { content: '[start-pending]', mode: 'chat' })).body;
     await waitFor(async () => { try { return await readFile(trace, 'utf8'); } catch { return ''; } }, text => text.includes('[start-pending]'));
-    assert.equal((await api(`/runs/${pendingRun.id}/interrupt`, {})).body.status, 'interrupted');
+    assert.equal((await api(`/runs/${pendingRun.id}/interrupt`, {})).body.status, 'stopping', 'Stop is not reported as interrupted before cleanup');
     assert.equal((await api(`/conversations/${conversation.id}/messages`, { content: 'Too early' })).status, 409, 'chat stays reserved while turn/start and interruption are unconfirmed');
     await waitFor(async () => (await api('/bootstrap')).body, data => data.state.conversations.find((c: any) => c.id === conversation.id).messages.at(-1).status === 'interrupted');
     const nextRun = (await api(`/conversations/${conversation.id}/messages`, { content: '[wait-for-stale]' })).body;
@@ -664,7 +671,8 @@ test('authenticated API persists CRUD, streams real adapter lifecycle, approves,
 
     const slowRun = (await api(`/conversations/${conversation.id}/messages`, { content: '[slow]', mode: 'chat' })).body;
     assert.equal((await api(`/conversations/${conversation.id}/messages`, { content: 'Duplicate' })).status, 409);
-    assert.equal((await api(`/runs/${slowRun.id}/interrupt`, {})).body.status, 'interrupted');
+    assert.equal((await api(`/conversations/${otherConversation.id}/messages`, { content: 'Concurrent host run' })).status, 409, 'only one run is allowed per host');
+    assert.equal((await api(`/runs/${slowRun.id}/interrupt`, {})).body.status, 'stopping');
     await waitFor(async () => (await api('/bootstrap')).body, data => data.state.conversations.find((c: any) => c.id === conversation.id).messages.at(-1).status === 'interrupted');
 
     const schedule = (await api('/schedules', { agentId: agent.id, title: 'Once', prompt: 'Scheduled hello', runAt: new Date(Date.now() - 1000).toISOString() })).body;
@@ -672,6 +680,9 @@ test('authenticated API persists CRUD, streams real adapter lifecycle, approves,
     assert.equal(scheduled.state.schedules.find((s: any) => s.id === schedule.id).enabled, false);
     const exportResponse = await api('/export'); assert.equal(exportResponse.status, 200);
     const exportedText = JSON.stringify(exportResponse.body); assert.ok(!exportedText.includes(handle.token)); assert.ok(!exportedText.includes('apiKey'));
+    assert.ok(!exportedText.includes('providerThreadId'), 'export omits runtime thread IDs');
+    assert.ok(!exportedText.includes('providerBinding'), 'export omits runtime bindings');
+    assert.ok(!exportedText.includes('credentialRef'));
     assert.equal((await api('/import', { ...exportResponse.body, version: 99 })).status, 400);
     assert.equal((await api('/import', { ...exportResponse.body, version: 2 })).status, 200);
     assert.equal((await api(`/groups/${group.id}`, undefined, 'DELETE')).status, 200);
@@ -767,7 +778,7 @@ test('OpenCode shutdown waits for child exit after termination escalation', asyn
   }
 });
 
-test('OpenCode Stop keeps the chat reserved until the child has exited', async () => {
+test('paused OpenCode Stop routes are gated without starting a child', async () => {
   const directory = await mkdtemp(join(scratch, 'agent-opencode-stop-test-'));
   const staticDir = join(directory, 'static'); await mkdir(staticDir); await writeFile(join(staticDir, 'index.html'), '<!doctype html><html><head></head><body>A Gent</body></html>');
   const pidFile = join(directory, 'opencode-pid');
@@ -780,31 +791,20 @@ test('OpenCode Stop keeps the chat reserved until the child has exited', async (
     const response = await fetch(`${handle.url}/api${path}`, { method, headers: { Authorization: `Bearer ${handle.token}`, 'Content-Type': 'application/json' }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
     return { status: response.status, body: await response.json() as any };
   };
-  let pid: number | undefined;
   try {
-    assert.equal((await api('/providers/opencode/connect', {})).body.readiness, 'ready');
-    const agent = await api('/agents', { name: 'OpenCode Stop', providerId: 'opencode', modelId: 'opencode/test-model' });
-    assert.equal(agent.status, 201);
-    const conversation = await api('/conversations', { agentId: agent.body.id });
-    assert.equal(conversation.status, 201);
-    const run = await api(`/conversations/${conversation.body.id}/messages`, { content: '[hold]' });
-    assert.equal(run.status, 202);
-    await waitFor(async () => { try { return await readFile(pidFile, 'utf8'); } catch { return ''; } }, text => text.length > 0);
-    pid = Number(await readFile(pidFile, 'utf8'));
-    assert.equal((await api(`/runs/${run.body.id}/interrupt`, {})).body.status, 'interrupted');
-    assert.equal((await api(`/conversations/${conversation.body.id}/messages`, { content: 'Too early' })).status, 409, 'chat stays reserved while the child is terminating');
-    const status = await waitFor(async () => (await api(`/conversations/${conversation.body.id}/messages`, { content: 'After stop' })).status, value => value !== 409);
-    assert.equal(status, 202);
-    assert.throws(() => process.kill(pid!, 0), (error: NodeJS.ErrnoException) => error.code === 'ESRCH', 'the chat is released only after the child exits');
+    const connected = await api('/providers/opencode/connect', {});
+    assert.equal(connected.status, 409, 'the paused OpenCode connect route is gated');
+    assert.match(connected.body.error, /Codex is the only runtime/);
+    assert.equal((await api('/agents', { name: 'OpenCode Stop', providerId: 'opencode', modelId: 'opencode/test-model' })).status, 409);
+    assert.equal(existsSync(pidFile), false, 'gating never launches the paused CLI');
   } finally {
-    if (pid) { try { process.kill(pid, 'SIGKILL'); } catch {} }
     await handle.close().catch(() => {});
     await rm(directory, { recursive: true, force: true });
     for (const [key, value] of [['AGENT_OPENCODE_COMMAND', saved.command], ['AGENT_OPENCODE_ARGS', saved.args], ['AGENT_SKIP_PROVIDER_PROBE', saved.probe]] as const) { if (value === undefined) delete process.env[key]; else process.env[key] = value; }
   }
 });
 
-test('host shutdown terminates an active OpenCode run and persists it as interrupted', async () => {
+test('paused OpenCode shutdown routes never launch a child', async () => {
   const directory = await mkdtemp(join(scratch, 'agent-opencode-shutdown-run-'));
   const staticDir = join(directory, 'static'); await mkdir(staticDir); await writeFile(join(staticDir, 'index.html'), '<!doctype html><html><head></head><body>A Gent</body></html>');
   const pidFile = join(directory, 'opencode-pid');
@@ -817,29 +817,20 @@ test('host shutdown terminates an active OpenCode run and persists it as interru
     const response = await fetch(`${handle.url}/api${path}`, { method, headers: { Authorization: `Bearer ${handle.token}`, 'Content-Type': 'application/json' }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
     return { status: response.status, body: await response.json() as any };
   };
-  let pid: number | undefined;
   try {
-    assert.equal((await api('/providers/opencode/connect', {})).body.readiness, 'ready');
-    const agent = await api('/agents', { name: 'OpenCode Shutdown', providerId: 'opencode', modelId: 'opencode/test-model' });
-    const conversation = await api('/conversations', { agentId: agent.body.id });
-    assert.equal((await api(`/conversations/${conversation.body.id}/messages`, { content: '[hold]' })).status, 202);
-    await waitFor(async () => { try { return await readFile(pidFile, 'utf8'); } catch { return ''; } }, text => text.length > 0);
-    pid = Number(await readFile(pidFile, 'utf8'));
+    assert.equal((await api('/providers/opencode/connect', {})).status, 409);
+    assert.equal(existsSync(pidFile), false, 'the paused CLI is not launched by gated routes');
     await handle.close();
-    assert.throws(() => process.kill(pid!, 0), (error: NodeJS.ErrnoException) => error.code === 'ESRCH', 'shutdown waits for the active child to exit');
     const persisted = JSON.parse(await readFile(join(directory, 'state.json'), 'utf8')) as any;
-    const savedConversation = persisted.conversations.find((item: any) => item.id === conversation.body.id);
-    assert.equal(savedConversation.messages.at(-1).status, 'interrupted');
-    assert.equal(savedConversation.messages.at(-1).content, '');
+    assert.equal(persisted.version, 2);
   } finally {
-    if (pid) { try { process.kill(pid, 'SIGKILL'); } catch {} }
     await handle.close().catch(() => {});
     await rm(directory, { recursive: true, force: true });
     for (const [key, value] of [['AGENT_OPENCODE_COMMAND', saved.command], ['AGENT_OPENCODE_ARGS', saved.args], ['AGENT_SKIP_PROVIDER_PROBE', saved.probe]] as const) { if (value === undefined) delete process.env[key]; else process.env[key] = value; }
   }
 });
 
-test('OpenCode provider discovers models and streams a continued CLI session', async () => {
+test('paused OpenCode discovery and inference routes are gated', async () => {
   const directory = await mkdtemp(join(scratch, 'agent-opencode-test-'));
   const staticDir = join(directory, 'static'); await mkdir(staticDir); await writeFile(join(staticDir, 'index.html'), '<!doctype html><html><head></head><body>A Gent</body></html>');
   const saved = { command: process.env.AGENT_OPENCODE_COMMAND, args: process.env.AGENT_OPENCODE_ARGS, probe: process.env.AGENT_SKIP_PROVIDER_PROBE };
@@ -852,31 +843,10 @@ test('OpenCode provider discovers models and streams a continued CLI session', a
     return { status: response.status, body: await response.json() as any };
   };
   try {
-    const connected = await api('/providers/opencode/connect', {});
-    assert.equal(connected.body.status, 'connected');
-    assert.deepEqual(connected.body.models.map((model: any) => model.id), ['opencode/test-model', 'opencode/second-model']);
-    const apps = await api('/apps');
-    assert.ok(apps.body.apps.some((app: any) => app.id === 'opencode:computer-use' && app.providerId === 'opencode' && app.source === 'runtime' && app.status === 'connected'));
-    assert.ok(apps.body.apps.some((app: any) => app.id === 'opencode:remote-calendar' && app.status === 'needs-auth' && app.toolsCount === undefined), 'OpenCode auth state is reported without an inferred tool count');
-    const openCodeCapabilities = await api(`/apps/${encodeURIComponent('opencode:computer-use')}/capabilities`);
-    assert.equal(openCodeCapabilities.status, 200);
-    assert.equal(openCodeCapabilities.body.supported, false);
-    assert.match(openCodeCapabilities.body.error, /does not expose MCP tool or resource detail/);
-    assert.equal((await api(`/apps/${encodeURIComponent('opencode:missing')}/capabilities`)).status, 404);
-    const openCodeAuth = await api(`/apps/${encodeURIComponent('opencode:computer-use')}/auth`, {});
-    assert.equal(openCodeAuth.status, 409);
-    assert.match(openCodeAuth.body.error, /opencode mcp auth/);
-    const agent = (await api('/agents', { name: 'OpenCode Agent', providerId: 'opencode', modelId: 'opencode/test-model' })).body;
-    const conversation = (await api('/conversations', { agentId: agent.id })).body;
-    const first = await api(`/conversations/${conversation.id}/messages`, { content: 'Hello OpenCode' });
-    assert.equal(first.status, 202);
-    const completed = await waitFor(async () => (await api('/bootstrap')).body, data => data.runs.some((run: any) => run.id === first.body.id && run.status === 'completed'));
-    assert.equal(completed.state.conversations.find((chat: any) => chat.id === conversation.id).messages.at(-1).content, 'OpenCode test response.');
-    assert.equal(completed.state.conversations.find((chat: any) => chat.id === conversation.id).providerThreadId, 'opencode-session-1');
-    const second = await api(`/conversations/${conversation.id}/messages`, { content: 'Continue OpenCode' });
-    assert.equal(second.status, 202);
-    const finalState = await waitFor(async () => (await api('/bootstrap')).body, data => data.runs.some((run: any) => run.id === second.body.id && run.status === 'completed'));
-    assert.equal(finalState.state.conversations.find((chat: any) => chat.id === conversation.id).messages.at(-1).content, 'OpenCode continued response.');
+    assert.equal((await api('/providers/opencode/connect', {})).status, 409);
+    assert.equal((await api('/providers/opencode/test', { modelId: 'opencode/test-model', confirm: true })).status, 409);
+    assert.equal((await api('/agents', { name: 'OpenCode Agent', providerId: 'opencode', modelId: 'opencode/test-model' })).status, 409);
+    assert.equal((await api('/conversations', { agentId: 'primary', providerId: 'opencode' })).status, 409);
   } finally {
     await handle.close(); await rm(directory, { recursive: true, force: true });
     for (const [key, value] of [['AGENT_OPENCODE_COMMAND', saved.command], ['AGENT_OPENCODE_ARGS', saved.args], ['AGENT_SKIP_PROVIDER_PROBE', saved.probe]] as const) { if (value === undefined) delete process.env[key]; else process.env[key] = value; }

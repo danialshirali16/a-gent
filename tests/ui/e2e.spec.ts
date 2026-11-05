@@ -138,28 +138,14 @@ test('workspace export and import round-trip', async ({ page }) => {
   await page.keyboard.press('Escape');
 });
 
-test('device tokens can be created, rotated, and revoked', async ({ page }) => {
+test('remote-device creation is not advertised in the personal candidate', async ({ page }) => {
   await home(page);
   await page.getByRole('button', { name: /Personal workspace/ }).click();
   await page.getByRole('button', { name: 'Devices' }).click();
-  await page.getByPlaceholder('Device name').fill('E2E Phone');
-  await page.getByRole('button', { name: 'Create', exact: true }).click();
-  await expect(page.getByText('New token for E2E Phone')).toBeVisible();
-  const token = await page.locator('.device-token-value code').textContent();
-  expect(token).toMatch(/^agt_/);
-  await page.getByRole('button', { name: 'Done' }).click();
-  const row = page.locator('.device-row', { hasText: 'E2E Phone' });
-  await expect(row).toBeVisible();
-  await row.getByRole('button', { name: 'Rotate' }).click();
-  await expect(page.getByText('New token for E2E Phone')).toBeVisible();
-  const rotated = await page.locator('.device-token-value code').textContent();
-  expect(rotated).toMatch(/^agt_/);
-  expect(rotated).not.toBe(token);
-  await page.getByRole('button', { name: 'Done' }).click();
-  await row.getByRole('button', { name: 'Revoke' }).click();
-  await expect(page.getByRole('dialog', { name: 'Revoke E2E Phone?' })).toBeVisible();
-  await page.getByRole('dialog', { name: 'Revoke E2E Phone?' }).getByRole('button', { name: 'Revoke device' }).click();
-  await expect(row.getByText('Revoked', { exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Devices', exact: true })).toBeVisible();
+  await expect(page.getByText(/remote-device setup is deferred/i)).toBeVisible();
+  await expect(page.getByPlaceholder('Device name')).toHaveCount(0);
+  await expect(page.getByText('Create a pairing token')).toHaveCount(0);
 });
 
 test('keyboard flows work across menus, side panel, and dialogs', async ({ page }) => {

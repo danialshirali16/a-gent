@@ -1,8 +1,8 @@
 # Durable run and termination lifecycle
 
-**Audit correction:** normal Stop/shutdown fixtures below are narrower than complete lifecycle acceptance. An OpenCode error-event child remained alive after run rejection and bridge.close(); some early error/limit paths settle/remove tracking before child exit, and descendants are not proven cleaned up. RunManager's first save can also strand a reserved chat; interrupt publishes interrupted before the UI can know cleanup finished. [V1-04](project-roadmap.md#recommended-execution-order) fixes retained Codex behavior; OpenCode stays paused.
+**Implementation correction (2026-11-05):** retained Codex behavior now rolls back the reservation/messages on an initial save failure, publishes `stopping` until provider cleanup, rejects concurrent sends, waits for run finalizers during shutdown, and saves active messages as `interrupted`. The OpenCode error-child/descendant finding remains recorded but OpenCode is paused; its API routes are gated.
 
-Status: **FND-006 Review, reopened 2026-11-05.** This defines how a chat run is reserved, interrupted, terminated, and recovered across the Codex, OpenCode, and HTTP/Ollama adapters.
+Status: **FND-006 source corrections implemented; Mac runtime/package evidence remains open.** This defines how a chat run is reserved, interrupted, terminated, and recovered across the Codex, OpenCode, and HTTP/Ollama adapters.
 
 [Release contract](release-contract.md) · [Durable schema](data-schema.md) · [Authority model](authority-model.md) · [Validation](validation.md) · [FND-006 task](project-roadmap.md#foundation-tasks)
 
@@ -16,14 +16,14 @@ Status: **FND-006 Review, reopened 2026-11-05.** This defines how a chat run is 
 | `completed` | The provider finished with a response. | Assistant message completed; activities persisted. |
 | `failed` | The provider or transport failed. | Assistant message failed with a bounded error/activity. |
 
-Current source limits one active controller per conversation, not one per host. Personal v1 requires the latter to be enforced in UI/API during V1-03. `RunManager.send()` checks the reservation before and after filesystem validation so simultaneous POSTs cannot append two prompts to one provider turn. On the ordinary provider path, the controller is removed in the run's finally block. Failure at the earlier first publishState occurs before that finalizer is attached and currently leaves a reservation.
+Personal v1 enforces one active controller per host in `RunManager.send()`, with a clear 409 for another chat. `send()` checks the reservation before and after filesystem validation so simultaneous POSTs cannot append two prompts to one provider turn. The initial `publishState` is wrapped: on failure it clears the controller/run, removes both appended messages, restores the previous binding/title, and rethrows so a retry is not permanently blocked. On the ordinary provider path, the controller is removed in the finalizer after cleanup.
 
 ## Termination rules
 
 ### Codex
 
-- Stop sends `turn/interrupt` for the known thread/turn.
-- An RPC acknowledgement is not completion; the adapter waits for matching turn/completed or child exit; current source does not handle turn/status/changed.
+- Stop publishes `stopping`, then sends `turn/interrupt` for the known thread/turn.
+- An RPC acknowledgement is not completion; the adapter waits for matching turn/completed or child exit. `RunManager` keeps the chat reserved and only publishes `interrupted` after approvals/interactions are settled and the controller is removed.
 - If interruption is not confirmed within 10 seconds, the adapter closes the owned child and waits for exit.
 - `CodexBridge.close()` ends stdin, escalates SIGTERM → SIGKILL, and waits for the child exit before resolving.
 
@@ -43,12 +43,13 @@ Current source limits one active controller per conversation, not one per host. 
 
 `RunManager.close()`:
 
-1. Stops the scheduler.
+1. Stops the scheduler and marks active runs `stopping`.
 2. Aborts every active controller.
 3. Calls `ProviderManager.close()`, which closes Codex and waits for OpenCode children.
-4. Saves the workspace.
+4. Waits for each run finalizer (approvals/interactions cancelled, controller removed), then marks any leftover run/message `interrupted`.
+5. Flushes interactions and saves the workspace.
 
-The assistant message for an active run is marked `interrupted` by the run's finalizer. If the process dies before that finalizer, `validateImport()` converts a persisted `streaming` message to `interrupted` on the next load. The run ledger itself is intentionally bounded/in-memory; durable message/activity state is the recovery source alongside FND-009's correlated pending-interaction records.
+If the process dies before finalization, `validateImport()` converts a persisted `streaming` message to `interrupted` on the next load. The run ledger itself is intentionally bounded/in-memory; durable message/activity state is the recovery source alongside FND-009's correlated pending-interaction records.
 
 ## Verification
 
@@ -72,8 +73,7 @@ Results: typecheck pass; 45/45 server/model-option tests pass; production build 
 
 ## Remaining work
 
-- **FND-009/HIL-005/006:** correlation exists; reverify genuine core answers and deterministic failure/expiry/Stop cleanup. MCP forms/URL work is paused.
-- **FND-010:** shared budgets/helpers exist; reverify their retained-runtime cleanup and UI semantics.
-- **OPC-005:** add OpenCode event decoding fixtures for split UTF-8/JSON, tool status, and final partial lines.
-- **QA-004:** reproduce the historical "OpenCode continues after Stop" finding against the current source on macOS and record evidence.
-- **QA-009:** exercise crash/write-failure/sleep/network-drop recovery beyond the current shutdown path.
+- **V1-06/HIL-006:** real Codex approval decline/accept now passes; the live native question path and packaged-Mac recovery remain. MCP forms/URL work is paused.
+- **V1-06/08:** verify Finder launch, native folder dialog, Quit/relaunch, and VoiceOver/zoom on the actual Mac.
+- **OPC-005:** OpenCode event decoding remains paused; add fixtures before re-enabling it.
+- **QA-009:** crash/write-failure/sleep/network-drop recovery beyond the current shutdown and browser offline paths remains a Mac candidate check.

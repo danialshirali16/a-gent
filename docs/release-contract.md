@@ -1,6 +1,6 @@
 # A Gent personal macOS v1.0 release contract
 
-Status: **Scope approved by Danial on 2026-11-05. Implementation and candidate acceptance remain open.** This amendment supersedes the broader first-public-release boundary; the [original contract](archive/release-contract-public-r1-2026-11-05.md) remains historical evidence.
+Status: **Scope approved by Danial on 2026-11-05. Source implementation and real-Codex source checks are in place; Mac candidate acceptance remains open.** This amendment supersedes the broader first-public-release boundary; the [original contract](archive/release-contract-public-r1-2026-11-05.md) remains historical evidence.
 
 [Roadmap and execution path](project-roadmap.md#recommended-execution-order) · [All 237 task decisions](roadmaps/v1-triage.md) · [Acceptance matrix](support-matrix.md) · [Validation](validation.md)
 
@@ -12,7 +12,7 @@ This documentation amendment records scope approval; it does not assert that the
 
 ## V1 definition
 
-The target is **A Gent 1.0.0 for personal macOS testing**. Source currently reports 0.1.0; REL-002 must align package, About, API health, app-server client identity, and artifacts for the candidate.
+The target is **A Gent 1.0.0 for personal macOS testing**. Source, package metadata, About, API health, and app-server client identity now report 1.0.0; REL-002 still requires the actual Mac artifacts to match the reviewed source.
 
 | Boundary | Approved requirement |
 | --- | --- |

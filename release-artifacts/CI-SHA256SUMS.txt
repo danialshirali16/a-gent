@@ -1,0 +1,4 @@
+# GitHub Actions artifact: A-Gent-macos (run 42116559054, artifact 13457416638)
+# Inner DMG/ZIP hashes are in SHA256SUMS.txt. Use the DMG or ZIP, not the
+# artifact zip's extracted mac-arm64 directory (symlinks may be dereferenced).
+02b7d02e7309448462259ddc405f8ccbed793c6f09a9645a86dc61c8ad409e9d  A-Gent-macos.zip

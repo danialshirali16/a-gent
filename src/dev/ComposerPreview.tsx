@@ -27,7 +27,6 @@ export function ComposerPreview() {
   const [attachments, setAttachments] = useState<Attachment[]>(initialAttachments);
   const [providerId, setProviderId] = useState('codex');
   const [modelId, setModelId] = useState('gpt-5.2-codex');
-  const [effort, setEffort] = useState('medium');
   const [mode, setMode] = useState<'chat' | 'work'>('chat');
   const [workspacePath, setWorkspacePath] = useState('/Users/danial/Projects/a-gent');
   const [modelPicker, setModelPicker] = useState(false);
@@ -77,11 +76,11 @@ export function ComposerPreview() {
           onSend={send}
           onStop={() => setNotice('Stopped the reply in this preview.')}
           busy={false}
+          stopping={false}
           canStop={false}
           sending={false}
           providerId={providerId}
           modelId={modelId}
-          effort={effort}
           mode={mode}
           workspacePath={workspacePath}
           providers={previewProviders}
@@ -96,7 +95,6 @@ export function ComposerPreview() {
           onChooseFolder={() => setWorkspacePath('/Users/danial/Projects/another-project')}
           onOpenConnections={() => setNotice('Connections would open here.')}
           onSetMode={setMode}
-          onSetEffort={setEffort}
           onComposerKey={onKey}
         />
       </div>

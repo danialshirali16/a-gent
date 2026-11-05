@@ -1,6 +1,6 @@
 # Pending interactions and recovery
 
-**Personal-v1 context (2026-11-05):** retain native approvals/questions and their expiry/cancellation/recovery; full MCP forms/URL flows are paused. The verification below records historical M3 evidence, not a fresh Mac candidate pass. Durable event/decision ordering under failures remains a V1-04/06 acceptance requirement.
+**Personal-v1 context (2026-11-05):** retain native approvals/questions and their expiry/cancellation/recovery; full MCP forms/URL flows are paused. Current source real-Codex evidence now includes one actual escalated command approval: declining left the target file absent; accepting created only the requested `hello` file. Native question live acceptance and packaged-Mac recovery remain open. Durable event/decision ordering under failures remains a V1-04/06 requirement.
 
 Status: **FND-009 recorded 2026-11-05.** This defines the durable correlation record for approvals, questions, forms, and URL requests, and what happens on refresh, restart, or host switch.
 

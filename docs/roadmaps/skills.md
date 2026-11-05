@@ -2,7 +2,7 @@
 
 Updated: 2026-11-05. [Active v1 path](../project-roadmap.md#recommended-execution-order) · [Every task's v1 decision](v1-triage.md) · [Current state](../current-state-review.md)
 
-**Personal macOS v1 amendment:** SKL-001–020 are PAUSE. Schema records and external CLI-native discovery do not constitute an A Gent skills manager. No manager/native skill adapter is currently implemented.
+**Personal macOS v1 amendment:** SKL-001–020 are PAUSE. Schema records and external CLI-native discovery do not constitute an A Gent skills manager. No manager/native skill adapter is currently implemented. The v1 Codex session withholds inherited skill instructions (`skills.include_instructions=false`), so host/plugin skills cannot silently widen the retained run; real prompt-input probing showed zero skill entries.
 
 The tables retain original public R1/R2 targets, full acceptance criteria, and original dependencies for later work. Current implementation statuses are maintained here; v1 scope/effort is maintained only in the triage. A v1 subset can pass its support-matrix row without declaring the whole original task complete. Old M2/M3 continuation and broad feature gates do not govern the active path.
 

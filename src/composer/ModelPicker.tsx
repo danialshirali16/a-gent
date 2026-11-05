@@ -5,7 +5,6 @@ import type { ProviderInfo } from '../../shared/types';
 import { Button, IconButton } from '../ui/Button';
 import { Popover } from '../ui/Popover';
 import { SearchField } from '../ui/Search';
-import { SegmentedControl } from '../ui/Tabs';
 import { Tooltip } from '../ui/Tooltip';
 import { connectedModelGroups } from './modelOptions';
 import { ProviderGlyph } from './ProviderGlyph';
@@ -14,11 +13,9 @@ interface ModelPickerProps {
   providers: ProviderInfo[];
   providerId: string;
   modelId: string;
-  effort: string;
   anchorRef: RefObject<HTMLElement | null>;
   onClose: () => void;
   onChoose: (providerId: string, modelId: string) => void;
-  onSetEffort: (effort: string) => void;
   onOpenConnections: () => void;
 }
 
@@ -45,10 +42,7 @@ export function ModelPicker(props: ModelPickerProps) {
   const selectionMissing = !currentProvider || (!!props.modelId && !currentProvider.models.some(model => model.id === props.modelId));
   const availableKeys = choices.map(choice => choice.key).join('\n');
   const panelId = `${id}-models`;
-  const reasoning = currentProvider?.models.find(model => model.id === props.modelId)?.reasoning;
-  const effortOptions = reasoning?.kind === 'enum' ? reasoning.options : [];
-  const effortIndex = Math.max(0, effortOptions.findIndex(option => option.value === props.effort));
-  const meterFill = effortOptions.length > 1 ? Math.round((effortIndex / (effortOptions.length - 1)) * 2) : 0;
+  const countLabel = new Intl.NumberFormat().format(choices.length);
 
   useEffect(() => {
     if (!choices.some(choice => choice.key === activeKey) && document.activeElement === document.body) search.current?.focus({ preventScroll: true });
@@ -56,7 +50,7 @@ export function ModelPicker(props: ModelPickerProps) {
 
   useEffect(() => {
     if (list.current) list.current.scrollTop = 0;
-  }, [query]);
+  }, [query, browsedProviderId]);
 
   useEffect(() => {
     const tab = activeProvider && tabs.current.get(activeProvider.id);
@@ -146,7 +140,7 @@ export function ModelPicker(props: ModelPickerProps) {
         <div className="model-picker-column" role="tabpanel" id={panelId} aria-labelledby={`${id}-tab-${activeProvider.id}`}>
           <div className="model-picker-search-row"><SearchField value={query} onChange={value => { setQuery(value); setActiveKey(''); }} inputRef={search} onKeyDown={onSearchKey} label="Search connected models" placeholder="Search models" className="model-picker-search" /></div>
           <div className="model-picker-models">
-            <div className="model-picker-caption">{searching ? `${choices.length} ${choices.length === 1 ? 'result' : 'results'}` : <bdi>{activeProvider.name}</bdi>}</div>
+            <div className="model-picker-caption">{searching ? `${countLabel} ${choices.length === 1 ? 'result' : 'results'}` : <bdi>{activeProvider.name}</bdi>}</div>
             {selectionMissing && <p className="model-picker-notice">Choose a connected model.</p>}
             {choices.length ? <div ref={list} className="model-picker-list" role="listbox" aria-label={searching ? 'Search results' : `${activeProvider.name} models`} onKeyDown={onListKey}>
               {choices.map(choice => {
@@ -162,17 +156,15 @@ export function ModelPicker(props: ModelPickerProps) {
             </div> : <div className="model-picker-empty"><Search size={21} strokeWidth={1.5} aria-hidden="true" /><strong>No models match “<bdi>{query}</bdi>”</strong><Button variant="quiet" size="sm" onClick={() => { setQuery(''); search.current?.focus(); }}>Clear search</Button></div>}
           </div>
           <div className="model-picker-thinking">
-            <span className="model-picker-thinking-label"><span className="model-picker-meter" aria-hidden="true">{[0, 1, 2].map(level => <span key={level} className={effortOptions.length && level <= meterFill ? 'is-filled' : ''} />)}</span>Thinking</span>
-            {reasoning?.kind === 'enum'
-              ? <SegmentedControl ariaLabel="Thinking effort" size="sm" value={props.effort || reasoning.default || effortOptions[0].value} onChange={props.onSetEffort} options={effortOptions.map(option => ({ id: option.value, label: option.label || option.value }))} />
-              : <span className="model-picker-thinking-unavailable">{reasoning?.kind === 'unsupported' ? 'Not available for this model' : reasoning?.kind === 'unknown' ? 'Provider default' : 'Not available for this provider'}</span>}
+            <span className="model-picker-thinking-label"><span className="model-picker-meter" aria-hidden="true">{[0, 1, 2].map(level => <span key={level} />)}</span>Reasoning</span>
+            <span className="model-picker-thinking-unavailable">Provider default</span>
           </div>
         </div>
       </div> : <>
         <div className="model-picker-empty-heading"><h2>Choose a model</h2><IconButton label="Close model picker" onClick={() => close()}><X size={16} /></IconButton></div>
         <div className="model-picker-empty is-disconnected"><Plug size={24} strokeWidth={1.5} aria-hidden="true" /><strong>No connected providers</strong><p>Connect a provider to choose a model.</p><Button className="model-picker-connect" variant="secondary" onClick={() => { close(false); props.onOpenConnections(); }}>Connect a provider</Button></div>
       </>}
-      <p className="sr-only" role="status">{connected.length ? `${choices.length} model options available.` : 'No connected providers.'}</p>
+      <p className="sr-only" role="status">{connected.length ? `${countLabel} model options available. Reasoning uses the provider default.` : 'No connected providers.'}</p>
     </div>
   </Popover>;
 }

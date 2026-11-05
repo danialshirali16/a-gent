@@ -1,4 +1,5 @@
 import { providerReadiness, readinessLabel } from '../../shared/providers';
+import { APP_VERSION } from '../../shared/version';
 import { Input } from '../ui/Input';
 import { Field } from '../ui/Field';
 import { Switch } from '../ui/Checkbox';
@@ -163,21 +164,13 @@ export function SettingsDialog({ state, providers, api, connection, onError, onR
 
         {section === 'devices' && <>
           <h2>Devices</h2>
-          <p className="settings-lead">Pairing tokens let another computer or phone reach this host. Each token can be rotated or revoked independently.</p>
+          <p className="settings-lead">This Mac pairs with its local host automatically. You can rotate or revoke this desktop token; remote-device setup is deferred for this release.</p>
           {deviceError && <Alert tone="danger">{deviceError}</Alert>}
           {newToken && <div className="settings-group device-token-reveal">
             <h3>New token for {newToken.name}</h3>
             <p className="settings-hint">Copy it now. A Gent will not show this token again.</p>
             <div className="device-token-value"><code>{newToken.token}</code><Button variant="secondary" size="sm" onClick={() => void copyDeviceToken()}>{tokenCopied ? <Check size={13} /> : <Copy size={13} />}{tokenCopied ? 'Copied' : 'Copy'}</Button></div>
             <Button variant="quiet" size="sm" onClick={() => setNewToken(null)}>Done</Button>
-          </div>}
-          {isAdmin && <div className="settings-group">
-            <h3>Create a pairing token</h3>
-            <div className="device-create-row">
-              <Field label="Device name" labelHidden className="device-create-field"><Input value={deviceName} onChange={event => setDeviceName(event.target.value)} placeholder="Device name" onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); void createDevice(); } }} /></Field>
-              <Button variant="secondary" size="sm" loading={deviceBusy === 'create'} disabled={!deviceName.trim()} onClick={() => void createDevice()}><Plus size={13} />Create</Button>
-            </div>
-            <p className="settings-hint">Give each phone or computer its own token so it can be revoked separately.</p>
           </div>}
           <div className="settings-group">
             <h3>{isAdmin ? 'All devices' : 'This device'}</h3>
@@ -203,7 +196,7 @@ export function SettingsDialog({ state, providers, api, connection, onError, onR
           <h2>Your data</h2>
           <p className="settings-lead">Everything is stored on this host. Export a copy or merge a previous workspace.</p>
           <div className="settings-group">
-            <div className="setting-row"><span><strong>Export workspace</strong><small>Save agents, conversations, groups, and schedules as JSON.</small></span><Button variant="secondary" size="sm" onClick={async () => { try { downloadJson(await api('/api/export'), 'a-gent-workspace.json'); } catch (reason) { onError((reason as Error).message); } }}><Download size={14} />Export</Button></div>
+            <div className="setting-row"><span><strong>Export workspace</strong><small>Save agents, conversations, groups, and schedules as JSON. Runtime bindings and credential references are excluded.</small></span><Button variant="secondary" size="sm" onClick={async () => { try { downloadJson(await api('/api/export'), 'a-gent-workspace.json'); } catch (reason) { onError((reason as Error).message); } }}><Download size={14} />Export</Button></div>
             <div className="setting-row"><span><strong>Import workspace</strong><small>Merge a previous A Gent export into this workspace.</small></span><Button variant="secondary" size="sm" loading={busy} onClick={() => input.current?.click()}><Upload size={14} />Import</Button><input ref={input} type="file" accept="application/json,.json" hidden onChange={async event => { const file = event.target.files?.[0]; if (!file) return; setBusy(true); try { if (file.size > 32 * 1024 * 1024) throw new Error('Choose an export smaller than 32 MB.'); await api('/api/import', 'POST', JSON.parse(await file.text())); await onRefresh(); } catch (reason) { onError((reason as Error).message); } finally { setBusy(false); event.target.value = ''; } }} /></div>
           </div>
           {archived.length > 0 && <div className="settings-group">
@@ -223,11 +216,11 @@ export function SettingsDialog({ state, providers, api, connection, onError, onR
         {section === 'about' && <>
           <h2>About A Gent</h2>
           <p className="settings-lead">A local-first personal workspace for connected AI agents.</p>
-          <div className="settings-about"><Mark size={42} /><div><strong>A Gent</strong><span>Version 0.1.0 · Local-first</span><small>Your agents, conversations, and workspace data stay on this host.</small></div></div>
+          <div className="settings-about"><Mark size={42} /><div><strong>A Gent</strong><span>Version {APP_VERSION} · Local-first</span><small>Your agents, conversations, and workspace data stay on this host.</small></div></div>
           <div className="settings-group">
-            <div className="setting-row"><span><strong>Workspace</strong><small>Agents, conversations, groups, and scheduled tasks</small></span></div>
-            <div className="setting-row"><span><strong>Models</strong><small>Codex, Ollama, and OpenAI-compatible endpoints</small></span></div>
-            <div className="setting-row"><span><strong>No cloud account</strong><small>No Reason account, billing, or hosted workspace is used.</small></span></div>
+            <div className="setting-row"><span><strong>Workspace</strong><small>Agents, conversations, groups, and saved drafts on this device</small></span></div>
+            <div className="setting-row"><span><strong>Runtime</strong><small>Codex CLI with external sign-in · provider-default reasoning</small></span></div>
+            <div className="setting-row"><span><strong>No cloud account</strong><small>No A Gent account, billing, or hosted workspace is used.</small></span></div>
           </div>
         </>}
       </div>

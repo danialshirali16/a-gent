@@ -1,0 +1,68 @@
+{
+  "date": "2026-11-05",
+  "branch": "codex/v1-macos-release",
+  "base": "be7b52e",
+  "host": {
+    "platform": "win32",
+    "arch": "x64",
+    "os": "Windows 11 10.0.26300",
+    "node": "26.12.1",
+    "npm": "11.20.0",
+    "electron": "45.2.2",
+    "codex": "0.166.0",
+    "opencode": "2.2.5"
+  },
+  "checks": {
+    "npmCi": "pass: 535 packages from lockfile",
+    "typecheck": "pass",
+    "serverTests": "73/73 pass",
+    "build": "pass with existing chunk-size advisory",
+    "browserSmoke": "22/22 pass (Windows Chrome, fixture host)",
+    "browserE2e": "7/7 pass",
+    "axe": "7/7 pass, 0 violations",
+    "visual": "not run: checked-in baselines are macOS-only",
+    "desktopRuntime": "pass: Electron 45.2.2 installed",
+    "desktopPackWindows": "pass: release/win-unpacked; asar contains dist, dist-server, electron, docs, package 1.0.0; no workspace state/token/data",
+    "desktopMac": "not run: Windows x64 host cannot build/accept the macOS artifact"
+  },
+  "realCodex": {
+    "authenticated": true,
+    "models": 8,
+    "firstModel": "gpt-6.1-sol",
+    "policy": {
+      "externalMcpServersDisabled": ["chrome-devtools", "codebase-memory-mcp", "node_repl", "open-design"],
+      "featuresDisabled": ["apps", "plugins", "hooks", "multi_agent"],
+      "skillEntriesInPolicyPromptInput": 0,
+      "globalConfigRewritten": false
+    },
+    "chat": {
+      "first": { "status": "completed", "content": "OK", "threadPresent": true },
+      "continuation": { "status": "completed", "content": "DONE", "sameThread": true },
+      "restart": { "before": { "status": "completed", "content": "ONE" }, "afterHostRestart": { "status": "completed", "content": "TWO", "sameThread": true } }
+    },
+    "stop": {
+      "interruptResponse": "stopping",
+      "sendWhileStopping": 409,
+      "settled": "interrupted",
+      "nextTurn": { "status": "completed", "content": "AFTER" }
+    },
+    "work": { "status": "completed", "fileContent": "hello", "insideWorkspace": true },
+    "chatReadOnly": { "status": "completed", "fileCreated": false, "approvals": 0 },
+    "approval": {
+      "kind": "escalated outside-workspace command write",
+      "declined": { "approvals": 1, "status": "completed", "fileExists": false },
+      "accepted": { "approvals": 1, "status": "completed", "fileExists": true, "content": "hello" },
+      "cleanup": "temporary directory removed"
+    },
+    "nativeQuestion": "not live-exercised; deterministic HIL fixtures only"
+  },
+  "notAccepted": [
+    "macOS .app/DMG/ZIP build, hash, or install",
+    "Finder launch or automatic desktop pairing on the owner Mac",
+    "native folder dialog",
+    "Gatekeeper/quarantine behavior",
+    "VoiceOver and actual Mac zoom/reflow",
+    "native Codex question path",
+    "owner V1-08 packaged-app acceptance"
+  ]
+}
