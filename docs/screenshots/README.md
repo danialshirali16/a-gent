@@ -4,6 +4,7 @@ Updated: 2026-11-05. Each image records the UI at capture time, rather than cert
 
 | Evidence | Location | Review |
 | --- | --- | --- |
+| Customer README | [Conversation](readme-chat.png), [model picker](readme-models.png) | Captured from current source with seeded conversation content and real Codex model discovery |
 | Component previews | `components/` | [Component validation](../validation.md#component-by-component-pass) |
 | Integrated app and avatars | `integration/` | [Avatar validation](../validation.md#bot-avatar-replacement) |
 | Model picker layout | [Dark](model-picker-dark.jpg), [light](model-picker-light.jpg), [mobile](model-picker-mobile.jpg), [empty](model-picker-empty.jpg) | [Picker review](../model-picker-review.md) |
