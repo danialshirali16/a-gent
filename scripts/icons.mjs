@@ -1,13 +1,20 @@
 import { Resvg } from '@resvg/resvg-js';
-import { readFile, writeFile, mkdir, access, rm } from 'node:fs/promises';
-import { spawnSync } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
+import { readFile, writeFile, mkdir, access } from 'node:fs/promises';
 
-const source = await readFile(new URL('../public/icon.svg', import.meta.url), 'utf8');
+// The supplied icon is a 1200px transparent PNG. Wrap it in SVG so Resvg can
+// rasterize every required size consistently without an extra image library.
+const raster = await readFile(new URL('../public/icon-source.png', import.meta.url));
+const imageData = raster.toString('base64');
+const source = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1200" viewBox="0 0 1200 1200"><image href="data:image/png;base64,${imageData}" width="1200" height="1200"/></svg>`;
+const foregroundSource = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1200" viewBox="-200 -200 1600 1600"><image href="data:image/png;base64,${imageData}" width="1200" height="1200"/></svg>`;
+const render = (svg, size) => new Resvg(svg, { font: { loadSystemFonts: false }, fitTo: { mode: 'width', value: size } }).render().asPng();
+const png = size => render(source, size);
+const foreground = size => render(foregroundSource, size);
+
 const output = new URL('../electron/assets/', import.meta.url);
 await mkdir(output, { recursive: true });
-const png = size => new Resvg(source, { font: { loadSystemFonts: false }, fitTo: { mode: 'width', value: size } }).render().asPng();
 await writeFile(new URL('icon.png', output), png(1024));
+await writeFile(new URL('../public/icon.png', import.meta.url), png(512));
 
 const sizes = [16, 24, 32, 48, 64, 128, 256];
 const images = sizes.map(size => png(size));
@@ -27,22 +34,29 @@ for (let i = 0; i < sizes.length; i += 1) {
 }
 await writeFile(new URL('icon.ico', output), Buffer.concat([header, ...images]));
 
-if (process.platform === 'darwin') {
-  const iconset = new URL('icon.iconset/', output);
-  await mkdir(iconset, { recursive: true });
-  for (const size of [16, 32, 128, 256, 512]) {
-    await writeFile(new URL(`icon_${size}x${size}.png`, iconset), png(size));
-    await writeFile(new URL(`icon_${size}x${size}@2x.png`, iconset), png(size * 2));
-  }
-  const result = spawnSync('/usr/bin/iconutil', ['-c', 'icns', '-o', fileURLToPath(new URL('icon.icns', output)), fileURLToPath(iconset)], { encoding: 'utf8' });
-  if (result.status !== 0) throw new Error(result.stderr || 'Could not create the macOS icon.');
-  await rm(iconset, { recursive: true });
+// Build a PNG-based ICNS container directly. This avoids requiring macOS
+// iconutil and keeps `npm run icons` reproducible on every development host.
+const icnsTypes = [
+  ['icp4', 16], ['icp5', 32], ['icp6', 64], ['ic07', 128], ['ic08', 256],
+  ['ic09', 512], ['ic10', 1024], ['ic11', 32], ['ic12', 64], ['ic13', 256], ['ic14', 512],
+];
+const chunks = [];
+for (const [type, size] of icnsTypes) {
+  const data = png(size);
+  const chunkHeader = Buffer.alloc(8);
+  chunkHeader.write(type, 0, 4, 'ascii');
+  chunkHeader.writeUInt32BE(data.length + 8, 4);
+  chunks.push(chunkHeader, data);
 }
+const body = Buffer.concat(chunks);
+const icnsHeader = Buffer.alloc(8);
+icnsHeader.write('icns', 0, 4, 'ascii');
+icnsHeader.writeUInt32BE(body.length + 8, 4);
+await writeFile(new URL('icon.icns', output), Buffer.concat([icnsHeader, body]));
 
 const android = new URL('../android/app/src/main/res/', import.meta.url);
 try {
   await access(android);
-  const foreground = source.replace('viewBox="0 0 128 128"', 'viewBox="-32 -32 192 192"');
   for (const [density, size, foregroundSize] of [
     ['mdpi', 48, 108], ['hdpi', 72, 162], ['xhdpi', 96, 216], ['xxhdpi', 144, 324], ['xxxhdpi', 192, 432],
   ]) {
@@ -50,7 +64,7 @@ try {
     await mkdir(directory, { recursive: true });
     await writeFile(new URL('ic_launcher.png', directory), png(size));
     await writeFile(new URL('ic_launcher_round.png', directory), png(size));
-    await writeFile(new URL('ic_launcher_foreground.png', directory), new Resvg(foreground, { font: { loadSystemFonts: false }, fitTo: { mode: 'width', value: foregroundSize } }).render().asPng());
+    await writeFile(new URL('ic_launcher_foreground.png', directory), foreground(foregroundSize));
   }
 } catch (error) {
   if (error.code !== 'ENOENT') throw error;
