@@ -2,7 +2,7 @@
 
 Completed 2026-11-05 as part of the [18-component pass](ui-roadmap.md#component-by-component-pass). Every family below has a development-only preview at `/?component=<id>` and a shared implementation under `src/ui/` (or the named feature folder for message and composer composition). The preview navigation links all families and preserves the light/dark selection.
 
-Follow-up status: the [modelOptions stress test](model-options-stress-test.md) found seven open catalog issues after the initial pass. These notes describe the implemented behavior; [the UI Roadmap](ui-roadmap.md) owns correction progress. [Documentation index](README.md).
+Follow-up status: the original audit found seven catalog issues; [current status](model-options-stress-test.md#current-status-after-provider-changes) distinguishes later production fixes and remaining raw/UI gaps. These notes describe source behavior; the [active v1 path](project-roadmap.md#recommended-execution-order) and [UI Roadmap](ui-roadmap.md) own scoped correction/verification. [Documentation index](README.md).
 
 Screenshots are in `docs/screenshots/components/`.
 

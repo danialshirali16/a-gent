@@ -1,14 +1,16 @@
-# Benchmark before development
+# Benchmark policy and records
 
 Updated: 2026-11-05. [Master roadmap](../project-roadmap.md) · [Scope benchmark tasks](../roadmaps/benchmarking.md) · [Record template](template.md)
 
-Every roadmap section and delivery scope follows **benchmark → design decisions → development → verification**. A task cannot enter Ready or implementation until its BEN dependency has an accepted record explicitly covering that task's scope. The BEN task itself is research; do not add an endless chain of benchmarks for benchmarks.
+**Personal-v1 exception approved 2026-11-05:** follow the [active roadmap](../project-roadmap.md#recommended-execution-order) and [D-11 amendment](../release-contract.md#d-11-benchmark-policy). CONTINUE corrections, core UI/recovery, QA, and local packaging do not require new two-peer comparisons first. Reuse applicable BEN-001/002/003/010 records; direct compatibility, regression, real Codex, and actual package checks remain mandatory.
 
-This rule also applies to bug-fix scopes, additional adapters, QA infrastructure, release processes, R2, and resumed platforms. When a narrow fix already has a current accepted comparison, link that scope and explain why it still applies; do not repeat research without a reason. New scope requires a new or amended benchmark record before development.
+BEN-011–014 are CUT/RETHINK as compulsory prerequisites for this personal release, not marked research-complete. All other classifications are in [v1 triage](../roadmaps/v1-triage.md). The requirements below apply to deferred full feature/platform scopes when explicitly resumed.
+
+For resumed work outside the personal-v1 exception, the benchmark rule applies to new adapters, features, QA/release infrastructure, and native platforms. When a narrow fix already has a current accepted comparison, link that scope and explain why it still applies; do not repeat research without a reason. New scope requires a new or amended benchmark record before development.
 
 ## Required record and acceptance gate
 
-Use [the template](template.md) and store records under `docs/benchmarks/`, named with the BEN ID and scope. BEN tasks stay To do until research is actually performed. The initial upstream-source research in the feature boards is background, not completed benchmarking.
+Use [the template](template.md) and store records under `docs/benchmarks/`, named with the BEN ID and scope. BEN tasks stay To do until research is actually performed. The initial upstream-source research in feature boards is background, not completed benchmarking. The personal-v1 exception does not relabel unperformed research as Done.
 
 An accepted record contains:
 
@@ -31,4 +33,4 @@ The owning delivery board is the status source for implementation. [The benchmar
 
 ## Research coverage
 
-Record required product/account access, corpus permissions, and real-service budgets in the benchmark plan. Use documented behavior or fixtures where live access is unavailable, label the limitation, and leave required real-world acceptance open. BEN-001 ([foundations](BEN-001-foundations.md)) and BEN-002 ([shared provider lifecycle](BEN-002-provider-lifecycle.md)) are the first accepted records; they cover foundations and the shared lifecycle only. The remaining comparisons and live-service checks are still To do.
+Record required product/account access, corpus permissions, and real-service budgets in the benchmark plan. Use documented behavior or fixtures where live access is unavailable, label the limitation, and leave required real-world acceptance open. Accepted comparison records are BEN-001–004, BEN-008–010, and BEN-021–022. They retain their dated scopes and limits. Acceptance of research does not establish current implementation, real-service, or package acceptance; deferred research stays open.

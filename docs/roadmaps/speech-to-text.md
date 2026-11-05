@@ -1,18 +1,18 @@
 # Speech-to-Text with ElevenLabs
 
-Updated: 2026-11-05. [Master roadmap](../project-roadmap.md) · [Task boards](README.md) · [Benchmark process](../benchmarks/README.md)
+Updated: 2026-11-05. [Active v1 path](../project-roadmap.md#recommended-execution-order) · [Every task's v1 decision](v1-triage.md) · [Current state](../current-state-review.md)
 
-Required flow: connect an ElevenLabs API key → deliberately record speech → review/edit the transcript → Send to the currently selected Agent. Transcription is independent of the Agent's LLM provider; it must retain that Agent's model, model-specific reasoning setting, skills, and tool policy. Spoken replies, voice calls, and always-listening behavior need separate scope.
+**Personal macOS v1 amendment:** STT-001–018 are PAUSE. Non-secret settings exist; microphone capture, transcription, and transcript-to-Agent behavior are not implemented. No microphone permission/entitlement feature is required for personal v1.
 
-Current source has no microphone capture or STT adapter. The initial technical references are ElevenLabs' [client streaming guide](https://elevenlabs.io/docs/eleven-api/guides/how-to/speech-to-text/realtime/client-side-streaming) and [realtime API](https://elevenlabs.io/docs/api-reference/speech-to-text/v-1-speech-to-text-realtime), checked 2026-11-05. They document Scribe v2 Realtime, temporary client tokens, supported audio formats, and partial/committed events. Choose transport and capture behavior through BEN-018/019; documentation research alone does not complete the benchmarks.
+The tables retain original public R1/R2 targets, full acceptance criteria, and original dependencies for later work. Current implementation statuses are maintained here; v1 scope/effort is maintained only in the triage. A v1 subset can pass its support-matrix row without declaring the whole original task complete. Old M2/M3 continuation and broad feature gates do not govern the active path.
 
-All tasks start **To do**. Target **R1** is the first public macOS release. Owners are suggested roles; assign an actual DRI and reviewer before Ready. Requirements here are planned, not implemented.
+The [approved D-11 exception](../release-contract.md#d-11-benchmark-policy) permits CONTINUE correction/QA/packaging without new peer comparisons. Compatibility research, tests, real Codex checks, and actual Mac package evidence remain required. Deferred full-scope work retains applicable benchmarks on resumption. Owner labels remain suggested roles; Danial is the acting accountable owner.
 
 ## Provider, API, and credentials
 
-Development gate: **BEN-018** in [the benchmark board](benchmarking.md) must have an accepted, scope-matched record before these tasks enter Ready or implementation.
+Original benchmark dependency: BEN-018. Personal-v1 CONTINUE work follows the [D-11 exception](../release-contract.md#d-11-benchmark-policy); deferred full-scope work follows the benchmark process when resumed.
 
-| ID | Target | Priority | Status | Owner | Depends on | Task and acceptance |
+| ID | Original target | Priority | Status | Owner | Original dependencies | Original full-scope task and acceptance history |
 | --- | --- | --- | --- | --- | --- | --- |
 | STT-001 | R1 | P0 | To do | Product + Integrations | BEN-018, FND-001, FND-002 | **Specify the ElevenLabs transcription contract.** Done when: ElevenLabs is the first STT provider, independent of the LLM connection; the accepted realtime-versus-batch comparison determines the current API/model, supported languages, session limits, and fallback behavior recorded in the contract. |
 | STT-002 | R1 | P0 | To do | Host | BEN-018, FND-012, PVD-003, STT-001 | **Add STT configuration and credential lifecycle.** Done when: The user can add/test/replace/clear the ElevenLabs key, choose session-only or secure persistence, and recover locked storage or denied STT access; permanent keys stay out of renderer state, bundles, exports, and logs. |
@@ -23,9 +23,9 @@ Development gate: **BEN-018** in [the benchmark board](benchmarking.md) must hav
 
 ## Microphone, transcript, and Agent flow
 
-Development gate: **BEN-019** in [the benchmark board](benchmarking.md) must have an accepted, scope-matched record before these tasks enter Ready or implementation.
+Original benchmark dependency: BEN-019. Personal-v1 CONTINUE work follows the [D-11 exception](../release-contract.md#d-11-benchmark-policy); deferred full-scope work follows the benchmark process when resumed.
 
-| ID | Target | Priority | Status | Owner | Depends on | Task and acceptance |
+| ID | Original target | Priority | Status | Owner | Original dependencies | Original full-scope task and acceptance history |
 | --- | --- | --- | --- | --- | --- | --- |
 | STT-007 | R1 | P0 | To do | Desktop + UI | BEN-019, STT-001, FND-004 | **Add deliberate microphone capture.** Done when: Explicit start/stop/cancel, first-use permission, denied/revoked permission, missing/busy/disconnected devices, and selected input work; tracks stop on cancellation, unmount, and the agreed background/context-switch policy. |
 | STT-008 | R1 | P1 | To do | UI | BEN-019, STT-005, STT-007, COR-004 | **Build composer recording states.** Done when: Idle, requesting permission, connecting, listening, transcribing, stopped, cancelled, and error states are distinct; microphone activity and destination Agent are visible and ordinary typed drafts remain usable. |
@@ -36,9 +36,9 @@ Development gate: **BEN-019** in [the benchmark board](benchmarking.md) must hav
 
 ## Speech benchmarks and release verification
 
-Development gate: **BEN-020** in [the benchmark board](benchmarking.md) must have an accepted, scope-matched record before these tasks enter Ready or implementation.
+Original benchmark dependency: BEN-020. Personal-v1 CONTINUE work follows the [D-11 exception](../release-contract.md#d-11-benchmark-policy); deferred full-scope work follows the benchmark process when resumed.
 
-| ID | Target | Priority | Status | Owner | Depends on | Task and acceptance |
+| ID | Original target | Priority | Status | Owner | Original dependencies | Original full-scope task and acceptance history |
 | --- | --- | --- | --- | --- | --- | --- |
 | STT-013 | R1 | P1 | To do | QA + Product | BEN-020, STT-001, STT-006 | **Create an approved speech evaluation corpus.** Done when: Named target languages, accents, code-switching, technical names, quiet/noisy conditions, short/long speech, silence, and user consent/data rights are documented; reference transcripts and environment are versioned. |
 | STT-014 | R1 | P1 | To do | QA + Integrations | BEN-020, STT-004, STT-013 | **Measure accuracy, latency, and cost.** Done when: WER/CER where appropriate, first-partial/final latency distributions, correction burden, network conditions, and actual usage/cost are compared to the benchmark baselines; product budgets follow measurements rather than marketing claims. |
@@ -49,4 +49,4 @@ Development gate: **BEN-020** in [the benchmark board](benchmarking.md) must hav
 
 ## Gate
 
-STT-018 must be accepted before QA-012 signs off R1. Authorized live transcription, measured quality, failure recovery, and microphone use in the signed Mac package are required. Windows/Android inherit their own native capture and lifecycle checks when resumed.
+STT-018, native microphone checks, and BEN-018–020 do not block personal v1. The ElevenLabs choice and full feature criteria are preserved for later resumption.

@@ -1,18 +1,18 @@
 # Paused platforms and later product completion
 
-Updated: 2026-11-05. [Master roadmap](../project-roadmap.md) · [Current state](../current-state-review.md)
+Updated: 2026-11-05. [Active v1 path](../project-roadmap.md#recommended-execution-order) · [Every task's v1 decision](v1-triage.md) · [Current state](../current-state-review.md)
 
-Windows and Android remain paused under the existing macOS-first scope. Their tasks are preserved as part of the original project vision. R2/Optional tasks require a deliberate scope decision and do not become complete when R1 ships.
+**Personal macOS v1 amendment:** WIN-001–006, AND-001–008, and FUT-001–006 are PAUSE. Existing cross-platform source/artifacts are historical and require native evidence before any support claim.
 
-When resumed, native platforms must benchmark and verify their own [speech capture](speech-to-text.md), [model-specific reasoning controls](reasoning-effort.md), and [skills behavior](skills.md). Speech-to-Text is required in R1; FUT-006 now covers only later signed updates. BEN-017 requires a distinct comparison for each future scope before its development.
+The tables retain original public R1/R2 targets, full acceptance criteria, and original dependencies for later work. Current implementation statuses are maintained here; v1 scope/effort is maintained only in the triage. A v1 subset can pass its support-matrix row without declaring the whole original task complete. Old M2/M3 continuation and broad feature gates do not govern the active path.
 
-Task status is **To do** until its evidence is accepted. Owners are suggested roles, not assigned people. Targets: R1 first public macOS release; R2 subsequent product completion; Paused/Optional requires a scope decision. Priority, status, and dependency rules are in the master roadmap.
+The [approved D-11 exception](../release-contract.md#d-11-benchmark-policy) permits CONTINUE correction/QA/packaging without new peer comparisons. Compatibility research, tests, real Codex checks, and actual Mac package evidence remain required. Deferred full-scope work retains applicable benchmarks on resumption. Owner labels remain suggested roles; Danial is the acting accountable owner.
 
 ## Windows
 
-Development gate: **BEN-015** in [the benchmark board](benchmarking.md) must have an accepted, scope-matched record before these tasks enter Ready or implementation.
+Original benchmark dependency: BEN-015. Personal-v1 CONTINUE work follows the [D-11 exception](../release-contract.md#d-11-benchmark-policy); deferred full-scope work follows the benchmark process when resumed.
 
-| ID | Target | Priority | Status | Owner | Depends on | Task and acceptance |
+| ID | Original target | Priority | Status | Owner | Original dependencies | Original full-scope task and acceptance history |
 | --- | --- | --- | --- | --- | --- | --- |
 | WIN-001 | Paused | P1 | To do | Product + Release | BEN-015, FND-001, REL-012 | **Reactivate and define Windows support.** Done when: Owner chooses supported Windows versions/architectures, package formats, permission model, runtime prerequisites, and a Windows verification environment. |
 | WIN-002 | Paused | P1 | To do | Integrations | BEN-015, WIN-001, PVD-017, EFF-012, SKL-020 | **Verify Windows provider/process behavior.** Done when: Minimal PATH, npm/binary discovery, spaces/Unicode paths, process trees, credentials, workspaces, model-specific effort, skills paths/configuration, and interruption pass on real Windows. |
@@ -23,9 +23,9 @@ Development gate: **BEN-015** in [the benchmark board](benchmarking.md) must hav
 
 ## Android companion
 
-Development gate: **BEN-016** in [the benchmark board](benchmarking.md) must have an accepted, scope-matched record before these tasks enter Ready or implementation.
+Original benchmark dependency: BEN-016. Personal-v1 CONTINUE work follows the [D-11 exception](../release-contract.md#d-11-benchmark-policy); deferred full-scope work follows the benchmark process when resumed.
 
-| ID | Target | Priority | Status | Owner | Depends on | Task and acceptance |
+| ID | Original target | Priority | Status | Owner | Original dependencies | Original full-scope task and acceptance history |
 | --- | --- | --- | --- | --- | --- | --- |
 | AND-001 | Paused | P1 | To do | Product + Release | BEN-016, FND-001, REL-012 | **Reactivate the Android companion contract.** Done when: Host ownership, supported Android/API/device range, HTTPS requirements, feature scope, and distribution channel are agreed. |
 | AND-002 | Paused | P0 | To do | Host + Mobile | BEN-016, AND-001, FND-004 | **Persist pairing credentials securely.** Done when: Device tokens use the chosen Android secure storage; logout/revocation/rotation, backup policy, reinstall, and locked-device behavior pass. |
@@ -38,9 +38,9 @@ Development gate: **BEN-016** in [the benchmark board](benchmarking.md) must hav
 
 ## Later integrations and parity
 
-Development gate: **BEN-017** in [the benchmark board](benchmarking.md) must have an accepted, scope-matched record before these tasks enter Ready or implementation.
+Original benchmark dependency: BEN-017. Personal-v1 CONTINUE work follows the [D-11 exception](../release-contract.md#d-11-benchmark-policy); deferred full-scope work follows the benchmark process when resumed.
 
-| ID | Target | Priority | Status | Owner | Depends on | Task and acceptance |
+| ID | Original target | Priority | Status | Owner | Original dependencies | Original full-scope task and acceptance history |
 | --- | --- | --- | --- | --- | --- | --- |
 | FUT-001 | R2 | P2 | To do | Integrations + Host | BEN-017, PVD-001, MCP-017, MCP-018, HIL-006 | **Add provider-independent MCP tool execution.** Done when: A bounded model/tool loop, supported model dialects, schema/result conversion, approvals, cancellation, context limits, and real HTTP-model tool evidence exist. |
 | FUT-002 | R2 | P2 | To do | Product + Host | BEN-017, COR-003, FND-003 | **Add editable conversation branches.** Done when: Editing/retry/branch lineage, provider session rebuilding, exports, deletion policy, and parallel branch behavior preserve history. |
@@ -51,4 +51,4 @@ Development gate: **BEN-017** in [the benchmark board](benchmarking.md) must hav
 
 ## Gate
 
-WIN-006 and AND-008 close only with native-platform evidence and approved release assets. If cross-platform delivery becomes a first-release requirement, promote these tasks and recompute the master release gate before scheduling.
+Windows/Android and later product gates do not block personal macOS v1. Resume only with explicit scope, applicable benchmarks, and native evidence; macOS results do not establish those platforms.

@@ -1,5 +1,7 @@
 # BEN-001 — Foundations and release-contract comparison
 
+**Personal-v1 reuse amendment, approved 2026-11-05:** Narrow the release boundary to Codex-only personal macOS v1; retain applicable schema/authority/persistence/session/timeout decisions. Public signing, connectors, speech, skills, and original M0–M7 gates are deferred. Follow the [active roadmap](../project-roadmap.md#recommended-execution-order), [contract/D-11 exception](../release-contract.md#d-11-benchmark-policy), and [task triage](../roadmaps/v1-triage.md). The dated comparison below is preserved, not rerun; reuse does not establish fresh runtime/package acceptance.
+
 Status: **Done — accepted for M0 execution on 2026-11-05.**
 
 [Benchmark process](README.md) · [Scope task](../roadmaps/benchmarking.md) · [Release contract](../release-contract.md) · [Runtime baseline](../runtime-baselines.md) · [Support matrix](../support-matrix.md)

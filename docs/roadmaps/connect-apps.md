@@ -1,16 +1,18 @@
-# MCP and Connect Apps completion
+# MCP, Connected Apps, and user input
 
-Updated: 2026-11-05. [Master roadmap](../project-roadmap.md) · [Current state](../current-state-review.md)
+Updated: 2026-11-05. [Active v1 path](../project-roadmap.md#recommended-execution-order) · [Every task's v1 decision](v1-triage.md) · [Current state](../current-state-review.md)
 
-Current state: scoped Codex/OpenCode inventory, capability inspection, Codex OAuth start, runtime reload, and correlated question/form answers are implemented; config adoption, enable/disable/removal, per-agent access, and real lifecycle acceptance remain. The [integration review](../integration-review.md) is the historical gap baseline. R1 architecture uses provider adapters as execution/auth owners behind a host connection service (D-03). A provider-independent MCP executor for HTTP models is tracked separately in FUT-001.
+**Personal macOS v1 amendment:** MCP-001–022 and APP-001–012 are PAUSE. HIL-001/002/005/006 are CONTINUE only for native runtime approvals/questions and their recovery; HIL-003/004 MCP forms/URL handoff are PAUSE.
 
-Status is maintained in the tables below: MCP-001–005/009/015 and HIL-001/002 are Done; MCP-010/011/014 and HIL-003 are Review. Task closure requires the acceptance evidence below. Owner values are suggested roles, not assigned people. Targets: **R1** first public macOS release; **R2** subsequent product completion. Priority/status rules and the dependency process are in the master roadmap.
+The tables retain original public R1/R2 targets, full acceptance criteria, and original dependencies for later work. Current implementation statuses are maintained here; v1 scope/effort is maintained only in the triage. A v1 subset can pass its support-matrix row without declaring the whole original task complete. Old M2/M3 continuation and broad feature gates do not govern the active path.
+
+The [approved D-11 exception](../release-contract.md#d-11-benchmark-policy) permits CONTINUE correction/QA/packaging without new peer comparisons. Compatibility research, tests, real Codex checks, and actual Mac package evidence remain required. Deferred full-scope work retains applicable benchmarks on resumption. Owner labels remain suggested roles; Danial is the acting accountable owner.
 
 ## MCP connection service and runtime adapters
 
-Development gate: **BEN-008** in [the benchmark board](benchmarking.md) must have an accepted, scope-matched record before these tasks enter Ready or implementation.
+Original benchmark dependency: BEN-008. Personal-v1 CONTINUE work follows the [D-11 exception](../release-contract.md#d-11-benchmark-policy); deferred full-scope work follows the benchmark process when resumed.
 
-| ID | Target | Priority | Status | Owner | Depends on | Task and acceptance |
+| ID | Original target | Priority | Status | Owner | Original dependencies | Original full-scope task and acceptance history |
 | --- | --- | --- | --- | --- | --- | --- |
 | MCP-001 | R1 | P0 | Done | Host | BEN-008, FND-003, FND-004 | **Define an app/server connection record.** Accepted 2026-11-05: `AppRecord` now carries stable scoped ID, host/provider/workspace, source ownership, transport, capability snapshot, credential reference, and last-checked/error metadata with validation/round-trip tests. [Schema](../data-schema.md). |
 | MCP-002 | R1 | P0 | Done | Integrations | BEN-008, FND-002 | **Pin and probe runtime/protocol capabilities.** Accepted 2026-11-05: Codex 0.166.0/OpenCode 2.2.5/MCP 2026-07-28 surfaces pinned with explicit fallbacks in [the baseline](../mcp-runtime-baseline.md). |
@@ -37,9 +39,9 @@ Development gate: **BEN-008** in [the benchmark board](benchmarking.md) must hav
 
 ## Connect Apps product flow
 
-Development gate: **BEN-009** in [the benchmark board](benchmarking.md) must have an accepted, scope-matched record before these tasks enter Ready or implementation.
+Original benchmark dependency: BEN-009. Personal-v1 CONTINUE work follows the [D-11 exception](../release-contract.md#d-11-benchmark-policy); deferred full-scope work follows the benchmark process when resumed.
 
-| ID | Target | Priority | Status | Owner | Depends on | Task and acceptance |
+| ID | Original target | Priority | Status | Owner | Original dependencies | Original full-scope task and acceptance history |
 | --- | --- | --- | --- | --- | --- | --- |
 | APP-001 | R1 | P1 | To do | Product + UI | BEN-009, FND-001, MCP-001 | **Define Connect Apps information architecture.** Done when: Models, MCP servers, native-provider apps, host pairing, and their ownership are distinguishable; a status inventory is not presented as a connection workflow. |
 | APP-002 | R1 | P1 | To do | UI | BEN-009, MCP-005, APP-001 | **Build Add app/server forms.** Done when: Local command/args/cwd/env references and remote URL/auth fields validate with accessible errors and a reviewable configuration summary. |
@@ -56,9 +58,9 @@ Development gate: **BEN-009** in [the benchmark board](benchmarking.md) must hav
 
 ## Questions, approvals, and elicitation
 
-Development gate: **BEN-010** in [the benchmark board](benchmarking.md) must have an accepted, scope-matched record before these tasks enter Ready or implementation.
+Original benchmark dependency: BEN-010. Personal-v1 CONTINUE work follows the [D-11 exception](../release-contract.md#d-11-benchmark-policy); deferred full-scope work follows the benchmark process when resumed.
 
-| ID | Target | Priority | Status | Owner | Depends on | Task and acceptance |
+| ID | Original target | Priority | Status | Owner | Original dependencies | Original full-scope task and acceptance history |
 | --- | --- | --- | --- | --- | --- | --- |
 | HIL-001 | R1 | P0 | Done | Host | BEN-010, FND-009, MCP-002 | **Define pending interaction types and routing.** Accepted 2026-11-05: typed approval/question/form/URL records with host/run/conversation/provider/thread IDs, response payload, accept/decline/cancel API, double-response rejection, and restart expiry tests. |
 | HIL-002 | R1 | P0 | Done | Host + UI | BEN-010, HIL-001 | **Implement real tool-question answers.** Accepted 2026-11-05: Codex `requestUserInput` questions are correlated and rendered; listed options/free text validate against the runtime schema; the selected answer returns to Codex; decline/cancel is explicit and empty `{}` answers are removed. Backend fixture covers invalid option, accepted answer, and double-submit. |
@@ -69,6 +71,4 @@ Development gate: **BEN-010** in [the benchmark board](benchmarking.md) must hav
 
 ## Gate
 
-MCP-022 is the acceptance gate. Adding a card, displaying a tool count, or storing config does not close it; authentication, scoped execution, restart, disable, and removal must work end to end.
-
-**Current position (2026-11-05):** 9 of 40 M3 tasks Done (MCP-001–005, MCP-009, MCP-015, HIL-001–002); MCP-010/011/014 and HIL-003 are Review; the remaining lifecycle, Connect Apps, and acceptance tasks are To do. No live OAuth connector or live HIL journey has been exercised.
+MCP-022/APP-012 full connector acceptance is paused. Personal HIL acceptance covers the retained approval/question route, genuine responses, Stop/expiry/shutdown, and late/double responses. Runtime MCP configuration must still be reviewed/constrained during V1-03 so inherited tools cannot bypass v1 policy; inventory cards are not enforcement.

@@ -1,6 +1,8 @@
 # Provider readiness and model identity
 
-Status: **M2 shared-lifecycle slice recorded 2026-11-05.** Implements the BEN-002 lifecycle contract for readiness, capability typing, catalog normalization, model-ID limits, and API-boundary readiness checks. Provider-specific journeys remain their own tasks.
+**Active scope:** [personal macOS v1](release-contract.md), Codex only/default reasoning. Existing source is broader and not yet gated. PVD-006/010/011/015/016 are Review after the audit: blank-field clearing, scroll/count copy, saved-ID slicing, stale Forget probes, and incomplete contract coverage remain. [V1-03–06](project-roadmap.md#recommended-execution-order) owns the retained corrections; this implementation reference is not release acceptance.
+
+Status: **M2 implementation record with personal-v1 review corrections, 2026-11-05.** Implements the BEN-002 lifecycle contract for readiness, capability typing, catalog normalization, model-ID limits, and API-boundary readiness checks. Provider-specific journeys remain their own tasks.
 
 [Release contract](release-contract.md) · [BEN-002](benchmarks/BEN-002-provider-lifecycle.md) · [Runtime baseline](runtime-baselines.md) · [Validation](validation.md) · [Provider board](roadmaps/providers.md)
 
@@ -36,16 +38,16 @@ Every provider carries typed capabilities. Speech-to-text is deliberately absent
 
 ## Implemented behavior
 
-- Provider entries carry typed `capabilities` for chat, streaming, tools, approvals, skills, attachments, reasoning, MCP, and discovery. Codex/OpenCode are agent runtimes; HTTP/Ollama are text-only in R1.
+- Provider entries carry typed `capabilities` for chat, streaming, tools, approvals, skills, attachments, reasoning, MCP, and discovery. Codex/OpenCode are agent runtimes; HTTP/Ollama are text-only deferred source adapters, not personal-v1 launch providers.
 - Codex probe transitions `checking` → `ready`/`needs-auth`/`error`.
 - OpenCode probe transitions `checking` → `ready` when models are found (detail explicitly says inference still needs a test), `needs-auth` when empty, or `error`.
 - HTTP/Ollama connect transitions `checking` → `ready` with models, `degraded` when connected without a model, or `error`.
 - Model catalogs use `normalizeModels()`: empty IDs rejected, duplicate IDs removed, blank names fall back to IDs, descriptions bounded, catalog capped at 200, IDs capped at 200.
-- One `MODEL_ID_LIMIT` is used by discovery, provider connect, agent/config persistence, import, message dispatch, and the model-ID form.
-- `RunManager.send()` rejects a provider that is not `ready` with a `409` before creating a streaming message. Model/effort capability validation remains EFF-006.
+- Shared MODEL_ID_LIMIT bounds discovery, connect, persistence/import, dispatch, and the form; saved connection loading still slices IDs and must adopt preserve-or-reject behavior.
+- `RunManager.send()` rejects a provider that is not `ready` with a `409` before creating a streaming message. Explicit model/enum/unsupported-effort validation exists; personal-v1 dispatch must use provider default and gate custom controls.
 - Provider cards/settings show lifecycle labels (`Ready`, `Checking`, `Sign-in needed`, `Connection error`, etc.) and the model picker filters with `isProviderReady`.
 - Provider cards hydrate the saved endpoint and manual model ID; a connect response with error readiness keeps the form open and shows the redacted detail instead of closing.
-- Model search uses NFKC canonicalization, resets list scroll on query changes, and colliding display names show a distinguishing ID suffix without adding descriptions or badges.
+- Search uses NFKC and query scroll reset; colliding names show an ID suffix. Provider-only scroll reset, live plural copy, and formatted counts remain incomplete.
 - Model options now carry verified `ReasoningCapability` metadata. Codex discovery preserves `defaultReasoningEffort` and `supportedReasoningEfforts`; the model picker renders only the selected model's enum options/default, and unknown/unsupported models show provider-default/no-control states.
 - Codex sends an effort only when the selected model advertises that exact enum value; the API rejects an explicit model that is unavailable or an effort outside the verified enum/unsupported case.
 
@@ -97,8 +99,12 @@ Results: typecheck pass; 51/51 server/model-option tests pass; production build 
 ## Remaining
 
 - **PVD-007:** explicit inference test/health check; `ready` currently means connection/catalog readiness, not a completed model turn.
-- **PVD-003/004/005/006:** keychain/session credentials, edit/clear/disconnect, restart recheck.
+- **PVD-003/004/005/006:** credential storage/disconnect/restart mechanisms exist. Full blank-field clear/edit is incomplete; PVD-006 is Review. Mac Keychain behavior still needs actual-host evidence if that deferred feature is resumed.
 - **PVD-012:** global/agent/chat default scoping.
 - **PVD-013/EFF-006:** model/effort capability validation before dispatch.
 - **PVD-014/015:** endpoint policy and refresh diagnostics.
 - **Provider-specific tasks:** BEN-003/BEN-004 Codex/OpenCode benchmarks and CDX/OPC journeys. HTTP/OLL/GEM are deferred to the distant future (D-02 amendment).
+
+## Personal v1 review limits
+
+Disconnect does not invalidate a pending probe generation: the audit reproduced configured → ready after Forget. Native runtime Forget resets A Gent state and is not CLI sign-out. Current startup probes Codex only; OpenCode requires an explicit check. Actual account changes are not represented by a fresh account identity in every session binding. Automatic effort-save failures and effective chat/default display still need work; custom effort is paused. Follow the support matrix rather than treating these source mechanisms as end-to-end acceptance.

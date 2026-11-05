@@ -1,5 +1,68 @@
 # A Gent — Validation Record
 
+Updated: 2026-11-05. Latest assessment source: fc634674f45bb578c68f8963758eef786aec82ac. The latest audit used Linux x64; earlier macOS/Windows results below retain their original scope. Documentation changes do not certify a new application build.
+
+[Active v1 path](project-roadmap.md#recommended-execution-order) · [Contract](release-contract.md) · [Candidate matrix](support-matrix.md) · [Current state](current-state-review.md)
+
+## Personal v1 readiness assessment
+
+Date: 2026-11-05. Read-only assessment before owner scope approval. Host: Linux x64, Node 24.22.1, npm 11.9.0. Original working tree stayed clean; dependency attempts, existing tests, and controlled reproductions ran in a disposable copy.
+
+### Fresh commands and limits
+
+| Command/check | Result and scope |
+| --- | --- |
+| npm ci | npm registry tarball requests returned HTTP 403. The installation stalled and was stopped; a retry with --fetch-retries=0 --fetch-timeout=10000 --no-audit --no-fund encountered the same denial and was stopped. This is an executor/network limitation, not proof of lockfile corruption. |
+| npm run typecheck | Blocked by missing installation: tsc not found. |
+| npm run build | Blocked by missing Vite. |
+| npm test | Blocked by missing tsx. No fresh normal 62-test result. |
+| npm start | No dist-server build; app did not start. |
+| npm run desktop:mac | Blocked by the missing build dependency. Linux x64 is also not an actual macOS package/launch acceptance host. |
+| UI / visual / axe / E2E | Not rerun; build/browser prerequisites unavailable. |
+| Supplemental existing tests | 40 passed using Node --experimental-transform-types and an in-memory resolver for relative .js/extensionless imports to existing .ts sources. Excluded backend.test.ts and diagnostics.test.ts, which require Express. No application/test files were edited. |
+| Supplemental runner detail | Initial resolver ran 37 passing tests but could not resolve the extensionless modelOptions import. After correcting only the ephemeral resolver, its 3 existing tests passed. This is 40 distinct tests, not a normal npm suite/typecheck result. |
+| node scripts/runtime-baseline.mjs --strict | Exit 1: installed Codex 0.166.0-alpha.1 differs from baseline 0.166.0 and selected schema hashes drift; OpenCode is missing. Required method/metadata checks passed. No live inference was attempted. |
+| Documentation audit | 636 relative file targets resolved. One machine-local absolute skill link and two stale backend-finding anchors were found. These describe the pre-amendment tree. |
+| Repository checks | Original git status clean; git diff --check passed. |
+
+The supplemental pass covers existing model/catalog/search, session binding, HIL parsing, interactions, config/secrets, persistence/migration, budgets, provider credential/contract/HTTP fixtures, and scoped Codex inventory/capability fixtures. It does not certify the full Express host, React UI, real account behavior, Electron, Mac architecture, Gatekeeper, or current package.
+
+### Controlled failure reproductions
+
+| Reproduction | Observed outcome | Owner / active phase |
+| --- | --- | --- |
+| Initial persistence failure | Override RunManager.publishState to reject before provider launch. First send rejects; second says the chat is already working; run remains running because reservation cleanup is not installed around the first awaited save. | FND-008/COR-006, QA-003/009; V1-04. |
+| Forget during outstanding Codex probe | Hold info(), start probeCodex, disconnect, then return authenticated info. Readiness changes configured → ready after the stale result. | PVD-006/015; V1-04. |
+| OpenCode error child | Launch an owned Node child that emits a JSON error/session PID and stays alive. run rejects and bridge.close returns, but child is still alive. Audit cleanup explicitly kills that fixture. | OPC-002/FND-006; OpenCode paused. |
+
+Source inspection, without a fresh HTTP/browser run, also confirmed raw store.state export includes providerThreadId/providerBinding, immediate interrupted UI state before cleanup, draft-clearing selection handlers, query-only scroll reset, raw plural/count copy, and saved model-ID slicing.
+
+Normal stop/shutdown/atomic-storage fixtures are narrower than these application/error cases. Eight prior Done labels are reopened in the documentation amendment; prior evidence remains historical.
+
+### Historical evidence that does not accept this candidate
+
+- The 62-test Windows source run and earlier 42 UI checks apply to their recorded stages, not a fresh full pass here.
+- Historical real Codex chat/Stop/project write/restart/resume and one OpenCode model reply do not complete current live approval, account/recovery, or packaged acceptance.
+- The earlier arm64 DMG/ZIP checksums do not identify a package containing all current foundation/provider/MCP work.
+- An earlier spctl result relied on disabled host security overrides; no ordinary quarantined-download/clean-Mac claim follows.
+- No fresh paid inference, connector/OAuth/STT/skills journey, Mac package launch, VoiceOver, actual zoom, signing, or notarization check occurred.
+
+## Personal v1 scope and documentation amendment
+
+Date: 2026-11-05. Danial approved the assessment, Codex-first personal v1 scope, all-task triage, ordered path, and D-11 benchmark exception, then requested documentation updates.
+
+- Active roadmap: V1-01 through V1-08; next implementation work is V1-02.
+- Every original ID is classified once: 69 CONTINUE / 163 PAUSE / 5 CUT/RETHINK.
+- Reopened Review: FND-006, PVD-006/010/011/015/016, OPC-002, EFF-005. Original implementation counts become 48 Done / 13 Review / 176 To do; this is not a v1 completion percentage.
+- Original public R1 roadmap/contract/matrix are archived; broader unfinished criteria are retained.
+- Mac chip/OS remains unconfirmed; arm64/macOS 13+ is the provisional existing baseline.
+- Scope gates, default reasoning, single active run, app fixes, version bump, and package acceptance are still unimplemented. Only Markdown documentation is changed in this pass.
+- Documentation checks passed: 237 unique original tasks and 237 unique triage entries match exactly; decisions total 69/163/5; every effort/primary phase is valid; all 8 ordered phases are present. 700 relative links, including 145 anchor references, resolve with no nonportable absolute links. git diff --check passed. Changes are Markdown-only; application/test/config files are unchanged. No new application tests or package build are implied.
+
+## Historical validation records
+
+The records below retain their original execution dates/source/artifact scope. Statements about “current,” old R1 requirements, or benchmark gates inside an earlier record are historical; follow the current contract/matrix and the assessment above.
+
 Date: 2026-11-05\
 Host: macOS arm64 baseline; latest M3 source checks on Windows x64 (development evidence, not R1 acceptance)\
 Historical packaged-baseline Node: 22.23.1\
@@ -743,12 +806,12 @@ Windows and Android artifacts below are from the previous cross-platform build. 
 - Manual VoiceOver and reduced-motion audit.
 - Universal/Intel macOS build.
 - Large-workspace/SSE performance check.
-- CI execution (the workflow has not run on GitHub yet).
+- Current candidate CI acceptance (a historical baseline GitHub run failed, as recorded above; no current CI acceptance is implied).
 
 ## Known issues
 
-- Seven model catalog findings remain open; see [modelOptions stress test](model-options-stress-test.md#what-broke).
-- Three backend findings remain tracked from the earlier review; their reproductions were not rerun in this documentation pass. See [current state](current-state-review.md#backend-findings-tracked-from-the-earlier-review).
+- Catalog findings have mixed current status; see [current picker assessment](model-options-stress-test.md#current-status-after-provider-changes).
+- Earlier backend fixture closures and newly reproduced lifecycle gaps are distinguished in [current state](current-state-review.md#earlier-backend-findings).
 - macOS app is ad-hoc signed and not notarized.
 - Windows artifacts are unsigned and were not rebuilt after the macOS-only changes.
 - Android APK is debug-signed, companion-only, and was not rebuilt after the macOS-only changes.

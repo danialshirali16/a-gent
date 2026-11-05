@@ -2,7 +2,7 @@
 
 The full 18-component checklist, current progress, per-component workflow, and continuation point are maintained in the [UI Roadmap](ui-roadmap.md#component-by-component-pass). Update progress there so future sessions have one source of truth.
 
-Updated: 2026-11-05. Status: **initial pass complete, 18 of 18**. Follow-up hardening is active: [modelOptions stress test](model-options-stress-test.md), with seven findings open. The Search field was corrected on 2026-11-05.
+Updated: 2026-11-05. Status: **initial pass complete, 18 of 18**. Follow-up uses the [personal-v1 path](project-roadmap.md#recommended-execution-order). The [current picker assessment](model-options-stress-test.md#current-status-after-provider-changes) distinguishes implemented fixes, raw-fixture failures, and remaining acceptance. The Search field was corrected on 2026-11-05.
 
 Product integration is tracked separately in [the completion roadmap](project-roadmap.md) and [task boards](roadmaps/README.md): provider and MCP/Connect Apps workflows remain partial despite the completed shared-component milestone.
 

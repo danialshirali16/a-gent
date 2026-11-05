@@ -1,18 +1,18 @@
 # Add, manage, and use Agent skills
 
-Updated: 2026-11-05. [Master roadmap](../project-roadmap.md) · [Task boards](README.md) · [Benchmark process](../benchmarks/README.md)
+Updated: 2026-11-05. [Active v1 path](../project-roadmap.md#recommended-execution-order) · [Every task's v1 decision](v1-triage.md) · [Current state](../current-state-review.md)
 
-Required flow: discover or add/create a skill → inspect its instructions/resources and origin → enable it for an eligible Agent/project → use it → edit/update → disable/remove/export. Skill management is a separate product area from MCP/Connect Apps. Current source has no dedicated Skills manager or native skill adapter.
+**Personal macOS v1 amendment:** SKL-001–020 are PAUSE. Schema records and external CLI-native discovery do not constitute an A Gent skills manager. No manager/native skill adapter is currently implemented.
 
-The [Agent Skills specification](https://agentskills.io/specification) describes a SKILL.md-based directory with metadata/instructions and optional resources. [Codex App Server](https://learn.chatgpt.com/docs/app-server) exposes skill listing, configuration, and explicit invocation; [OpenCode skills](https://opencode.ai/docs/skills) document native discovery and permission controls. These references were checked 2026-11-05; supported installed runtime schemas still govern implementation. Read/enable state is distinct from actual use in a run.
+The tables retain original public R1/R2 targets, full acceptance criteria, and original dependencies for later work. Current implementation statuses are maintained here; v1 scope/effort is maintained only in the triage. A v1 subset can pass its support-matrix row without declaring the whole original task complete. Old M2/M3 continuation and broad feature gates do not govern the active path.
 
-All tasks start **To do**. Target **R1** is the first public macOS release. Owners are suggested roles; assign an actual DRI and reviewer before Ready. Requirements here are planned, not implemented.
+The [approved D-11 exception](../release-contract.md#d-11-benchmark-policy) permits CONTINUE correction/QA/packaging without new peer comparisons. Compatibility research, tests, real Codex checks, and actual Mac package evidence remain required. Deferred full-scope work retains applicable benchmarks on resumption. Owner labels remain suggested roles; Danial is the acting accountable owner.
 
 ## Skill format, sources, and storage
 
-Development gate: **BEN-023** in [the benchmark board](benchmarking.md) must have an accepted, scope-matched record before these tasks enter Ready or implementation.
+Original benchmark dependency: BEN-023. Personal-v1 CONTINUE work follows the [D-11 exception](../release-contract.md#d-11-benchmark-policy); deferred full-scope work follows the benchmark process when resumed.
 
-| ID | Target | Priority | Status | Owner | Depends on | Task and acceptance |
+| ID | Original target | Priority | Status | Owner | Original dependencies | Original full-scope task and acceptance history |
 | --- | --- | --- | --- | --- | --- | --- |
 | SKL-001 | R1 | P0 | To do | Product + Integrations | BEN-023, FND-001, FND-002, PVD-001 | **Specify the skills product and adapter matrix.** Done when: Reusable instructions/resources are distinct from MCP connections; create/import/manage/use scope, supported runtimes/formats, project/global/per-Agent rules, and explicitly unsupported execution modes are recorded. |
 | SKL-002 | R1 | P0 | To do | Host + Integrations | BEN-023, SKL-001, FND-003 | **Define skill identity and discovery.** Done when: Host/root/path/source identity, version, effective precedence, duplicate names, disabled/unsupported states, and discovery errors are stable across project/global/native roots and refresh/restart. |
@@ -24,9 +24,9 @@ Development gate: **BEN-023** in [the benchmark board](benchmarking.md) must hav
 
 ## Runtime use and management interface
 
-Development gate: **BEN-024** in [the benchmark board](benchmarking.md) must have an accepted, scope-matched record before these tasks enter Ready or implementation.
+Original benchmark dependency: BEN-024. Personal-v1 CONTINUE work follows the [D-11 exception](../release-contract.md#d-11-benchmark-policy); deferred full-scope work follows the benchmark process when resumed.
 
-| ID | Target | Priority | Status | Owner | Depends on | Task and acceptance |
+| ID | Original target | Priority | Status | Owner | Original dependencies | Original full-scope task and acceptance history |
 | --- | --- | --- | --- | --- | --- | --- |
 | SKL-008 | R1 | P0 | To do | Integrations | BEN-024, SKL-002, SKL-006, FND-002 | **Integrate supported Codex skill APIs.** Done when: Version-probed native listing, invalidation/reload, enable/disable, and explicit skill input use actual runtime-supported paths and identities; unsupported or under-development methods have a clear fallback. |
 | SKL-009 | R1 | P0 | To do | Integrations | BEN-024, SKL-002, SKL-006, OPC-003 | **Integrate supported OpenCode skills.** Done when: Native discovery roots, SKILL.md compatibility, per-Agent permissions, and refresh behavior match the supported runtime; A Gent changes preserve unrelated settings and cannot widen approved tool access. |
@@ -39,9 +39,9 @@ Development gate: **BEN-024** in [the benchmark board](benchmarking.md) must hav
 
 ## Skills verification and release
 
-Development gate: **BEN-025** in [the benchmark board](benchmarking.md) must have an accepted, scope-matched record before these tasks enter Ready or implementation.
+Original benchmark dependency: BEN-025. Personal-v1 CONTINUE work follows the [D-11 exception](../release-contract.md#d-11-benchmark-policy); deferred full-scope work follows the benchmark process when resumed.
 
-| ID | Target | Priority | Status | Owner | Depends on | Task and acceptance |
+| ID | Original target | Priority | Status | Owner | Original dependencies | Original full-scope task and acceptance history |
 | --- | --- | --- | --- | --- | --- | --- |
 | SKL-016 | R1 | P0 | To do | QA | BEN-025, SKL-003, SKL-005, SKL-006, SKL-007 | **Create adversarial package and persistence fixtures.** Done when: Malformed/frontmatter/oversized/duplicate/missing-resource packages, traversal/symlink archives, changed external files, interrupted writes, rollback, and secret exclusion have meaningful regression evidence. |
 | SKL-017 | R1 | P0 | To do | QA + Integrations | BEN-025, SKL-011, SKL-014, SKL-015 | **Verify skill behavior across adapters.** Done when: Actual context/invocation payloads, on-demand loading, enabled/disabled scope, missing permissions/resources, token limits, concurrent chats, and runtime errors pass contract tests without granting new execution rights. |
@@ -51,4 +51,4 @@ Development gate: **BEN-025** in [the benchmark board](benchmarking.md) must hav
 
 ## Gate
 
-SKL-020 must be accepted before QA-012 signs off R1. Real supported-runtime journeys, adapter limitations, file ownership, recovery, and accessibility must be demonstrated. Importing instructions never grants new tool/file/network rights or runs package scripts by itself.
+SKL-020 and BEN-023–025 do not block personal v1. Resume the dedicated skills feature only under an explicit later scope and applicable benchmark record; preserve file/permission ownership criteria below.

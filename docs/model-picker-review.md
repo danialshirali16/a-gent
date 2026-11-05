@@ -2,7 +2,7 @@
 
 Reviewed: 2026-11-05. Status: implemented and verified in the browser preview.
 
-Follow-up: this was the normal-fixture implementation review. The later [modelOptions stress test](model-options-stress-test.md) found seven open issues, including blank accessible labels and ambiguous/invalid selection. Its findings qualify this review's original verdict; use the stress report and [UI Roadmap](ui-roadmap.md) for continuation.
+Follow-up: this is the historical normal-fixture review. The original stress audit found seven issues; [current picker status](model-options-stress-test.md#current-status-after-provider-changes) distinguishes later normalization/disambiguation/search fixes from raw-fixture failures and remaining scroll/count/limit work. Use the [active v1 path](project-roadmap.md#recommended-execution-order), not this historical verdict, for release acceptance.
 
 ## Scope and coverage
 

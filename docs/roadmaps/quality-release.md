@@ -1,20 +1,20 @@
 # Quality, packaging, and release
 
-Updated: 2026-11-05. [Master roadmap](../project-roadmap.md) · [Current state](../current-state-review.md)
+Updated: 2026-11-05. [Active v1 path](../project-roadmap.md#recommended-execution-order) · [Every task's v1 decision](v1-triage.md) · [Current state](../current-state-review.md)
 
-The earlier test counts and installer checks are historical. This board requires evidence for a new candidate after provider, app, and product corrections. The workflow file currently builds Windows and Android unconditionally; QA-010 reconciles CI with the active scope.
+**Personal macOS v1 amendment:** Retained source/runtime/data/accessibility tests and actual Mac packaging/pilot are CONTINUE. Fleet-scale budgets, signing/notarization, public terms/publication infrastructure, and public publication are PAUSE.
 
-R1 evidence includes [ElevenLabs speech](speech-to-text.md), [model-specific reasoning](reasoning-effort.md), and [skills](skills.md). QA and packaging have their own benchmark prerequisites; final QA signoff depends on all three feature gates, including real-service/runtime and signed-package checks.
+The tables retain original public R1/R2 targets, full acceptance criteria, and original dependencies for later work. Current implementation statuses are maintained here; v1 scope/effort is maintained only in the triage. A v1 subset can pass its support-matrix row without declaring the whole original task complete. Old M2/M3 continuation and broad feature gates do not govern the active path.
 
-Task status is **To do** until its evidence is accepted. Owners are suggested roles, not assigned people. Targets: R1 first public macOS release; R2 subsequent product completion; Paused/Optional requires a scope decision. Priority, status, and dependency rules are in the master roadmap.
+The [approved D-11 exception](../release-contract.md#d-11-benchmark-policy) permits CONTINUE correction/QA/packaging without new peer comparisons. Compatibility research, tests, real Codex checks, and actual Mac package evidence remain required. Deferred full-scope work retains applicable benchmarks on resumption. Owner labels remain suggested roles; Danial is the acting accountable owner.
 
 ## Quality and verification
 
-Development gate: **BEN-013** in [the benchmark board](benchmarking.md) must have an accepted, scope-matched record before these tasks enter Ready or implementation.
+Original benchmark dependency: BEN-013. Personal-v1 CONTINUE work follows the [D-11 exception](../release-contract.md#d-11-benchmark-policy); deferred full-scope work follows the benchmark process when resumed.
 
-QA-001's initial support matrix was recorded for M0 on 2026-11-05 in [the support matrix](../support-matrix.md). QA-001 itself remains **To do**: BEN-013 is still required, and every row must be accepted or explicitly excluded before the task closes.
+QA-001 now uses the [personal-v1 acceptance matrix](../support-matrix.md). Its scope is documented; candidate acceptance remains open. BEN-013 peer research and paused feature gates are not personal-v1 prerequisites.
 
-| ID | Target | Priority | Status | Owner | Depends on | Task and acceptance |
+| ID | Original target | Priority | Status | Owner | Original dependencies | Original full-scope task and acceptance history |
 | --- | --- | --- | --- | --- | --- | --- |
 | QA-001 | R1 | P0 | To do | QA | BEN-013, FND-001, FND-002 | **Create the release acceptance matrix.** Done when: Every advertised provider, transport, auth flow, model-specific effort mode, ElevenLabs speech and skill journey, platform, and negative state maps to an owner, test, and evidence location. |
 | QA-002 | R1 | P1 | To do | QA + Host | BEN-013, FND-011 | **Set and measure performance budgets.** Done when: Agree startup, stream latency, memory, catalog, 500-agent/5,000-chat, and slow-SSE-client budgets; publish measured baselines before pass/fail targets. |
@@ -31,9 +31,9 @@ QA-001's initial support matrix was recorded for M0 on 2026-11-05 in [the suppor
 
 ## macOS distribution
 
-Development gate: **BEN-014** in [the benchmark board](benchmarking.md) must have an accepted, scope-matched record before these tasks enter Ready or implementation.
+Original benchmark dependency: BEN-014. Personal-v1 CONTINUE work follows the [D-11 exception](../release-contract.md#d-11-benchmark-policy); deferred full-scope work follows the benchmark process when resumed.
 
-| ID | Target | Priority | Status | Owner | Depends on | Task and acceptance |
+| ID | Original target | Priority | Status | Owner | Original dependencies | Original full-scope task and acceptance history |
 | --- | --- | --- | --- | --- | --- | --- |
 | REL-001 | R1 | P0 | To do | Release | BEN-014, FND-001, FND-002 | **Make release builds reproducible.** Done when: A clean checkout uses the lockfile and supported Node/Electron/CLI versions; build prerequisites and expected output are documented. |
 | REL-002 | R1 | P1 | To do | Release + Host | BEN-014, REL-001 | **Centralize release identity and version metadata.** Done when: Package, app-server client, API health, About, bundle identifiers, artifact names, and release notes agree for active artifacts. |
@@ -50,4 +50,4 @@ Development gate: **BEN-014** in [the benchmark board](benchmarking.md) must hav
 
 ## Gate
 
-REL-012 can close only for the actual approved artifact set. A successful source build, fake-provider suite, or ad-hoc local package is insufficient evidence for public distribution.
+QA-012 personal signoff follows the active support matrix and V1-08, not every old R1 task. REL-007 uses the actual personal Mac candidate without REL-004/STT-017/SKL-019/EFF-011 as prerequisites. Public REL-012 remains paused; signing/notarization and public approval gates are retained for later distribution.
