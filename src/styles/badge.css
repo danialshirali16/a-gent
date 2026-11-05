@@ -1,0 +1,58 @@
+/* Compact state labels and live status indicators. */
+.ui-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 100%;
+  border: 1px solid transparent;
+  border-radius: var(--ui-radius-pill);
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+}
+.ui-badge.is-sm { min-height: 19px; padding: 2px 7px; font-size: 10px; }
+.ui-badge.is-md { min-height: 23px; padding: 3px 9px; font-size: 11px; }
+.ui-badge-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+.ui-badge-icon { display: inline-flex; }
+.ui-badge-icon svg { width: 11px; height: 11px; }
+
+.ui-badge.is-neutral { background: color-mix(in srgb, var(--ui-ink) 6%, transparent); border-color: var(--ui-border); color: var(--ui-text-2); }
+.ui-badge.is-success { background: color-mix(in srgb, var(--ui-success) 11%, transparent); border-color: color-mix(in srgb, var(--ui-success) 18%, transparent); color: var(--ui-success); }
+.ui-badge.is-warning { background: color-mix(in srgb, var(--ui-warning) 12%, transparent); border-color: color-mix(in srgb, var(--ui-warning) 20%, transparent); color: var(--ui-warning); }
+.ui-badge.is-danger { background: color-mix(in srgb, var(--ui-danger) 10%, transparent); border-color: color-mix(in srgb, var(--ui-danger) 18%, transparent); color: var(--ui-danger); }
+.ui-badge.is-info { background: color-mix(in srgb, var(--ui-accent) 9%, transparent); border-color: color-mix(in srgb, var(--ui-accent) 16%, transparent); color: var(--ui-accent); }
+:root:not([data-theme='dark']) .ui-badge.is-info { color: color-mix(in srgb, var(--ui-accent) 80%, var(--ui-ink)); }
+:root:not([data-theme='dark']) .ui-badge.is-warning { color: color-mix(in srgb, var(--ui-warning) 82%, var(--ui-ink)); }
+:root:not([data-theme='dark']) .ui-badge.is-brand { color: color-mix(in srgb, var(--ui-brand) 52%, var(--ui-ink)); }
+:root[data-theme='dark'] .ui-badge.is-success { color: color-mix(in srgb, var(--ui-success) 78%, var(--ui-ink)); }
+:root[data-theme='dark'] .ui-badge.is-danger { color: color-mix(in srgb, var(--ui-danger) 74%, var(--ui-ink)); }
+.ui-badge.is-accent { background: var(--ui-accent); border-color: var(--ui-accent); color: var(--ui-accent-ink); }
+.ui-badge.is-brand { background: color-mix(in srgb, var(--ui-brand) 14%, transparent); border-color: color-mix(in srgb, var(--ui-brand) 22%, transparent); color: color-mix(in srgb, var(--ui-brand) 75%, var(--ui-ink)); }
+
+.ui-status { display: inline-flex; align-items: center; gap: 6px; color: var(--ui-text-2); font-size: 11px; line-height: 16px; white-space: nowrap; }
+.ui-status.is-md { font-size: 12px; line-height: 18px; }
+.ui-status-dot { display: inline-block; width: 6px; height: 6px; flex-shrink: 0; border-radius: 50%; background: var(--ui-text-3); }
+.ui-status.is-success .ui-status-dot,
+.ui-status-dot.is-success { background: var(--ui-success); }
+.ui-status.is-warning .ui-status-dot,
+.ui-status-dot.is-warning { background: var(--ui-warning); }
+.ui-status.is-danger .ui-status-dot,
+.ui-status-dot.is-danger { background: var(--ui-danger); }
+.ui-status.is-info .ui-status-dot,
+.ui-status-dot.is-info { background: var(--ui-accent); }
+.ui-status.is-accent .ui-status-dot,
+.ui-status-dot.is-accent { background: var(--ui-accent); }
+.ui-status.is-brand .ui-status-dot,
+.ui-status-dot.is-brand { background: var(--ui-brand); }
+.ui-status.is-pulse .ui-status-dot,
+.ui-status-dot.is-pulse { animation: status-pulse 1.6s ease-in-out infinite; }
+
+@keyframes status-pulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 color-mix(in srgb, currentColor 0%, transparent); }
+  50% { opacity: .55; box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 12%, transparent); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-status.is-pulse .ui-status-dot,
+  .ui-status-dot.is-pulse { animation: none; }
+}

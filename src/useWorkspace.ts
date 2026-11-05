@@ -41,6 +41,8 @@ export function useWorkspace(connection: Connection) {
     return () => { cancelled = true; controller.abort(); clearTimeout(retry); };
   }, [connection.url, connection.token, refresh]);
 
-  const updateRun = (run: Run) => setData(previous => previous ? { ...previous, runs: [...previous.runs.filter(item => item.id !== run.id), run] } : previous);
+  // A live event can advance the run before its initiating HTTP response arrives.
+  // Seed missing runs from responses without replacing an existing stream snapshot.
+  const updateRun = (run: Run) => setData(previous => previous && !previous.runs.some(item => item.id === run.id) ? { ...previous, runs: [...previous.runs, run] } : previous);
   return { data, api, refresh, loading, error, setError, online, updateRun };
 }

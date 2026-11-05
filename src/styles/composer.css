@@ -1,0 +1,93 @@
+/* Provider rail and model pane, adapted from the supplied reference. */
+.ui-popover.composer-model-popover {
+  display: flex;
+  max-height: min(480px, var(--popover-available-height, 100dvh));
+  overflow: hidden;
+  padding: 0;
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-raised);
+  box-shadow: var(--ui-shadow-menu), 0 1px 3px #00000014;
+  animation: none;
+}
+.model-provider-glyph { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--ui-ink); }
+.model-provider-glyph > svg { width: 16px; height: 16px; }
+.model-picker { display: flex; flex-direction: column; width: 100%; min-height: 0; }
+.model-picker-layout { display: flex; flex: 1; min-width: 0; min-height: 248px; }
+.model-picker-rail { position: relative; flex: 0 0 56px; background: color-mix(in srgb, var(--ui-ink) 5%, var(--ui-raised)); }
+.model-picker-provider-tabs { position: absolute; inset-block: 8px 88px; inset-inline: 5px; display: flex; flex-direction: column; align-items: center; gap: 6px; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
+.model-picker-provider-tab { display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 42px; flex-shrink: 0; border-radius: 10px; color: var(--ui-text-2); }
+.model-picker-provider-tab > svg { width: 20px; height: 20px; }
+.model-picker-provider-tab[aria-selected='true'] { background: var(--ui-raised); color: var(--ui-ink); box-shadow: 0 1px 3px #00000012; }
+.model-picker-provider-tab:focus-visible { outline: 2px solid var(--ui-accent); outline-offset: -2px; }
+.model-picker-rail-actions { position: absolute; inset-block-end: 8px; inset-inline: 5px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.model-picker-rail-actions .icon-button { width: 36px; height: 32px; color: var(--ui-text-2); }
+.model-picker-column { display: flex; flex: 1; flex-direction: column; min-width: 0; min-height: 0; }
+.model-picker-search-row { flex-shrink: 0; padding: 6px 8px; background: color-mix(in srgb, var(--ui-ink) 5%, var(--ui-raised)); }
+.model-picker .model-picker-search { height: 34px; border-color: transparent; background: transparent; border-radius: 6px; transition: none; }
+.model-picker .model-picker-search:focus-within { outline: 2px solid var(--ui-accent); outline-offset: -1px; box-shadow: none; }
+.model-picker-models { display: flex; flex: 1; flex-direction: column; min-height: 0; padding: 8px; border-start-start-radius: 10px; background: var(--ui-raised); }
+.model-picker-caption { flex-shrink: 0; padding: 2px 8px 8px; color: var(--ui-text-2); font-size: 12px; font-weight: 400; line-height: 1.5; overflow-wrap: anywhere; }
+.model-picker-list { flex: 1; min-height: 0; max-height: min(256px, 42dvh); overflow-y: auto; overscroll-behavior: contain; scroll-padding-block: 4px; scrollbar-width: thin; }
+.model-picker-option { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 40px; padding: 9px 8px; border-radius: var(--ui-radius-sm); color: var(--ui-ink); text-align: start; }
+.model-picker-name { flex: 1; min-width: 0; font-size: 14px; font-weight: 500; line-height: 1.5; overflow-wrap: anywhere; }
+.model-picker-option[aria-selected='true'] { background: color-mix(in srgb, var(--ui-ink) 7%, transparent); }
+.model-picker-option:focus-visible { outline: 2px solid var(--ui-accent); outline-offset: -2px; }
+.model-picker-check { flex-shrink: 0; color: var(--ui-ink); }
+.model-picker-result-provider { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; flex-shrink: 0; color: var(--ui-text-2); }
+.model-picker-result-provider > svg { width: 16px; height: 16px; }
+.model-picker-notice { margin: 0 8px 8px; color: var(--ui-text-2); font-size: 12px; line-height: 1.5; }
+.model-picker-thinking { display: flex; align-items: center; flex-shrink: 0; gap: 10px; padding: 10px 12px; border-top: 1px solid var(--ui-border); }
+.model-picker-thinking-label { display: inline-flex; align-items: center; gap: 7px; flex-shrink: 0; color: var(--ui-text-2); font-size: 12px; line-height: 1.5; }
+.model-picker-meter { display: flex; align-items: flex-end; gap: 2px; height: 12px; }
+.model-picker-meter > span { width: 3px; height: 5px; border-radius: 1px; background: var(--ui-border-strong); }
+.model-picker-meter > span:nth-child(2) { height: 8px; }
+.model-picker-meter > span:nth-child(3) { height: 11px; }
+.model-picker-meter > span.is-filled { background: var(--ui-ink); }
+.model-picker-thinking .ui-segmented { flex: 1; min-width: 0; }
+.model-picker-thinking .ui-segmented button { flex: 1; min-width: 0; min-height: 30px; padding-inline: 6px; font-size: 12px; transition: none; }
+.model-picker-thinking-unavailable { color: var(--ui-text-2); font-size: 12px; line-height: 1.5; }
+.model-picker-empty { display: flex; flex: 1; flex-direction: column; align-items: center; justify-content: center; gap: 10px; min-height: 0; padding: 20px 12px; color: var(--ui-text-2); text-align: center; overflow-y: auto; }
+.model-picker-empty strong { max-width: 100%; color: var(--ui-ink); font-size: 13px; font-weight: 500; line-height: 1.5; overflow-wrap: anywhere; }
+.model-picker-empty p { color: var(--ui-text-2); font-size: 12px; line-height: 1.5; }
+.model-picker-empty.is-disconnected { min-height: 180px; }
+.model-picker-empty-heading { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; }
+.model-picker-empty-heading h2 { font-size: 14px; font-weight: 500; }
+.ui-popover.composer-model-popover[data-constrained='true'] { overflow-y: auto; scrollbar-width: thin; }
+
+@media (hover: hover) and (pointer: fine) {
+  .model-picker-option:hover { background: color-mix(in srgb, var(--ui-ink) 5%, transparent); }
+  .model-picker-option[aria-selected='true']:hover { background: color-mix(in srgb, var(--ui-ink) 10%, transparent); }
+  .model-picker-provider-tab:hover { background: color-mix(in srgb, var(--ui-ink) 5%, var(--ui-raised)); color: var(--ui-ink); }
+}
+@media (forced-colors: active) {
+  .model-picker-option[aria-selected='true'], .model-picker-provider-tab[aria-selected='true'] { outline: 1px solid Highlight; outline-offset: -1px; }
+  .model-picker-option:focus-visible, .model-picker-provider-tab:focus-visible, .model-picker .model-picker-search:focus-within { outline: 2px solid Highlight; }
+}
+
+/* On narrow screens the model controls move below the message field so the
+   placeholder and the text being typed keep the full width. */
+@media (pointer: coarse), (max-width: 599px) {
+  .reason-composer,
+  .reason-composer.is-one-line { border-radius: 24px; }
+  .reason-composer-main { flex-wrap: wrap; align-items: flex-end; row-gap: 5px; }
+  .reason-composer .composer-plus { width: 40px; height: 40px; }
+  .reason-composer textarea { min-height: 40px; font-size: 16px; line-height: 22px; padding-block: 8px; }
+  .reason-composer-actions { order: 2; flex: 1 0 100%; justify-content: space-between; gap: 8px; }
+  .reason-composer-actions .reason-model-anchor { flex: 1; min-width: 0; }
+  .reason-model-pill { width: 100%; min-height: 44px; justify-content: flex-start; }
+  .reason-model-pill .model-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; }
+  .reason-send { width: 40px; height: 40px; }
+  .model-picker .ui-search .ui-search-input { font-size: 16px; }
+  .model-picker-rail { flex-basis: 52px; }
+  .model-picker-provider-tabs { inset-inline: 4px; }
+  .model-picker-provider-tab { width: 44px; height: 44px; }
+  .model-picker-rail-actions { inset-inline: 4px; }
+  .model-picker-rail-actions .icon-button { width: 44px; height: 44px; }
+  .model-picker-provider-tabs { inset-block-end: 108px; }
+  .model-picker-search-row { padding-inline: 6px; }
+  .model-picker .model-picker-search { height: 44px; padding-inline: 6px; }
+  .model-picker-option { min-height: 44px; }
+  .model-picker-thinking { align-items: stretch; flex-direction: column; gap: 8px; padding: 10px; }
+  .model-picker-thinking .ui-segmented { width: 100%; }
+  .model-picker-thinking .ui-segmented button { min-height: 44px; }
+}

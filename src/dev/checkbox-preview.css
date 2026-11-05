@@ -1,0 +1,9 @@
+.checkbox-preview-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; }
+.checkbox-preview-form { display: grid; gap: 22px; }
+.checkbox-preview-group { display: flex; flex-direction: column; gap: 12px; }
+.checkbox-preview-children { display: flex; flex-direction: column; gap: 8px; padding-left: 27px; }
+.checkbox-preview-setting { padding-top: 18px; border-top: 1px solid var(--ui-border); }
+
+@media (max-width: 720px) {
+  .checkbox-preview-grid { grid-template-columns: 1fr; }
+}

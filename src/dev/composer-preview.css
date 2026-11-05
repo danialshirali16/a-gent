@@ -1,0 +1,14 @@
+.composer-preview-stage { width: min(100%, 820px); margin: 0 auto; padding: 22px; border: 1px solid var(--ui-border); border-radius: 16px; background: var(--ui-page); }
+.composer-preview-note { margin-top: 10px; color: var(--ui-text-3); font-size: 12px; text-align: center; }
+.composer-preview-chips { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 18px; }
+.composer-preview-anatomy { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; padding: 20px 22px; }
+.composer-preview-anatomy div { display: flex; flex-direction: column; gap: 4px; }
+.composer-preview-anatomy strong { font-size: 12px; font-weight: 550; }
+.composer-preview-anatomy span { color: var(--ui-text-3); font-size: 12px; line-height: 18px; }
+
+@media (max-width: 720px) {
+  .composer-preview-stage { padding: 12px; }
+  .composer-preview-anatomy { grid-template-columns: 1fr; }
+}
+.composer-preview-fixtures { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-block-end: 16px; }
+.composer-preview-fixtures .ui-segmented { flex-wrap: wrap; }

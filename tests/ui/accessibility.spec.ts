@@ -21,6 +21,7 @@ async function setTheme(page: Page, theme: 'light' | 'dark') {
     await fetch('/api/settings', { method: 'PATCH', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ theme: next }) });
   }, theme);
   await expect.poll(() => page.evaluate(() => document.documentElement.dataset.theme)).toBe(theme);
+  await expect.poll(() => page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--ui-ink').trim())).toBe(theme === 'dark' ? '#f5f5f5' : '#1c1c1c');
   await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
 }
 
@@ -63,6 +64,14 @@ test('side panel passes axe', async ({ page }, testInfo) => {
   await page.getByRole('button', { name: 'Open side panel' }).click();
   await expect(page.getByRole('tab', { name: 'Session', exact: true })).toBeVisible();
   await audit(page, testInfo, 'side-panel');
+});
+
+test('agent avatar picker passes axe', async ({ page }, testInfo) => {
+  await home(page);
+  await page.getByRole('button', { name: 'Create an agent', exact: true }).click();
+  await page.locator('.avatar-picker-trigger').click();
+  await expect(page.getByRole('radiogroup', { name: 'Avatar' })).toBeVisible();
+  await audit(page, testInfo, 'agent-avatar-picker', 'dialog[open]');
 });
 
 test('mobile home screen passes axe', async ({ page }, testInfo) => {

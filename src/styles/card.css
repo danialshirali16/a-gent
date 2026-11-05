@@ -1,0 +1,37 @@
+/* Content cards and compact navigation rows. */
+.ui-card { display: flex; flex-direction: column; min-width: 0; }
+.ui-card.is-flat { background: transparent; }
+.ui-card.is-raised { background: var(--ui-raised); border: 1px solid var(--ui-border); border-radius: var(--ui-radius-lg); }
+.ui-card.is-interactive { background: var(--ui-raised); border: 1px solid var(--ui-border); border-radius: var(--ui-radius-lg); cursor: pointer; transition: background var(--ui-dur-fast) ease, border-color var(--ui-dur-fast) ease; }
+.ui-card.is-interactive:hover { background: color-mix(in srgb, var(--ui-ink) 4%, var(--ui-raised)); border-color: var(--ui-border-strong); }
+
+.ui-list-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+  padding: 9px 10px;
+  border-radius: var(--ui-radius-sm);
+  color: var(--ui-text-2);
+  text-align: left;
+}
+
+button.ui-list-row:hover { background: color-mix(in srgb, var(--ui-ink) 7%, transparent); color: var(--ui-ink); }
+button.ui-list-row:focus-visible { outline: 2px solid var(--ui-accent); outline-offset: 1px; }
+.ui-list-row.is-selected { background: color-mix(in srgb, var(--ui-ink) 9%, transparent); color: var(--ui-ink); }
+.ui-list-row-leading { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.ui-list-row-copy { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.ui-list-row-copy strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 500; line-height: 18px; }
+.ui-list-row-copy small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ui-text-3); font-size: 11px; line-height: 16px; }
+.ui-list-row-trailing { display: inline-flex; align-items: center; flex-shrink: 0; margin-left: auto; color: var(--ui-text-3); }
+
+@media (pointer: coarse), (max-width: 599px) {
+  .ui-list-row { min-height: 48px; padding-block: 11px; }
+  .ui-list-row-copy strong { font-size: 13px; line-height: 19px; }
+  .ui-list-row-copy small { font-size: 12px; line-height: 17px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-card.is-interactive { transition: none; }
+}

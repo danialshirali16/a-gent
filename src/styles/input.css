@@ -1,0 +1,84 @@
+:root {
+  --ui-field-error: #b0163e;
+}
+
+:root[data-theme='dark'] {
+  --ui-field-error: #ff86a2;
+}
+
+.text-control {
+  --control-height: 32px;
+  --control-padding: 10px;
+  --control-font: 13px;
+  display: block;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 5px var(--control-padding);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-sm);
+  background: color-mix(in srgb, var(--ui-ink) 4%, transparent);
+  color: var(--ui-ink);
+  font-family: var(--ui-font-text);
+  font-size: var(--control-font);
+  font-weight: 400;
+  line-height: 20px;
+  letter-spacing: normal;
+  box-shadow: none;
+  caret-color: currentColor;
+}
+
+.text-input { height: var(--control-height); }
+.text-control[data-control-size='sm'] { --control-height: 28px; --control-padding: 8px; --control-font: 12px; padding-block: 3px; }
+.text-control[data-control-size='lg'] { --control-height: 36px; --control-padding: 12px; --control-font: 14px; padding-block: 7px; }
+
+.text-control::placeholder {
+  color: var(--ui-text-3);
+  opacity: 1;
+}
+
+.text-control:read-only {
+  background: transparent;
+  color: var(--ui-text-2);
+}
+
+.text-control[aria-invalid='true'] {
+  border-color: var(--ui-field-error);
+}
+
+.text-control:focus {
+  border-color: var(--ui-accent);
+  outline: 2px solid var(--ui-accent);
+  outline-offset: 2px;
+}
+
+.text-control[aria-invalid='true']:focus {
+  border-color: var(--ui-field-error);
+  outline-color: var(--ui-field-error);
+}
+
+.text-control:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+
+.text-area,
+.text-area[data-control-size] {
+  height: auto;
+  min-height: 96px;
+  max-height: 320px;
+  padding-block: 8px;
+  resize: vertical;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .text-control:hover:not(:disabled):not(:focus):not([aria-invalid='true']) {
+    border-color: var(--ui-border-strong);
+  }
+}
+
+/* Touch fields stay legible and avoid the browser's small-text focus zoom. */
+@media (pointer: coarse), (max-width: 599px) {
+  .text-control[data-control-size] { --control-height: 44px; --control-font: 16px; padding-block: 10px; }
+  .text-area[data-control-size] { min-height: 112px; }
+}

@@ -1,369 +1,187 @@
-# A Gent — Main Project Roadmap
+# A Gent completion and release roadmap
 
-Status: active  
-Date: 2026-11-04  
-Branch: `main`  
-Active scope: **macOS only**. Windows and Android work is paused; do not rebuild or test those artifacts until the scope changes.
+Updated: 2026-11-05. Status: proposed execution plan grounded in the current source. Branch: `main`. Active implementation scope remains **macOS first**; Windows and Android are paused until explicitly resumed.
 
-## 0. Current scope
+[Documentation index](README.md) · [Integration review](integration-review.md) · [Task board index](roadmaps/README.md) · [Current state](current-state-review.md) · [Validation](validation.md)
 
-The active objective is to complete and improve A Gent on macOS. macOS builds, macOS runtime checks, backend tests, macOS UI tests, accessibility audits, and macOS E2E workflows are in scope. Windows and Android builds/tests are explicitly out of scope for this pass.
+## Objective and release boundaries
 
-## 1. Original target
+Finish the promised provider and app workflows, complete the core local workspace, and release a tested, signed A Gent package. The installed Reason UI remains a visual/workflow reference; A Gent keeps its own implementation, branding, data, and integrations.
 
-> Build a working clone of Reason, branded **A Gent**, that runs on **Mac, Windows, and Android** — local-first, without Reason’s private cloud service or billing, with a **Reason-like UI**.
+**R1** is the proposed first public macOS release. It includes complete supported provider journeys, a usable MCP/Connect Apps lifecycle for the selected agent runtimes, model-specific reasoning controls, adding/managing Agent skills, ElevenLabs Speech-to-Text, text chat/project workflows, one-time scheduling, recovery, accessibility, and distribution evidence. It does not close the original Windows/Android goal or later product tasks.
 
-Scope clarifications from the project owner:
+**R2** retains broader product completion: multiple connection profiles, provider-independent MCP execution for HTTP models, binary attachments, recurring schedules, branching, richer files, usage, and selected team workflows. **Paused** tasks preserve Windows and Android delivery. **Optional** native/browser control and later signed updates need their own accepted scope. Speech-to-Text is required; spoken replies, voice calls, and always-listening behavior need separate scope. Reason's private cloud and billing remain outside scope.
 
-- Do **not** reproduce Reason’s private cloud service or billing.
-- The UI should feel like Reason.
-- Keep A Gent’s own name, branding, code, and local data store.
+ElevenLabs as the initial STT provider, model-specific effort, skill management, and benchmarking before development are user requirements. The other recommended release boundaries and unresolved choices are recorded through FND-001 before implementation scheduling. A feature promoted into R1 brings its tests, dependencies, and release gate with it; a deferred feature remains visibly open.
 
-## 2. Current status
+Every section follows **benchmark → design decisions → development → verification**. The [benchmark board](roadmaps/benchmarking.md) defines 25 scope prerequisites; [the process and record template](benchmarks/README.md) define evidence and acceptance. Every delivery task has a BEN dependency. Existing source or upstream documentation alone does not mark a benchmark complete.
 
-### Core product
+## Source-based assessment
 
-Working:
+The [integration review](integration-review.md) records exact source locations and upstream references. This planning pass inspected code and test definitions; it did not perform new account logins, model requests, MCP connections, live OAuth checks, test-suite runs, package rebuilds, or publication.
 
-- Persistent conversations and messages.
-- Custom agents with instructions, icon, color, provider, model, reasoning effort, and agent group.
-- Agent groups and conversation groups.
-- Conversation search.
-- Streamed replies.
-- Project folders.
-- Visible tool activity.
-- Command, file, and permission approvals.
-- Run interruption.
-- One-time scheduled tasks.
-- Workspace import/export.
-- Read-only Files side panel with workspace browsing.
-- Terminal/activity side panel.
-- Per-device pairing tokens with create, rotate, revoke, and legacy cookie migration.
-- Local token auth, host/origin allowlists, Electron sandboxing.
-- Data-directory lock, rolling `state.json.bak` recovery, CSP, and approval diffs.
+- Provider adapters exist, but setup/authentication, readiness, persistence, editing/removal, model capabilities, and negative-path verification are incomplete.
+- Connect Apps currently refreshes an inventory of MCP servers already configured in Codex. It does not provide an end-to-end add/authenticate/scope/use/disable/remove workflow.
+- Existing Codex/OpenCode runtimes may execute externally configured tools. HTTP model adapters currently provide chat without their own MCP tool loop.
+- MCP elicitation is declined and tool questions receive empty answers. Supported user input needs a real interaction flow.
+- The initial **18-component UI pass** is complete. Provider/MCP product completion and release readiness are separate milestones.
+- Seven modelOptions findings and three earlier backend findings remain open. Earlier green suites/packages do not certify the latest source.
+- Effort options/defaults are still global, model capability metadata is discarded, and there is no implemented STT adapter or Skills manager. The three new feature boards describe required work rather than shipped behavior.
 
-### Providers
+## Workstream map
 
-- **Codex** — local app-server integration and sign-in.
-- **OpenCode** — local CLI integration, model discovery, session continuity, streamed JSON events.
-- **Antigravity** — Google Gemini OpenAI-compatible endpoint with API key.
-- **Cloud** — configurable hosted OpenAI-compatible endpoint.
-- **Ollama** — local OpenAI-compatible chat.
-- **OpenAI compatible** — custom endpoint, API key, and model ID.
+| Board | Tasks | Readiness today |
+| --- | ---: | --- |
+| [Foundations](#foundation-tasks) | 12 | Contracts, decisions, and reliability hardening required |
+| [Provider integration completion](roadmaps/providers.md) | 44 | Partial |
+| [MCP and Connect Apps completion](roadmaps/connect-apps.md) | 40 | Inventory exists; lifecycle incomplete |
+| [Model-specific reasoning controls](roadmaps/reasoning-effort.md) | 12 | Fixed options/defaults need capability-driven replacement |
+| [Agent skills](roadmaps/skills.md) | 20 | Creation/import/management/runtime flow missing |
+| [ElevenLabs Speech-to-Text](roadmaps/speech-to-text.md) | 18 | Required; not implemented |
+| [Core product and UI completion](roadmaps/product.md) | 22 | Working foundations; gaps remain |
+| [Quality, packaging, and release](roadmaps/quality-release.md) | 24 | Historical tests/packages; new candidate required |
+| [Paused platforms and later product completion](roadmaps/platforms-next.md) | 20 | Paused / later scope |
+| [Benchmark prerequisites](roadmaps/benchmarking.md) | 25 | Scope comparisons required before development |
 
-OpenCode runs through its CLI with `--auto`; stricter permissions belong in OpenCode’s own configuration. Cloud and Antigravity use the HTTP streaming adapter.
+**237 tracked acceptance tasks:** 208 R1, 11 R2, 16 paused-platform, and 2 optional-scope tasks. These counts include benchmark prerequisites and describe completion packages, not effort estimates or percentage completion. All start To do; partial existing code is accounted for in the review.
 
-### Reason-like UI
+## Decisions to record
 
-Implemented:
+| Decision | Recommended starting position | Record needed before dependent work |
+| --- | --- | --- |
+| D-01 — release scope | First public release on macOS; preserve Windows/Android as paused delivery phases | Release audience, features, version, platform/architecture/minimum OS, and supported launch matrix |
+| D-02 — provider promise | Codex/OpenCode as agent runtimes; Ollama/custom/Cloud/Gemini-compatible endpoints according to actual adapter capabilities | Required auth modes and real-service acceptance per entry; decide whether Antigravity means Gemini API compatibility or a native runtime integration |
+| D-03 — MCP execution ownership | Use supported Codex/OpenCode runtimes behind A Gent adapters for R1; a shared host connection service owns A Gent configuration/scope | Runtime/config/auth ownership, supported transports, external config adoption; if all HTTP models must use MCP at launch, promote FUT-001 into R1 |
+| D-04 — secrets and authority | macOS Keychain plus an explicit session-only mode; public readiness contains no secrets; connection/tool mutations follow host roles | Credential storage/retention, remote-device rights, imported versus managed entries, tool grants and approval policy |
+| D-05 — launch apps | A small verified catalog plus custom local/remote setup; exercise local, anonymous remote, and OAuth scenarios | Named supported connectors/publishers, required account registrations/scopes, setup ownership, and test environments |
+| D-06 — compatibility and distribution | Pin/probe supported runtime schemas; use supported production paths; public macOS release must pass signing/notarization checks | Minimum runtime versions, feature fallback policy, signing ownership, distribution/support channel, update/rollback strategy |
+| D-07 — behavior and feature scope | Make global/agent/chat model defaults explicit; complete text workflows plus the requested STT and skills journeys; retain larger content/scheduling features as R2 | Selection/session rules, retry/history behavior, attachment limits, schedule semantics, and any R2 features promoted to R1 |
+| D-08 — Speech-to-Text | ElevenLabs is the initial provider; review/edit transcript before explicit Send through the selected Agent | Benchmark-selected realtime/batch transport, current model/API, microphone/host authority, credential storage, languages, retention, measured quality/cost, and native-package permissions |
+| D-09 — reasoning controls | Only the selected model's verified options/default; unknown metadata uses provider default with no guessed parameter | Capability sources/version/freshness, provider-native enum/budget/boolean mapping, selection migration, and cross-surface behavior |
+| D-10 — Agent skills | Add/create/import/manage skills and enable/use them within actual runtime capabilities and existing permissions | Supported format/sources, managed versus external files, per-Agent/project/global scope, native versus HTTP instruction-only behavior, updates/removal/export and rollback |
+| D-11 — benchmark gate | Every delivery scope benchmarks at least two relevant peers/reference implementations before development | Scope-matched dated evidence, adopted decisions/tradeoffs, acceptance/test mapping, actual DRI/reviewer, and recheck triggers; see the benchmark process |
 
-- Reason-derived light/dark design tokens.
-- Inter Variable UI text, Latin subset only (48 KB).
-- 280px sidebar, inset chat surface, centered agent pill.
-- Agent rows with solid color icons and collapsible agent groups.
-- Compact 64px sidebar rail.
-- Chat bubbles, date separators, hover actions.
-- Tool stream with Compact / Verbose / Hidden setting.
-- One-line composer with plus menu and combined model/effort pill.
-- Settings modal with left navigation and search, including Devices.
-- Connections modal with models, providers, local MCP apps, and host pairing.
-- Agents and Scheduled modals.
-- 480px side panel with Session, Sessions, Files, Terminal, Activity, and Approvals tabs.
-- Code-block copy buttons.
-- Centered model/effort change events.
-- Electron hidden title bar, traffic-light padding, Windows title-bar overlay.
-- Full keyboard navigation for menus, dialogs, model picker, and side-panel tabs.
-- `⌘ \` side-panel shortcut.
-- Automated axe accessibility audit.
-- macOS E2E matrix for core workflows.
+Technical choices can be resolved during their tasks, but changes to a product promise or release boundary must be recorded here and propagated to the boards. No calendar date is promised before tasks are sized and actual owners/capacity are assigned.
 
-Not finished:
+## Milestones and dependencies
 
-- Retry/more message actions.
-- Manual screen-reader and reduced-motion audit.
-- Removal of unused page views from `views.tsx`.
-- Image/PDF/binary attachments.
-- Recurring schedules and conversation retry/branching.
+| Milestone | Purpose | Exit evidence |
+| --- | --- | --- |
+| M0 — scope and compatibility | Benchmark foundations, agree product promises, runtime support, and owners | BEN-001 and FND-001/002 accepted; D-01–D-11 and the QA-001 support matrix recorded |
+| M1 — reliable foundations | Stable schemas, authority, secret/config interfaces, sessions, cancellation, persistence, and pending interactions | FND-003 through FND-012 accepted; priority backend reproductions have an owned correction path |
+| M2 — providers and reasoning | Complete every advertised R1 provider and model-specific settings | R1 provider tasks, PVD-017, and EFF-012 accepted, including real supported-provider/model journeys |
+| M3 — MCP and Connect Apps | Complete connection/auth/access/use/removal rather than only inventory | MCP-022 accepted with app onboarding and human-input recovery evidence |
+| M4 — product, speech, and skills | Close R1 core/UI gaps and deliver requested speech/skills journeys | R1 product tasks, STT-018, and SKL-020 accepted; the seven catalog findings closed through their owning provider tasks |
+| M5 — release quality | Verify the actual candidate and all advertised journeys | QA-012 accepted with fresh regression, failure/recovery, real-integration, performance, and packaged evidence |
+| M6 — first public release | Sign, notarize, pilot, and publish the approved candidate | REL-012 accepted; exact tag/commit, artifacts, hashes, release notes, support and rollback recorded |
+| M7 — continued completion | Deliver accepted R2 and reactivated platform work | Each later task and native-platform release gate accepted; unfinished optional work remains explicit |
 
-### Built artifacts
-
-| Platform | Artifact | Size | Status |
-| --- | --- | ---: | --- |
-| macOS arm64 | `release/A-Gent-0.1.0-mac-arm64.dmg` | 121 MB | Built; ad-hoc signed; not notarized |
-| macOS arm64 | `release/A-Gent-0.1.0-mac-arm64.zip` | 118 MB | Built; ad-hoc signed; not notarized |
-| Windows x64 | `release/A-Gent-Setup-0.1.0-x64.exe` | 120 MB | Previous cross-platform build; unsigned; not rebuilt in this macOS pass |
-| Windows x64 | `release/A-Gent-Portable-0.1.0-x64.exe` | 108 MB | Previous cross-platform build; unsigned; not rebuilt in this macOS pass |
-| Android | `release/A-Gent-0.1.0-android-debug.apk` | 4.3 MB | Previous cross-platform build; debug-signed; companion client |
-
-### Artifact hashes
-
-```text
-f5b2f8479898798f3e31146ba200b0547d1fe357bae5452bf68584ac24aac3cb  A-Gent-0.1.0-mac-arm64.dmg
-259092c74717c03296462950c152b422d6a54a8a2559fdb48da2e6fb9798492a  A-Gent-0.1.0-mac-arm64.zip
-4ef4c19e8b9437c246b42a436ab95ad73a65105c432105ead2241f750914df92  A-Gent-Setup-0.1.0-x64.exe
-f65ba83b3719106ac8984ddb4bef1c3b6ad4c8806534d63ca3c566477e8f8ba7  A-Gent-Portable-0.1.0-x64.exe
-e3d476344f8ba3492657bec03b0626dce11aee4c5a24d99047fad45e240cac2c  A-Gent-0.1.0-android-debug.apk
+```mermaid
+flowchart TD
+  M0["M0 Scope and compatibility"] --> M1["M1 Foundations"]
+  M1 --> M2["M2 Providers and reasoning"]
+  M1 --> M3["M3 MCP and Connect Apps"]
+  M1 --> M4["M4 Product, speech, and skills"]
+  M2 --> M5["M5 Candidate verification"]
+  M3 --> M5
+  M4 --> M5
+  M5 --> M6["M6 Public macOS release"]
+  M6 --> M7["M7 R2 and resumed platforms"]
 ```
 
-### Verified on this machine
+QA and packaging preparation start alongside implementation after their own benchmarks; milestone arrows show acceptance gates. Task-level dependencies govern readiness. Every milestone exit requires accepted comparisons for its scopes. MCP work depends on shared contracts/secrets/authority, not on waiting for every unrelated provider to finish.
 
-- `npm run typecheck` — passes.
-- `npm test` — 12/12 backend tests pass.
-- `npm run test:ui` — 17/17 Playwright smoke tests pass.
-- `npm run test:visual` — 10/10 visual baselines pass.
-- `npm run test:a11y` — 6/6 axe scans pass with 0 violations.
-- `npm run test:e2e` — 6/6 macOS E2E workflows pass.
-- `npm run build` — passes.
-- `npm run desktop:mac` — builds DMG and ZIP.
-- Packaged macOS app launches and serves the UI.
-- Real Codex discovery works: account detected, models listed.
-- OpenCode connects through the installed CLI and reports 31 models.
-- Packaged macOS app visually verified with Computer Use: hidden title bar, traffic lights, sidebar, compact rail.
-- Packaged macOS app verified for devices, agent groups, Files/Terminal, keyboard flows, light theme, and provider cards.
-- Inter Latin WOFF2 is the only bundled font resource (48 KB).
+## Foundation tasks
 
-### Not verified
+Development gate: **BEN-001** in [the benchmark board](roadmaps/benchmarking.md) must have an accepted, scope-matched record before these tasks enter Ready or implementation.
 
-- Windows installer/portable runtime on real Windows (paused).
-- Windows icon rendering on a Windows desktop (paused).
-- Android APK on a physical device or emulator (paused).
-- Android HTTPS host pairing, back button, safe areas, token persistence (paused).
-- macOS Gatekeeper on a clean Mac.
-- macOS notarization.
-- Windows code signing.
-- Android release signing.
-- Manual VoiceOver and reduced-motion audit.
-- Universal/Intel macOS build.
-- CI execution on GitHub.
-- Performance check under large workspaces/SSE load.
+| ID | Target | Priority | Status | Owner | Depends on | Task and acceptance |
+| --- | --- | --- | --- | --- | --- | --- |
+| FND-001 | R1 | P0 | To do | Product | BEN-001 | **Confirm the release contract and open decisions.** Done when: D-01 through D-11 record choices, the requested speech/model-effort/skills and benchmark requirements, launch support matrix, exclusions, and owner acceptance; no unfinished feature is relabeled complete. |
+| FND-002 | R1 | P0 | To do | Integrations | BEN-001, FND-001 | **Capture runtime versions and capability/schema baselines.** Done when: Supported Node/Electron/Codex/OpenCode versions and generated/probed interfaces are recorded with fixtures; unsupported methods have a defined fallback. |
+| FND-003 | R1 | P0 | To do | Host | BEN-001, FND-001 | **Version the durable data and integration schemas.** Done when: Provider/profile bindings, app/skill ownership and scope, model-specific effort, non-secret speech settings, and migrations preserve existing workspaces with rollback/import tests. |
+| FND-004 | R1 | P0 | To do | Host + Product | BEN-001, FND-001 | **Define host/device authority and tool access boundaries.** Done when: Provider/STT credentials, endpoint changes, local process setup, app/tool grants, skill configuration, microphone capture versus remote transcription-session rights, and device management have explicit roles enforced by API tests. |
+| FND-005 | R1 | P0 | To do | Host | BEN-001, FND-004 | **Bind event streams to authenticated devices.** Done when: Rotation/revocation closes affected active streams and rejects subsequent requests; unrelated devices remain connected. |
+| FND-006 | R1 | P0 | To do | Host | BEN-001, FND-003 | **Define durable run and interruption lifecycle.** Done when: Pending/running/waiting/interrupted/failure transitions, reservation release, process termination confirmation, and shutdown recovery are consistent across adapters. |
+| FND-007 | R1 | P0 | To do | Host | BEN-001, FND-003 | **Isolate provider session bindings.** Done when: Provider/account/workspace/model changes cannot reuse an incompatible session ID; existing conversation bindings migrate or rebuild deliberately. |
+| FND-008 | R1 | P0 | To do | Host | BEN-001, FND-003 | **Verify atomic persistence and recovery contracts.** Done when: Concurrent saves, write failures, valid backup retention, imports/migrations, locks, and restart produce recoverable state without silently losing data. |
+| FND-009 | R1 | P0 | To do | Host | BEN-001, FND-003, FND-004, FND-006 | **Add correlated pending interaction state.** Done when: Approval/question/form/URL requests belong to a specific host/run/thread and survive or cancel correctly across refresh, restart, and host switch. |
+| FND-010 | R1 | P0 | To do | Host | BEN-001, FND-006 | **Define timeout budgets and cancellation primitives.** Done when: Shared startup/catalog/auth/tool/interaction/stream/shutdown budgets and cleanup primitives have tests; each feature board applies them to its own lifecycle. |
+| FND-011 | R1 | P1 | To do | Host + QA | BEN-001, FND-003 | **Standardize diagnostics and error events.** Done when: Request/run/provider/app IDs support debugging; user-facing errors recover; tokens, keys, private arguments, and arbitrary provider error text are redacted. |
+| FND-012 | R1 | P0 | To do | Host | BEN-001, FND-003, FND-004 | **Define shared config/secret storage interfaces.** Done when: Typed config and credential references have ownership, atomic updates, rollback, export exclusion, and migration tests before new integrations depend on them. |
 
-## 3. Completion assessment
+## Recommended execution order
 
-These are engineering estimates, not precise metrics.
+1. Complete BEN-001, then FND-001/002; assign actual owners, capture versions, and agree D-01–D-11 and the launch support matrix.
+2. Establish schema/authority/run/session foundations. Prioritize SSE revocation, confirmed OpenCode termination, and provider binding so new integrations inherit reliable behavior.
+3. Complete the relevant provider/reasoning benchmarks, then shared readiness, credentials, catalog normalization, model-specific effort, and selection semantics. Preserve the supplied picker layout.
+4. Benchmark and deliver one vertical slice: Codex setup → selected model/valid effort → one app connection → authentication/access → real tool use → interruption/restart → disable/remove. Include a question/form case.
+5. Complete the skills comparisons, then create/import → enable for an Agent → actual use → edit/update → disable/remove; finish OpenCode and HTTP/Ollama/Google provider journeys after their scoped benchmarks.
+6. Benchmark ElevenLabs API, recording UX, and evaluation methods; connect the key → speak → edit transcript → Send through the selected Agent. Verify cleanup, quality/cost, and signed-Mac microphone behavior.
+7. Finish R1 core, Connect Apps, and accessibility after their comparisons. Repeat adversarial catalog, effort, app, speech, and skill fixtures.
+8. Complete QA/release benchmarks, then candidate verification, signing, clean-machine install/upgrade, and pilot checks; publish only the reviewed artifact set.
+9. Benchmark each accepted R2 scope and resumed Windows/Android phase before development and follow its own release gate.
 
-| Workstream | Done | Remaining | Notes |
-| --- | ---: | ---: | --- |
-| Core local workspace | 85% | 15% | Core chat/agents/schedules/approvals work; local parity gaps remain |
-| macOS delivery | 92% | 8% | Artifact built and packaged app verified; signing/notarization/Intel missing |
-| Windows delivery | 60% | 40% | Paused; previous artifacts built, no runtime test, unsigned |
-| Android delivery | 40% | 60% | Paused; debug APK, companion-only, no device test |
-| Reason-like UI | 92% | 8% | Major surfaces, providers, groups, Files/Terminal, keyboard, and accessibility done; retry actions and manual audit remain |
-| Security and reliability | 85% | 15% | Device tokens, cookie migration, data lock, recovery, CSP, and approval diffs; SSRF/timeouts/streaming remain |
-| Tests and QA | 97% | 3% | 12 backend, 17 smoke, 10 visual, 6 axe, and 6 E2E pass; manual screen-reader audit pending |
-| Docs and release | 85% | 15% | README, roadmap, UI roadmap, validation, and research notes updated; tag, notices, signing remain |
-| Full Reason parity | 35% | 65% | Cloud/billing intentionally excluded; native/browser/voice/connectors missing |
+## How to run the project
 
-**Against the current macOS objective: roughly 90–92% complete.**
-**Against the original local-first Mac + Windows + Android goal: roughly 65–70% complete.**
-**Against full Reason parity: roughly 35% complete**, with cloud and billing intentionally out of scope.
+### Task states and ownership
 
-## 4. What is left
+Use **To do → Ready → In progress → Review → Validated → Done**. Use **Blocked** only with a concrete dependency/external requirement and the next action. Owner cells currently name recommended roles; assign an actual DRI before moving a task to Ready.
 
-### A. macOS release hardening
+- **To do:** acceptance package is defined; existing code may be partial.
+- **Ready:** the task's BEN dependency has an accepted record explicitly covering its scope, product/design decisions are recorded, other dependencies have accepted evidence, and the actual owner/reviewer are clear.
+- **In progress:** one owned task/vertical slice is being implemented. Keep work in progress small rather than opening every integration simultaneously.
+- **Review:** code/docs and the concrete behavior are ready for review.
+- **Validated:** the task's required checks ran against the identified source/artifact, including meaningful negative paths.
+- **Done:** acceptance is met, evidence is linked in validation, affected docs/boards are updated, and the reviewer accepts closure.
 
-- Developer ID signing.
-- Notarization and stapling.
-- Clean-Mac Gatekeeper test.
-- Universal/Intel packaging decision.
-- Signing steps in CI/release docs.
-- Auto-update only after signing is stable.
+P0 blocks trustworthy integration or release correctness/security. P1 completes advertised workflows and required release quality. P2 is later scope. Severity is not an estimate. Moving an R1 task out of the release requires an explicit scope decision, a recorded reason, and consistent UI/docs.
 
-### B. Manual accessibility audit
+### Per-task delivery process
 
-- VoiceOver traversal of home, sidebar, composer, Settings, Connections, side panel, and Files/Terminal.
-- Reduced-motion audit of the packaged app.
-- Fix any findings and record them in `docs/validation.md`.
+1. Read the owning board and integration evidence. Benchmark the task's scope under its BEN prerequisite; compare at least two relevant peers/reference implementations and record dated/versioned observations, failures, and limitations in [the benchmark records](benchmarks/README.md).
+2. Accept the benchmark and adopted design decisions before Ready or development. Reproduce the current gap, map schema/API/UI/runtime changes, migrations, compatibility, authorization/data effects and acceptance tests, and preserve unrelated working-tree changes. Split large scopes into linked tasks/benchmarks when needed.
+3. Implement one usable flow with failure, cancellation, and restart behavior. Define capabilities in the host and enforce them at the API boundary; recheck benchmark coverage if requirements or runtime behavior change.
+4. Run checks appropriate to the change: meaningful unit/contract/integration tests, keyboard/accessibility/responsive checks for UI, real-service smoke evidence for advertised integrations, package verification for release changes.
+5. Record date, task ID, commit/tree or artifact identity, commands, fixtures versus real account coverage, results, screenshots/logs, and unverified cases in [validation](validation.md).
+6. Update status only in the owning task board; update current-state and component/UI notes when behavior changes. Reopen a task if later evidence contradicts its acceptance.
 
-### C. Local feature parity
+A UI control, successful catalog fetch, fixture pass, or old screenshot is not sufficient to close an integration. Documentation-only tasks use documentation checks; they do not imply new runtime validation.
 
-- Retry/regenerate and more message actions.
-- Image/PDF/binary attachments.
-- Project file browser and diff review.
-- Recurring schedules.
-- Conversation retry/branching.
-- Notifications for scheduled tasks and approvals.
-- Token/cost/rate-limit display.
-- Multi-agent teams if still in scope.
-- Local MCP app authentication flow.
-- Voice input/chat, native computer control, and browser extension only after separate approval.
+### Tracking and progress
 
-### D. Paused platforms
+Maintain task status in the owning board, decisions in this master, current behavior in current-state-review, and executed evidence in validation. Report completed versus total **R1 acceptance tasks**, the active vertical slice, remaining P0/P1 items, and concrete blockers. Do not use speculative overall completion percentages.
 
-- Windows runtime test and signing.
-- Android device test, persistent secure token storage, QR pairing, safe areas, release signing.
-- Cross-platform CI and smoke tests.
+Use issue tracking later if useful, retaining these IDs and acceptance criteria. Creating this roadmap does not create external issues, run production changes, or authorize publication.
 
-### E. Release
+## Release acceptance
 
-- License, privacy, and third-party notices.
-- Release notes and artifact naming.
-- Tag a release candidate.
-- Final README and validation truth.
+Before publication, every pre-publication R1 task must be Done, including QA-012; REL-012 is the final publication task. Confirm:
 
-## 5. Phase plan
+- Advertised provider setup/use/Stop/restart/edit/removal journeys pass against supported real integrations.
+- Supported MCP app add/authenticate/scope/use/restart/disable/remove journeys pass; user questions and elicitation do not receive fabricated answers.
+- Model catalog findings and priority backend findings have regression evidence.
+- Every R1 scope has accepted benchmark evidence and adopted decisions linked to its delivery tasks.
+- The selected model exposes and sends only verified reasoning settings; switching/defaults/migrations and unsupported/unknown behavior pass EFF-012.
+- Skills create/import/manage/scope/use/update/disable/remove/export and supported-runtime journeys pass SKL-020 with existing permission boundaries enforced.
+- ElevenLabs key setup, deliberate speech capture, editable transcript, explicit Send through the selected Agent, measured accuracy/latency/cost, and signed-Mac microphone recovery pass STT-018.
+- Core data, schedules, drafts, attachments, streaming, offline/crash recovery, keyboard, VoiceOver, motion preferences, and actual zoom checks pass for the agreed scope.
+- Fresh typecheck/backend/smoke/visual/axe/E2E evidence and performance budgets apply to the candidate.
+- Packaged resources match source; secrets/private data/dev fixtures are excluded; notices and release documentation are reviewed.
+- Signing/notarization, clean-Mac install/upgrade, protected release permissions, pilot triage, checksums, support, and rollback are complete.
+- The owner approves the concrete candidate and publication destination before REL-012 publishes it.
 
-### Phase 0 — Release truth and UI merge
+R1 shipping does not close R2, paused, or optional tasks. Original cross-platform completion requires WIN-006 and AND-008 after those workstreams resume.
 
-- [x] Update README artifact/status text.
-- [x] Add `docs/validation.md` with current evidence.
-- [x] Merge `ui/reason-style` into `main`.
-- [x] Record artifact hashes and sizes.
-- [x] Add release checklist.
-- [ ] Tag a build (`v0.1.0-ui` or similar).
+## Evidence and document ownership
 
-### Phase 1 — Windows delivery (paused)
+- [Integration review](integration-review.md): source-based current gaps and checked upstream references.
+- [Task boards](roadmaps/README.md): detailed tasks and status.
+- [Benchmark process and records](benchmarks/README.md): scope comparisons, design decisions, reviewer acceptance, and recheck triggers.
+- [Current state](current-state-review.md): implemented behavior and unresolved issues.
+- [UI Roadmap](ui-roadmap.md): component process and UI integration notes.
+- [Validation](validation.md): dated executed evidence and recorded artifacts.
+- [modelOptions stress test](model-options-stress-test.md): catalog reproductions and seven findings.
+- [Historical plan](archive/project-roadmap-2026-11-04.md): earlier phases/estimates, retained for provenance.
 
-- [x] Fix Windows icon/version metadata (`signExecutable: false`).
-- [x] Rebuild setup and portable artifacts.
-- [ ] Test on Windows 11 x64.
-- [ ] Verify Codex/OpenCode discovery and HTTP providers.
-- [ ] Verify project folder picker, approvals, interruption, schedules.
-- [ ] Verify title-bar overlay and drag regions.
-- [ ] Document Windows prerequisites and SmartScreen behavior.
-- [ ] Decide signing plan.
-
-### Phase 2 — Android delivery (paused)
-
-- [ ] Test APK on a physical device/emulator.
-- [x] Add Android back-button handling.
-- [ ] Add persistent secure token storage.
-- [ ] Add QR/short-code pairing if feasible.
-- [ ] Verify HTTPS host pairing.
-- [ ] Verify safe areas, keyboard, touch targets.
-- [ ] Verify import/export in WebView.
-- [ ] Add release signing.
-- [ ] Document companion setup and limitations.
-
-### Phase 3 — macOS release hardening
-
-- [ ] Developer ID signing.
-- [ ] Notarization and stapling.
-- [ ] Clean-Mac Gatekeeper test.
-- [ ] Decide universal vs arm64.
-- [ ] Add signing steps to CI/release docs.
-
-### Phase 4 — Security and reliability
-
-- [x] Replace proxy-sensitive token injection with a desktop pairing cookie.
-- [x] Add per-device tokens with rotation/revocation and legacy cookie migration.
-- [x] Add Settings → Devices for token creation, rotation, and current-device revocation.
-- [x] Add data-directory lock.
-- [x] Add rolling backups and corrupt-state recovery.
-- [ ] Finish import/export streaming; body limit raised to 32 MB.
-- [x] Add CSP and remote-image policy.
-- [ ] Review provider URL SSRF.
-- [x] Add file-diff approvals; session approvals still pending.
-- [ ] Add approval/turn timeouts.
-- [ ] Add large-workspace/SSE performance checks.
-
-### Phase 5 — UI completion and test suite
-
-- [x] Agent groups in sidebar.
-- [x] Approvals in side panel.
-- [x] Files/Terminal tabs.
-- [ ] Retry/more message actions.
-- [x] Full keyboard menu navigation.
-- [x] Playwright smoke tests.
-- [x] Playwright screenshot visual baselines (5 viewports × 2 themes).
-- [x] Automated axe accessibility audit.
-- [x] macOS E2E workflow matrix.
-- [ ] Manual screen-reader and reduced-motion audit.
-- [ ] Remove unused page views.
-
-### Phase 6 — Local feature parity
-
-- [ ] Image/PDF/binary attachments.
-- [ ] Project file browser and diff review.
-- [ ] Recurring schedules.
-- [ ] Conversation retry/branching.
-- [ ] Notifications.
-- [ ] Token/cost/rate-limit display.
-- [ ] Multi-agent teams if still in scope.
-- [ ] Voice/native/browser features only after separate approval.
-
-### Phase 7 — Release
-
-- [ ] CI builds and tests on macOS, Windows, Android.
-- [ ] Artifact checksums and release notes.
-- [ ] License/privacy/terms and third-party notices.
-- [x] Final README and validation docs.
-- [ ] Tag release.
-- [ ] Smoke-test every artifact.
-
-## 6. Milestones
-
-| Milestone | Definition | Status |
-| --- | --- | --- |
-| M0 | UI branch merged; docs and artifacts truthful | Done |
-| M1 | Windows installer/portable pass a Windows smoke test | Paused |
-| M2 | Android APK pairs with a host and passes device smoke test | Paused |
-| M3 | macOS DMG is signed, notarized, and opens on a clean Mac | Pending |
-| M4 | Security/reliability checklist passes | Mostly done |
-| M5 | UI E2E/visual/accessibility pass | E2E, visual, and axe pass; manual audit pending |
-| M6 | Agreed local parity checklist complete | Pending |
-| M7 | v0.1.0 multi-platform release published | Pending |
-
-## 7. Risks
-
-| Risk | Impact | Mitigation |
-| --- | --- | --- |
-| No Windows runtime available here | Windows artifacts unverified | Paused until a Windows VM/device is available |
-| No Android device/emulator available here | APK unverified | Paused until a device/emulator is available |
-| macOS ad-hoc signature | Gatekeeper blocks other Macs | Developer ID + notarization |
-| No signing credentials | Cannot ship a trusted release | Obtain Apple, Windows, and Android signing credentials |
-| OpenCode CLI permissions | `--auto` can run tools without A Gent approval | Configure OpenCode permissions; keep provider opt-in |
-| Cloud endpoint trust | User-supplied endpoint can be malicious | Keep SSRF review and explicit endpoint configuration |
-| Manual accessibility gaps | Automated axe does not catch screen-reader issues | Run VoiceOver/reduced-motion audit |
-| State corruption | Data loss | Backups, lock, recovery |
-| Scope creep | Delays | Keep cloud/billing/native/voice out of v1 |
-| Full Reason parity expectation | Unbounded scope | Define “core local workspace + selected parity” |
-
-## 8. Definition of done
-
-### Current macOS objective
-
-- [x] App builds and launches on macOS.
-- [x] Core local workspace flows work.
-- [x] Reason-like UI surfaces implemented.
-- [x] Files/Terminal, agent groups, devices, and keyboard navigation implemented.
-- [x] Automated axe audit passes with zero violations.
-- [x] macOS E2E matrix passes.
-- [ ] Manual VoiceOver and reduced-motion audit passes.
-- [ ] Signed and notarized DMG opens on a clean Mac.
-- [ ] Universal/Intel decision recorded.
-
-### Original multi-platform target
-
-- [ ] A clean Windows machine can install/run the app and discover providers.
-- [ ] A real Android device can install the APK, pair over HTTPS, and use chat, approvals, and schedules.
-- [ ] All three platforms use the Reason-like UI.
-- [ ] Core local workspace flows work on all platforms.
-- [ ] Cross-platform smoke tests pass.
-- [ ] README and validation docs match the shipped artifacts.
-
-## 9. Release checklist
-
-- [ ] Typecheck, backend tests, smoke tests, visual baselines, axe scans, and E2E matrix pass.
-- [ ] macOS app builds and launches from the packaged artifact.
-- [ ] Manual VoiceOver and reduced-motion audit passes.
-- [ ] DMG is signed, notarized, and stapled.
-- [ ] Clean-Mac Gatekeeper check passes.
-- [ ] Artifact hashes and sizes match `docs/validation.md`.
-- [ ] README, roadmap, UI roadmap, validation, and research notes are current.
-- [ ] Third-party notices, license, and privacy notes are included.
-- [ ] Release tag and notes are created.
-
-## 10. Immediate next actions
-
-1. Run the manual VoiceOver and reduced-motion audit on the packaged macOS app.
-2. Decide universal vs arm64.
-3. Obtain signing credentials and complete Developer ID/notarization.
-4. Add retry/more message actions and image/PDF attachments.
-5. Tag a macOS release candidate after the manual audit.
-
-Current environment limitations:
-
-- No signing credentials are available.
-- No clean Mac is available for Gatekeeper verification.
-- No Windows VM/device, Android device, or emulator is available.
-- Windows and Android work remains paused by the current scope.
+The earlier main roadmap is also preserved in [the pre-detailed plan](archive/project-roadmap-2026-11-05-before-detailed.md). This roadmap supersedes its execution order without marking its unfinished work complete.

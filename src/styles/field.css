@@ -1,0 +1,68 @@
+/* Shared label, description, requirement marker, and validation message. */
+.ui-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+  color: var(--ui-ink);
+}
+
+.ui-field > .ui-field-label,
+.ui-field > .ui-field-label:where(label) {
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+  color: var(--ui-text-2);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 18px;
+  letter-spacing: 0;
+}
+
+.ui-field-required {
+  color: var(--ui-field-error);
+  font-weight: 500;
+}
+
+.ui-field-optional {
+  color: var(--ui-text-3);
+  font-size: 11px;
+  font-weight: 400;
+}
+
+.ui-field-description,
+.ui-field-error {
+  margin: 0;
+  max-width: 64ch;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.ui-field-description {
+  color: var(--ui-text-3);
+}
+
+.ui-field-error {
+  color: var(--ui-field-error);
+  font-weight: 450;
+}
+
+.ui-field > .text-control { width: 100%; }
+
+.device-create-field { flex: 1; min-width: 0; }
+
+.ui-field-group { gap: 8px; }
+.ui-field-group > .ui-field-label { display: flex; }
+
+/* Field controls inherit the compact form rhythm already used by dialogs. */
+.form-stack > .ui-field { gap: 7px; }
+
+@media (pointer: coarse), (max-width: 599px) {
+  .color-options { height: auto; gap: 10px; }
+  .color-options > button { width: 36px; height: 36px; }
+  .ui-field-label { font-size: 13px; line-height: 19px; }
+  .ui-field-description,
+  .ui-field-error { font-size: 13px; line-height: 20px; }
+}

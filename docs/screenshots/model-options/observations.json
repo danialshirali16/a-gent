@@ -1,0 +1,1003 @@
+[
+  {
+    "label": "demo-real-width",
+    "blankLabels": [],
+    "caption": "Codex",
+    "focused": "Search connected models",
+    "footer": {
+      "bottom": 657,
+      "height": 57,
+      "left": 519,
+      "right": 877,
+      "top": 600,
+      "width": 358,
+      "x": 519,
+      "y": 600
+    },
+    "listScroll": 0,
+    "options": 3,
+    "pageWidth": 961,
+    "popup": {
+      "bottom": 658,
+      "height": 269,
+      "left": 462,
+      "right": 878,
+      "top": 389,
+      "width": 416,
+      "x": 462,
+      "y": 389
+    },
+    "selected": [
+      {
+        "id": "gpt-5.2-codex",
+        "name": "GPT-5.2 Codex"
+      }
+    ],
+    "status": "3 model options available.",
+    "tabs": [
+      "Codex",
+      "Ollama"
+    ],
+    "url": "http://127.0.0.1:4492/?component=composer&stress=model-options&data=demo&theme=dark",
+    "viewport": [
+      961,
+      804
+    ]
+  },
+  {
+    "label": "worst-real-width",
+    "blankLabels": [
+      "unnamed-evaluation",
+      "blank-display-name"
+    ],
+    "caption": "Codex",
+    "focused": "Search connected models",
+    "footer": {
+      "bottom": 657,
+      "height": 57,
+      "left": 519,
+      "right": 877,
+      "top": 600,
+      "width": 358,
+      "x": 519,
+      "y": 600
+    },
+    "listScroll": 0,
+    "options": 14,
+    "pageWidth": 961,
+    "popup": {
+      "bottom": 658,
+      "height": 405,
+      "left": 462,
+      "right": 878,
+      "top": 253,
+      "width": 416,
+      "x": 462,
+      "y": 253
+    },
+    "selected": [
+      {
+        "id": "enterprise-research-eu-west-nightly",
+        "name": "Northwind Enterprise Research — Codex (EU West, 256k context, nightly evaluation)"
+      }
+    ],
+    "status": "14 model options available.",
+    "tabs": [
+      "Codex",
+      "Cloud",
+      "Ollama"
+    ],
+    "url": "http://127.0.0.1:4492/?component=composer&stress=model-options&data=worst&theme=dark",
+    "viewport": [
+      961,
+      804
+    ]
+  },
+  {
+    "label": "identical-model-names",
+    "blankLabels": [],
+    "caption": "Cloud",
+    "focused": "Cloud",
+    "footer": {
+      "bottom": 657,
+      "height": 57,
+      "left": 519,
+      "right": 877,
+      "top": 600,
+      "width": 358,
+      "x": 519,
+      "y": 600
+    },
+    "listScroll": 0,
+    "options": 3,
+    "pageWidth": 961,
+    "popup": {
+      "bottom": 658,
+      "height": 269,
+      "left": 462,
+      "right": 878,
+      "top": 389,
+      "width": 416,
+      "x": 462,
+      "y": 389
+    },
+    "selected": [],
+    "status": "3 model options available.",
+    "tabs": [
+      "Codex",
+      "Cloud",
+      "Ollama"
+    ],
+    "url": "http://127.0.0.1:4492/?component=composer&stress=model-options&data=worst&theme=dark",
+    "viewport": [
+      961,
+      804
+    ]
+  },
+  {
+    "label": "composed-accent-search",
+    "blankLabels": [],
+    "caption": "0 results",
+    "focused": "Search connected models",
+    "footer": {
+      "bottom": 657,
+      "height": 57,
+      "left": 519,
+      "right": 877,
+      "top": 600,
+      "width": 358,
+      "x": 519,
+      "y": 600
+    },
+    "options": 0,
+    "pageWidth": 961,
+    "popup": {
+      "bottom": 658,
+      "height": 277.5,
+      "left": 462,
+      "right": 878,
+      "top": 380.5,
+      "width": 416,
+      "x": 462,
+      "y": 380.5
+    },
+    "selected": [],
+    "status": "0 model options available.",
+    "tabs": [
+      "Codex",
+      "Cloud",
+      "Ollama"
+    ],
+    "url": "http://127.0.0.1:4492/?component=composer&stress=model-options&data=worst&theme=dark",
+    "viewport": [
+      961,
+      804
+    ]
+  },
+  {
+    "label": "decomposed-accent-search",
+    "blankLabels": [],
+    "caption": "1 result",
+    "focused": "Search connected models",
+    "footer": {
+      "bottom": 657,
+      "height": 57,
+      "left": 519,
+      "right": 877,
+      "top": 600,
+      "width": 358,
+      "x": 519,
+      "y": 600
+    },
+    "listScroll": 0,
+    "options": 1,
+    "pageWidth": 961,
+    "popup": {
+      "bottom": 658,
+      "height": 250,
+      "left": 462,
+      "right": 878,
+      "top": 408,
+      "width": 416,
+      "x": 462,
+      "y": 408
+    },
+    "selected": [],
+    "status": "1 model options available.",
+    "tabs": [
+      "Codex",
+      "Cloud",
+      "Ollama"
+    ],
+    "url": "http://127.0.0.1:4492/?component=composer&stress=model-options&data=worst&theme=dark",
+    "viewport": [
+      961,
+      804
+    ]
+  },
+  {
+    "label": "empty-model-id-selection",
+    "blankLabels": [],
+    "caption": "OpenAI compatible",
+    "focused": "Gateway default alias",
+    "footer": {
+      "bottom": 657,
+      "height": 39,
+      "left": 519,
+      "right": 877,
+      "top": 618,
+      "width": 358,
+      "x": 519,
+      "y": 618
+    },
+    "listScroll": 0,
+    "options": 5,
+    "pageWidth": 961,
+    "popup": {
+      "bottom": 658,
+      "height": 331,
+      "left": 462,
+      "right": 878,
+      "top": 327,
+      "width": 416,
+      "x": 462,
+      "y": 327
+    },
+    "selected": [
+      {
+        "id": "",
+        "name": "Provider default"
+      },
+      {
+        "id": "",
+        "name": "Gateway default alias"
+      }
+    ],
+    "status": "5 model options available.",
+    "tabs": [
+      "OpenAI compatible"
+    ],
+    "url": "http://127.0.0.1:4492/?component=composer&stress=model-options&data=invalid&theme=dark",
+    "viewport": [
+      961,
+      804
+    ]
+  },
+  {
+    "label": "duplicate-model-id-selection",
+    "blankLabels": [],
+    "caption": "OpenAI compatible",
+    "focused": "Research (EU replica)",
+    "footer": {
+      "bottom": 657,
+      "height": 39,
+      "left": 519,
+      "right": 877,
+      "top": 618,
+      "width": 358,
+      "x": 519,
+      "y": 618
+    },
+    "listScroll": 0,
+    "options": 5,
+    "pageWidth": 961,
+    "popup": {
+      "bottom": 658,
+      "height": 331,
+      "left": 462,
+      "right": 878,
+      "top": 327,
+      "width": 416,
+      "x": 462,
+      "y": 327
+    },
+    "selected": [
+      {
+        "id": "research-eu",
+        "name": "Research (EU)"
+      },
+      {
+        "id": "research-eu",
+        "name": "Research (EU replica)"
+      }
+    ],
+    "status": "5 model options available.",
+    "tabs": [
+      "OpenAI compatible"
+    ],
+    "url": "http://127.0.0.1:4492/?component=composer&stress=model-options&data=invalid&theme=dark",
+    "viewport": [
+      961,
+      804
+    ]
+  },
+  {
+    "label": "one-choice",
+    "blankLabels": [],
+    "caption": "Codex",
+    "focused": "Search connected models",
+    "footer": {
+      "bottom": 657,
+      "height": 57,
+      "left": 519,
+      "right": 877,
+      "top": 600,
+      "width": 358,
+      "x": 519,
+      "y": 600
+    },
+    "listScroll": 0,
+    "options": 1,
+    "pageWidth": 961,
+    "popup": {
+      "bottom": 658,
+      "height": 250,
+      "left": 462,
+      "right": 878,
+      "top": 408,
+      "width": 416,
+      "x": 462,
+      "y": 408
+    },
+    "selected": [
+      {
+        "id": "",
+        "name": "Provider default"
+      }
+    ],
+    "status": "1 model options available.",
+    "tabs": [
+      "Codex"
+    ],
+    "url": "http://127.0.0.1:4492/?component=composer&stress=model-options&data=one&theme=dark",
+    "viewport": [
+      961,
+      804
+    ]
+  },
+  {
+    "label": "one-result",
+    "blankLabels": [],
+    "caption": "1 result",
+    "focused": "Search connected models",
+    "footer": {
+      "bottom": 657,
+      "height": 57,
+      "left": 519,
+      "right": 877,
+      "top": 600,
+      "width": 358,
+      "x": 519,
+      "y": 600
+    },
+    "listScroll": 0,
+    "options": 1,
+    "pageWidth": 961,
+    "popup": {
+      "bottom": 658,
+      "height": 250,
+      "left": 462,
+      "right": 878,
+      "top": 408,
+      "width": 416,
+      "x": 462,
+      "y": 408
+    },
+    "selected": [
+      {
+        "id": "",
+        "name": "Provider default"
+      }
+    ],
+    "status": "1 model options available.",
+    "tabs": [
+      "Codex"
+    ],
+    "url": "http://127.0.0.1:4492/?component=composer&stress=model-options&data=one&theme=dark",
+    "viewport": [
+      961,
+      804
+    ]
+  },
+  {
+    "label": "empty",
+    "blankLabels": [],
+    "focused": "Connect a provider",
+    "options": 0,
+    "pageWidth": 961,
+    "popup": {
+      "bottom": 658,
+      "height": 234,
+      "left": 462,
+      "right": 878,
+      "top": 424,
+      "width": 416,
+      "x": 462,
+      "y": 424
+    },
+    "selected": [],
+    "status": "No connected providers.",
+    "tabs": [],
+    "url": "http://127.0.0.1:4492/?component=composer&stress=model-options&data=empty&theme=dark",
+    "viewport": [
+      961,
+      804
+    ]
+  },
+  {
+    "label": "thousand-models",
+    "blankLabels": [],
+    "caption": "OpenAI compatible",
+    "focused": "Search connected models",
+    "footer": {
+      "bottom": 657,
+      "height": 39,
+      "left": 519,
+      "right": 877,
+      "top": 618,
+      "width": 358,
+      "x": 519,
+      "y": 618
+    },
+    "listScroll": 0,
+    "options": 1001,
+    "pageWidth": 961,
+    "popup": {
+      "bottom": 658,
+      "height": 387,
+      "left": 462,
+      "right": 878,
+      "top": 271,
+      "width": 416,
+      "x": 462,
+      "y": 271
+    },
+    "selected": [
+      {
+        "id": "northwind/research-evaluation-r001",
+        "name": "northwind/research-evaluation-r001"
+      }
+    ],
+    "status": "1001 model options available.",
+    "tabs": [
+      "Codex",
+      "OpenCode",
+      "Antigravity",
+      "Cloud",
+      "Ollama",
+      "OpenAI compatible"
+    ],
+    "url": "http://127.0.0.1:4492/?component=composer&stress=model-options&data=huge&theme=dark",
+    "viewport": [
+      961,
+      804
+    ]
+  },
+  {
+    "label": "thousand-models-end",
+    "blankLabels": [],
+    "caption": "OpenAI compatible",
+    "focused": "northwind/support-evaluation-r200",
+    "footer": {
+      "bottom": 657,
+      "height": 39,
+      "left": 519,
+      "right": 877,
+      "top": 618,
+      "width": 358,
+      "x": 519,
+      "y": 618
+    },
+    "listScroll": 39784,
+    "options": 1001,
+    "pageWidth": 961,
+    "popup": {
+      "bottom": 658,
+      "height": 387,
+      "left": 462,
+      "right": 878,
+      "top": 271,
+      "width": 416,
+      "x": 462,
+      "y": 271
+    },
+    "selected": [
+      {
+        "id": "northwind/research-evaluation-r001",
+        "name": "northwind/research-evaluation-r001"
+      }
+    ],
+    "status": "1001 model options available.",
+    "tabs": [
+      "Codex",
+      "OpenCode",
+      "Antigravity",
+      "Cloud",
+      "Ollama",
+      "OpenAI compatible"
+    ],
+    "url": "http://127.0.0.1:4492/?component=composer&stress=model-options&data=huge&theme=dark",
+    "viewport": [
+      961,
+      804
+    ]
+  },
+  {
+    "label": "thousand-search-results",
+    "blankLabels": [],
+    "caption": "1000 results",
+    "focused": "Search connected models",
+    "footer": {
+      "bottom": 657,
+      "height": 39,
+      "left": 519,
+      "right": 877,
+      "top": 618,
+      "width": 358,
+      "x": 519,
+      "y": 618
+    },
+    "listScroll": 41731,
+    "options": 1000,
+    "pageWidth": 961,
+    "popup": {
+      "bottom": 658,
+      "height": 387,
+      "left": 462,
+      "right": 878,
+      "top": 271,
+      "width": 416,
+      "x": 462,
+      "y": 271
+    },
+    "selected": [
+      {
+        "id": "northwind/research-evaluation-r001",
+        "name": "northwind/research-evaluation-r001"
+      }
+    ],
+    "status": "1000 model options available.",
+    "tabs": [
+      "Codex",
+      "OpenCode",
+      "Antigravity",
+      "Cloud",
+      "Ollama",
+      "OpenAI compatible"
+    ],
+    "url": "http://127.0.0.1:4492/?component=composer&stress=model-options&data=huge&theme=dark",
+    "viewport": [
+      961,
+      804
+    ]
+  },
+  {
+    "label": "demo-wide",
+    "blankLabels": [],
+    "caption": "Codex",
+    "focused": "Search connected models",
+    "footer": {
+      "bottom": 1293,
+      "height": 57,
+      "left": 1400,
+      "right": 1758,
+      "top": 1236,
+      "width": 358,
+      "x": 1400,
+      "y": 1236
+    },
+    "listScroll": 0,
+    "options": 3,
+    "pageWidth": 2560,
+    "popup": {
+      "bottom": 1294,
+      "height": 269,
+      "left": 1343,
+      "right": 1759,
+      "top": 1025,
+      "width": 416,
+      "x": 1343,
+      "y": 1025
+    },
+    "selected": [
+      {
+        "id": "gpt-5.2-codex",
+        "name": "GPT-5.2 Codex"
+      }
+    ],
+    "status": "3 model options available.",
+    "tabs": [
+      "Codex",
+      "Ollama"
+    ],
+    "url": "http://127.0.0.1:4492/?component=composer&stress=model-options&data=demo&theme=dark",
+    "viewport": [
+      2560,
+      1440
+    ]
+  },
+  {
+    "label": "worst-wide",
+    "blankLabels": [
+      "unnamed-evaluation",
+      "blank-display-name"
+    ],
+    "caption": "Codex",
+    "focused": "Search connected models",
+    "footer": {
+      "bottom": 1293,
+      "height": 57,
+      "left": 1400,
+      "right": 1758,
+      "top": 1236,
+      "width": 358,
+      "x": 1400,
+      "y": 1236
+    },
+    "listScroll": 0,
+    "options": 14,
+    "pageWidth": 2560,
+    "popup": {
+      "bottom": 1294,
+      "height": 405,
+      "left": 1343,
+      "right": 1759,
+      "top": 889,
+      "width": 416,
+      "x": 1343,
+      "y": 889
+    },
+    "selected": [
+      {
+        "id": "enterprise-research-eu-west-nightly",
+        "name": "Northwind Enterprise Research — Codex (EU West, 256k context, nightly evaluation)"
+      }
+    ],
+    "status": "14 model options available.",
+    "tabs": [
+      "Codex",
+      "Cloud",
+      "Ollama"
+    ],
+    "url": "http://127.0.0.1:4492/?component=composer&stress=model-options&data=worst&theme=dark",
+    "viewport": [
+      2560,
+      1440
+    ]
+  },
+  {
+    "label": "demo-320",
+    "blankLabels": [],
+    "caption": "Codex",
+    "focused": "Search connected models",
+    "footer": {
+      "bottom": 453,
+      "height": 97,
+      "left": 61,
+      "right": 311,
+      "top": 356,
+      "width": 250,
+      "x": 61,
+      "y": 356
+    },
+    "listScroll": 0,
+    "options": 3,
+    "pageWidth": 320,
+    "popup": {
+      "bottom": 454,
+      "height": 331,
+      "left": 8,
+      "right": 312,
+      "top": 123,
+      "width": 304,
+      "x": 8,
+      "y": 123
+    },
+    "selected": [
+      {
+        "id": "gpt-5.2-codex",
+        "name": "GPT-5.2 Codex"
+      }
+    ],
+    "status": "3 model options available.",
+    "tabs": [
+      "Codex",
+      "Ollama"
+    ],
+    "url": "http://127.0.0.1:4492/?component=composer&stress=model-options&data=demo&theme=dark",
+    "viewport": [
+      320,
+      640
+    ]
+  },
+  {
+    "label": "worst-320",
+    "blankLabels": [
+      "unnamed-evaluation",
+      "blank-display-name"
+    ],
+    "caption": "Codex",
+    "focused": "Search connected models",
+    "footer": {
+      "bottom": 453,
+      "height": 97,
+      "left": 61,
+      "right": 311,
+      "top": 356,
+      "width": 250,
+      "x": 61,
+      "y": 356
+    },
+    "listScroll": 0,
+    "options": 14,
+    "pageWidth": 320,
+    "popup": {
+      "bottom": 454,
+      "height": 446,
+      "left": 8,
+      "right": 312,
+      "top": 8,
+      "width": 304,
+      "x": 8,
+      "y": 8
+    },
+    "selected": [
+      {
+        "id": "enterprise-research-eu-west-nightly",
+        "name": "Northwind Enterprise Research — Codex (EU West, 256k context, nightly evaluation)"
+      }
+    ],
+    "status": "14 model options available.",
+    "tabs": [
+      "Codex",
+      "Cloud",
+      "Ollama"
+    ],
+    "url": "http://127.0.0.1:4492/?component=composer&stress=model-options&data=worst&theme=dark",
+    "viewport": [
+      320,
+      640
+    ]
+  },
+  {
+    "label": "worst-320-rtl-large-root",
+    "blankLabels": [
+      "unnamed-evaluation",
+      "blank-display-name"
+    ],
+    "caption": "Codex",
+    "focused": "Search connected models",
+    "footer": {
+      "bottom": 447.5,
+      "height": 97,
+      "left": 9,
+      "right": 259,
+      "top": 350.5,
+      "width": 250,
+      "x": 9,
+      "y": 350.5
+    },
+    "listScroll": 0,
+    "options": 14,
+    "pageWidth": 320,
+    "popup": {
+      "bottom": 448.5,
+      "height": 440,
+      "left": 8,
+      "right": 312,
+      "top": 8.5,
+      "width": 304,
+      "x": 8,
+      "y": 8.5
+    },
+    "selected": [
+      {
+        "id": "enterprise-research-eu-west-nightly",
+        "name": "Northwind Enterprise Research — Codex (EU West, 256k context, nightly evaluation)"
+      }
+    ],
+    "status": "14 model options available.",
+    "tabs": [
+      "Codex",
+      "Cloud",
+      "Ollama"
+    ],
+    "url": "http://127.0.0.1:4492/?component=composer&stress=model-options&data=worst&theme=dark&dir=rtl&text=large",
+    "viewport": [
+      320,
+      640
+    ]
+  },
+  {
+    "label": "worst-320-light",
+    "blankLabels": [
+      "unnamed-evaluation",
+      "blank-display-name"
+    ],
+    "caption": "Codex",
+    "focused": "Search connected models",
+    "footer": {
+      "bottom": 453,
+      "height": 97,
+      "left": 61,
+      "right": 311,
+      "top": 356,
+      "width": 250,
+      "x": 61,
+      "y": 356
+    },
+    "listScroll": 0,
+    "options": 14,
+    "pageWidth": 320,
+    "popup": {
+      "bottom": 454,
+      "height": 446,
+      "left": 8,
+      "right": 312,
+      "top": 8,
+      "width": 304,
+      "x": 8,
+      "y": 8
+    },
+    "selected": [
+      {
+        "id": "enterprise-research-eu-west-nightly",
+        "name": "Northwind Enterprise Research — Codex (EU West, 256k context, nightly evaluation)"
+      }
+    ],
+    "status": "14 model options available.",
+    "tabs": [
+      "Codex",
+      "Cloud",
+      "Ollama"
+    ],
+    "url": "http://127.0.0.1:4492/?component=composer&stress=model-options&data=worst&theme=light&dir=ltr&text=normal",
+    "viewport": [
+      320,
+      640
+    ]
+  },
+  {
+    "label": "demo-961-light",
+    "blankLabels": [],
+    "caption": "Codex",
+    "focused": "Search connected models",
+    "footer": {
+      "bottom": 657,
+      "height": 57,
+      "left": 519,
+      "right": 877,
+      "top": 600,
+      "width": 358,
+      "x": 519,
+      "y": 600
+    },
+    "listScroll": 0,
+    "options": 3,
+    "pageWidth": 961,
+    "popup": {
+      "bottom": 658,
+      "height": 269,
+      "left": 462,
+      "right": 878,
+      "top": 389,
+      "width": 416,
+      "x": 462,
+      "y": 389
+    },
+    "selected": [
+      {
+        "id": "gpt-5.2-codex",
+        "name": "GPT-5.2 Codex"
+      }
+    ],
+    "status": "3 model options available.",
+    "tabs": [
+      "Codex",
+      "Ollama"
+    ],
+    "url": "http://127.0.0.1:4492/?component=composer&stress=model-options&data=demo&theme=light&dir=ltr&text=normal",
+    "viewport": [
+      961,
+      804
+    ]
+  },
+  {
+    "label": "worst-961-light",
+    "blankLabels": [
+      "unnamed-evaluation",
+      "blank-display-name"
+    ],
+    "caption": "Codex",
+    "focused": "Search connected models",
+    "footer": {
+      "bottom": 657,
+      "height": 57,
+      "left": 519,
+      "right": 877,
+      "top": 600,
+      "width": 358,
+      "x": 519,
+      "y": 600
+    },
+    "listScroll": 0,
+    "options": 14,
+    "pageWidth": 961,
+    "popup": {
+      "bottom": 658,
+      "height": 405,
+      "left": 462,
+      "right": 878,
+      "top": 253,
+      "width": 416,
+      "x": 462,
+      "y": 253
+    },
+    "selected": [
+      {
+        "id": "enterprise-research-eu-west-nightly",
+        "name": "Northwind Enterprise Research — Codex (EU West, 256k context, nightly evaluation)"
+      }
+    ],
+    "status": "14 model options available.",
+    "tabs": [
+      "Codex",
+      "Cloud",
+      "Ollama"
+    ],
+    "url": "http://127.0.0.1:4492/?component=composer&stress=model-options&data=worst&theme=light&dir=ltr&text=normal",
+    "viewport": [
+      961,
+      804
+    ]
+  },
+  {
+    "label": "final-persisted-worst",
+    "blankLabels": [
+      "unnamed-evaluation",
+      "blank-display-name"
+    ],
+    "caption": "Codex",
+    "focused": "Search connected models",
+    "footer": {
+      "bottom": 657,
+      "height": 57,
+      "left": 519,
+      "right": 877,
+      "top": 600,
+      "width": 358,
+      "x": 519,
+      "y": 600
+    },
+    "listScroll": 0,
+    "options": 14,
+    "pageWidth": 961,
+    "popup": {
+      "bottom": 658,
+      "height": 405,
+      "left": 462,
+      "right": 878,
+      "top": 253,
+      "width": 416,
+      "x": 462,
+      "y": 253
+    },
+    "selected": [
+      {
+        "id": "enterprise-research-eu-west-nightly",
+        "name": "Northwind Enterprise Research — Codex (EU West, 256k context, nightly evaluation)"
+      }
+    ],
+    "status": "14 model options available.",
+    "tabs": [
+      "Codex",
+      "Cloud",
+      "Ollama"
+    ],
+    "url": "http://127.0.0.1:4492/?component=composer&stress=model-options&data=worst&theme=dark&dir=ltr&text=normal",
+    "viewport": [
+      961,
+      804
+    ]
+  }
+]

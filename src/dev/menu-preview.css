@@ -1,0 +1,26 @@
+.menu-preview-bar { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; padding: 16px; }
+.menu-preview-hint { margin-left: auto; color: var(--ui-text-3); font-size: 12px; }
+.menu-preview-card { display: flex; flex-direction: column; gap: 10px; padding: 18px 20px; border: 1px solid var(--ui-border); border-radius: 14px; background: var(--ui-raised); outline: none; }
+.menu-preview-card:focus-visible { outline: 2px solid var(--ui-accent); outline-offset: 3px; }
+.menu-preview-card-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
+.menu-preview-card-head strong { font-size: 13px; font-weight: 550; }
+.menu-preview-card-head span { color: var(--ui-text-3); font-size: 11px; }
+.menu-preview-card p { color: var(--ui-text-2); font-size: 13px; line-height: 21px; }
+.menu-preview-card-hint { color: var(--ui-text-3); font-size: 11px; }
+.menu-preview-anatomy { padding: 6px; max-width: 300px; }
+.menu-preview-anatomy-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 30px; padding: 5px 8px; border-radius: 6px; font-size: 12px; }
+.menu-preview-anatomy-row > span { display: inline-flex; align-items: center; gap: 9px; }
+.menu-preview-anatomy-row > span > svg { color: var(--ui-text-3); }
+.menu-preview-anatomy-row kbd { color: var(--ui-text-3); font-family: var(--ui-font-text); font-size: 10px; }
+.menu-preview-anatomy-row small { color: var(--ui-text-3); font-size: 10px; }
+.menu-preview-anatomy-row.is-disabled { opacity: 1; }
+.menu-preview-anatomy-row.is-disabled > span { color: var(--ui-text-2); }
+.menu-preview-anatomy-row.is-disabled > span > svg { color: var(--ui-text-3); }
+.menu-preview-anatomy-row.is-disabled small { color: var(--ui-text-2); }
+.menu-preview-anatomy-row.is-danger { color: var(--ui-button-danger-ink, var(--ui-danger)); }
+.menu-preview-anatomy-row.is-danger > span > svg { color: currentColor; }
+.menu-preview-divider { height: 1px; margin: 4px 6px; background: var(--ui-border); }
+
+@media (max-width: 720px) {
+  .menu-preview-hint { margin-left: 0; width: 100%; }
+}

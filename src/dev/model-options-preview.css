@@ -1,0 +1,27 @@
+/* Test chrome only; no selectors change the components under test. */
+.model-options-lab { display: flex; flex-direction: column; height: 100dvh; padding: 20px 24px 80px; background: var(--ui-page); color: var(--ui-ink); }
+.model-options-lab-header { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 14px; }
+.model-options-lab-header a { color: var(--ui-text-2); font-size: 12px; }
+.model-options-lab-header h1 { margin-top: 8px; font-size: 16px; font-weight: 500; line-height: 1.5; }
+.model-options-lab-environment { display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; }
+.model-options-lab-environment label { display: inline-flex; align-items: center; gap: 5px; min-height: 32px; cursor: pointer; }
+.model-options-lab-environment input { appearance: auto; width: 14px; height: 14px; }
+.model-options-lab-stage { display: flex; flex: 1; min-height: 0; flex-direction: column; padding-top: 20px; }
+.model-options-lab-meta { max-width: 720px; color: var(--ui-text-2); font-size: 12px; line-height: 1.5; }
+.model-options-lab-meta output { display: block; margin-top: 8px; overflow-wrap: anywhere; font-family: ui-monospace, monospace; }
+.model-options-lab-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.model-options-lab-actions button { min-height: 32px; padding: 4px 8px; border: 1px solid var(--ui-border); border-radius: 5px; }
+.model-options-lab-actions button:disabled { opacity: .4; cursor: default; }
+.model-options-lab-composer { width: min(100%, 820px); margin: auto auto 0; }
+.model-options-lab-data { position: fixed; z-index: 300; bottom: 12px; left: 50%; transform: translateX(-50%); display: flex; flex-wrap: wrap; justify-content: center; gap: 3px; width: max-content; max-width: calc(100% - 16px); padding: 4px; border: 1px solid #b7b7b7; border-radius: 9px; background: #d7d7d7; color: #303030; font: 12px/1.4 system-ui, sans-serif; box-shadow: 0 2px 12px #0002; }
+.model-options-lab-data button { min-height: 32px; padding: 5px 10px; border-radius: 5px; color: inherit; white-space: nowrap; }
+.model-options-lab-data button[aria-pressed='true'] { background: white; box-shadow: 0 1px 3px #0002; }
+.model-options-lab-actions button:focus-visible, .model-options-lab-data button:focus-visible, .model-options-lab-header a:focus-visible, .model-options-lab-header input:focus-visible { outline: 2px solid var(--ui-accent); outline-offset: 2px; }
+@media (min-width: 900px) { .model-options-lab-stage { margin-inline-start: 256px; } }
+@media (max-width: 599px) {
+  .model-options-lab { padding: 12px 12px 112px; }
+  .model-options-lab-header h1 { font-size: 14px; }
+  .model-options-lab-stage { padding-top: 12px; }
+  .model-options-lab-data { bottom: 8px; }
+  .model-options-lab-data button { min-height: 36px; padding-inline: 9px; }
+}

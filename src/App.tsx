@@ -1,8 +1,10 @@
+import { Button } from './ui/Button';
+import { Alert, useToast } from './ui/Alert';
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
-import { AlertCircle, ArrowUpRight, Code2, Palette, Search, Sparkles, Telescope, Terminal, UsersRound, X } from 'lucide-react';
+import { ArrowUpRight, Code2, Palette, Search, Sparkles, Telescope, Terminal, UsersRound } from 'lucide-react';
 import type { Agent, Attachment, Conversation, Run } from '../shared/types';
 import { initialConnection, request, type Connection } from './api';
-import { AgentGlyph, IconButton, Mark, Spinner } from './components';
+import { AgentGlyph, AvatarRuntimeProvider, Mark, Spinner } from './components';
 import { AgentDialog, AgentGroupDialog, GroupDialog, ConversationDialog, SearchDialog, ScheduleDialog, ConnectionDialog, type DialogKind } from './dialogs';
 import { SettingsDialog } from './dialogs/SettingsDialog';
 import { ConnectionsDialog } from './dialogs/ConnectionsDialog';
@@ -22,6 +24,7 @@ function remember(key: string, value: string) { try { localStorage.setItem(key, 
 export default function App() {
   const [connection, setConnection] = useState<Connection>(initialConnection);
   const { data, api, refresh, loading, error, setError, online, updateRun } = useWorkspace(connection);
+  const toast = useToast();
   const [activeAgentId, setActiveAgentId] = useState(saved('aGent.agent', 'primary'));
   const [activeConversationId, setActiveConversationId] = useState<string | null>(saved('aGent.conversation') || null);
   const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 860);
@@ -71,11 +74,6 @@ export default function App() {
     };
     window.addEventListener('keydown', handler); return () => window.removeEventListener('keydown', handler);
   });
-  useEffect(() => {
-    const handler = (event: PointerEvent) => { if (!pickerRef.current?.contains(event.target as Node)) setModelPicker(false); };
-    if (modelPicker) window.addEventListener('pointerdown', handler);
-    return () => window.removeEventListener('pointerdown', handler);
-  }, [modelPicker]);
   useEffect(() => {
     const handler = (event: Event) => {
       if (modelPicker) { event.preventDefault(); setModelPicker(false); return; }
@@ -128,7 +126,7 @@ export default function App() {
   }
   async function chooseModel(nextProvider: string, nextModel: string) {
     const changed = nextProvider !== providerId || nextModel !== modelId;
-    setProviderId(nextProvider); setModelId(nextModel); setModelPicker(false); if (nextProvider !== 'codex') setMode('chat');
+    setProviderId(nextProvider); setModelId(nextModel); if (nextProvider !== 'codex') setMode('chat');
     if (agent) try {
       await api(`/api/agents/${agent.id}`, 'PATCH', { providerId: nextProvider, modelId: nextModel });
       if (changed) {
@@ -149,7 +147,7 @@ export default function App() {
   async function connect(next: Connection) { await request(next, '/api/bootstrap'); remember('aGent.host', next.url); try { sessionStorage.setItem('aGent.token', next.token); } catch { /* session-only fallback */ } setConnection(next); setActiveConversationId(null); setActiveAgentId('primary'); }
   function updateDeviceToken(token: string) { setConnection(previous => ({ ...previous, token })); try { sessionStorage.setItem('aGent.token', token); } catch { /* session-only fallback */ } }
   function handleDeviceRevoked() { try { sessionStorage.removeItem('aGent.token'); } catch { /* session-only fallback */ } window.location.reload(); }
-  async function copyMessage(content: string, id: string) { try { await navigator.clipboard.writeText(content); setCopied(id); setTimeout(() => setCopied(''), 1500); } catch { setError('Clipboard access is unavailable on this device.'); } }
+  async function copyMessage(content: string, id: string) { try { await navigator.clipboard.writeText(content); setCopied(id); setTimeout(() => setCopied(''), 1500); toast({ title: 'Message copied', tone: 'success' }); } catch { toast({ title: 'Clipboard unavailable', description: 'Copying is blocked in this environment.', tone: 'danger' }); } }
   async function handleApproval(id: string, accept: boolean) { try { await api(`/api/approvals/${id}`, 'POST', { decision: accept ? 'accept' : 'decline' }); } catch (reason) { setError((reason as Error).message); } }
   async function stopRun() { if (!currentRun) return; try { updateRun(await api<Run>(`/api/runs/${currentRun.id}/interrupt`, 'POST')); } catch (reason) { setError((reason as Error).message); } }
   function openConversationDetails(chat: Conversation) { setDialog({ kind: 'conversation', conversation: chat }); }
@@ -161,10 +159,11 @@ export default function App() {
       ? [{ Icon: Palette, title: 'Explore a direction', prompt: 'Help me explore a visual direction for a product. Ask about the product and its audience.' }, { Icon: UsersRound, title: 'Improve a flow', prompt: 'Help me improve a user flow. Ask me which flow and what is not working.' }, { Icon: Sparkles, title: 'Shape an idea', prompt: 'Help me turn a product idea into a clear, testable concept.' }]
       : [{ Icon: Sparkles, title: 'Think it through', prompt: 'Help me think through an idea. Ask me what I have in mind.' }, { Icon: Code2, title: 'Build something', prompt: 'Help me plan something I want to build. Ask what I would like to create.' }, { Icon: Telescope, title: 'Look into it', prompt: 'Help me research a topic. Ask what I want to understand and why.' }];
 
-  return <div className={`reason-app ${sidebarOpen ? 'is-sidebar-open' : ''} ${sidePanelOpen ? 'is-panel-open' : ''}`} data-desktop={window.aGentDesktop ? 'true' : undefined} data-platform={window.aGentDesktop?.platform}>
+  return <AvatarRuntimeProvider runs={data?.runs || []}><div className={`reason-app ${sidebarOpen ? 'is-sidebar-open' : ''} ${sidePanelOpen ? 'is-panel-open' : ''}`} data-desktop={window.aGentDesktop ? 'true' : undefined} data-platform={window.aGentDesktop?.platform}>
     {sidebarOpen && <button className="reason-scrim" aria-label="Close sidebar" onClick={() => setSidebarOpen(false)} />}
     {sidebarOpen ? <Sidebar
       agents={agents}
+      conversations={conversations}
       agentGroups={state?.agentGroups || []}
       activeAgentId={agent?.id}
       runs={data?.runs || []}
@@ -205,14 +204,14 @@ export default function App() {
           onToggleSidePanel={() => sidePanelOpen ? setSidePanelOpen(false) : openSidePanel('session')}
           onOpenConversationDetails={() => conversation && openConversationDetails(conversation)}
         />
-        {error && <div className="error-banner" role="alert"><AlertCircle size={16} /><span>{error}</span><IconButton label="Dismiss error" onClick={() => setError('')}><X size={15} /></IconButton></div>}
+        {error && <Alert tone="danger" title="Something went wrong" className="error-banner" onDismiss={() => setError('')}>{error}</Alert>}
         {!data ? <div className="reason-initial">
           <Mark size={54} />
-          {loading ? <><Spinner size={22} /><h1>Opening your workspace…</h1></> : <><h1>Your agents. Wherever you are.</h1><p>Connect to your A Gent host to get started.</p><button className="button primary" onClick={() => setDialog({ kind: 'connection' })}>Connect workspace<ArrowUpRight size={16} /></button></>}
+          {loading ? <><Spinner size={22} /><h1>Opening your workspace…</h1></> : <><h1>Your agents. Wherever you are.</h1><p>Connect to your A Gent host to get started.</p><Button variant="primary" onClick={() => setDialog({ kind: 'connection' })}>Connect workspace<ArrowUpRight size={16} /></Button></>}
         </div> : <div className="reason-chat" onDragOver={event => event.preventDefault()} onDrop={event => { event.preventDefault(); if (event.dataTransfer.files.length) void addFiles(event.dataTransfer.files); }}>
           <div className={`reason-chat-scroll ${!conversation?.messages.length ? 'is-empty' : ''}`} ref={scroll}>
             {!conversation?.messages.length ? <div className="reason-welcome">
-              <div className="reason-welcome-mark">{agent?.id === 'primary' || !agent ? <Mark size={48} /> : <AgentGlyph agent={agent} size={48} />}</div>
+              <div className="reason-welcome-mark">{agent ? <AgentGlyph agent={agent} size={48} /> : <Mark size={48} />}</div>
               <h1>{agent?.name || 'A Gent'}</h1>
               <p>{agent?.description || 'A place to think clearly and move things forward.'}</p>
               <div className="reason-starters">{starterPrompts.map(({ Icon, title, prompt }) => <button key={title} onClick={() => { setText(prompt); composer.current?.focus(); }}><Icon size={15} /><span>{title}</span><ArrowUpRight size={13} /></button>)}</div>
@@ -224,6 +223,7 @@ export default function App() {
               runError={runError}
               onCopy={copyMessage}
               onApproval={handleApproval}
+              onOpenDetails={() => conversation && openConversationDetails(conversation)}
             />}
           </div>
           <Composer
@@ -279,15 +279,15 @@ export default function App() {
       onApproval={handleApproval}
     />}
     {dialog?.kind === 'connection' && <ConnectionDialog connection={connection} onConnect={connect} onClose={() => setDialog(null)} />}
-    {data && dialog?.kind === 'settings' && <SettingsDialog state={data.state} api={api} connection={connection} onError={setError} onRefresh={refresh} onClose={() => setDialog(null)} onOpenConnections={() => setDialog({ kind: 'connections' })} onDeviceToken={updateDeviceToken} onDeviceRevoked={handleDeviceRevoked} />}
+    {data && dialog?.kind === 'settings' && <SettingsDialog state={data.state} providers={data.providers} api={api} connection={connection} onError={setError} onRefresh={refresh} onClose={() => setDialog(null)} onOpenConnections={() => setDialog({ kind: 'connections' })} onDeviceToken={updateDeviceToken} onDeviceRevoked={handleDeviceRevoked} />}
     {data && dialog?.kind === 'connections' && <ConnectionsDialog providers={data.providers} api={api} onRefresh={refresh} connection={connection} onHost={() => setDialog({ kind: 'connection' })} onClose={() => setDialog(null)} />}
     {data && dialog?.kind === 'agents' && <AgentsDialog agents={agents} onCreate={() => setDialog({ kind: 'agent' })} onEdit={value => setDialog({ kind: 'agent', agent: value })} onChat={value => { newChat(value); setDialog(null); }} onClose={() => setDialog(null)} />}
     {data && dialog?.kind === 'schedules' && <SchedulesDialog state={data.state} api={api} onCreate={() => setDialog({ kind: 'schedule' })} onOpen={id => { const chat = state?.conversations.find(item => item.id === id); if (chat) selectChat(chat); setDialog(null); }} onError={setError} onClose={() => setDialog(null)} />}
-    {data && dialog?.kind === 'agent' && <AgentDialog agent={dialog.agent} agentGroups={data.state.agentGroups} providers={data.providers} api={api} onClose={() => setDialog(null)} onSaved={value => { setActiveAgentId(value.id); setActiveConversationId(null); }} />}
+    {data && dialog?.kind === 'agent' && <AgentDialog agent={dialog.agent} agentGroups={data.state.agentGroups} providers={data.providers} api={api} onClose={() => setDialog(null)} onSaved={value => { setActiveAgentId(value.archived ? 'primary' : value.id); setActiveConversationId(null); }} />}
     {data && dialog?.kind === 'group' && <GroupDialog api={api} onClose={() => setDialog(null)} />}
     {data && dialog?.kind === 'agent-group' && <AgentGroupDialog group={dialog.group} api={api} onClose={() => setDialog(null)} />}
     {data && dialog?.kind === 'conversation' && <ConversationDialog conversation={dialog.conversation} state={data.state} api={api} onClose={() => setDialog(null)} onArchived={() => { if (activeConversationId === dialog.conversation.id) newChat(); }} />}
     {data && dialog?.kind === 'search' && <SearchDialog state={data.state} onSelect={selectChat} onClose={() => setDialog(null)} />}
     {data && dialog?.kind === 'schedule' && <ScheduleDialog state={data.state} activeAgentId={agent?.id || 'primary'} api={api} onClose={() => setDialog(null)} />}
-  </div>;
+  </div></AvatarRuntimeProvider>;
 }

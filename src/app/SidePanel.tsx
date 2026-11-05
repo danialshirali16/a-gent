@@ -1,8 +1,11 @@
+import { Tabs } from '../ui/Tabs';
 import { AlertCircle, Check, FolderPlus, LoaderCircle, MessageSquare, Plus, PanelRightClose, Settings2 } from 'lucide-react';
-import type { KeyboardEvent } from 'react';
 import type { Activity as ActivityItem, Agent, Conversation, Group, Run } from '../../shared/types';
 import { AgentGlyph, IconButton, formatDate } from '../components';
+import { StatusIndicator } from '../ui/Badge';
+import { ListRow } from '../ui/Card';
 import type { Api } from '../dialogs';
+import { ApprovalCard } from '../chat/ApprovalCard';
 import { FilesPanel } from './FilesPanel';
 import { TerminalPanel } from './TerminalPanel';
 
@@ -53,30 +56,24 @@ export function SidePanel(props: SidePanelProps) {
     || [];
   const workspace = props.conversation?.workspacePath || props.agent?.workspacePath || '';
   const status = props.currentRun ? (props.currentRun.status === 'waiting' ? 'Waiting for approval' : 'Working') : 'Ready';
+  const statusTone = props.currentRun ? (props.currentRun.status === 'waiting' ? 'warning' : 'info') : 'success';
   const pendingApprovals = props.currentRun?.approvals.filter(approval => approval.status === 'pending') || [];
-  const onTabKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
-    const buttons = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="tab"]'));
-    const current = buttons.indexOf(document.activeElement as HTMLButtonElement);
-    if (current < 0) return;
-    let next = current;
-    if (event.key === 'ArrowLeft') next = (current - 1 + buttons.length) % buttons.length;
-    else if (event.key === 'ArrowRight') next = (current + 1) % buttons.length;
-    else if (event.key === 'Home') next = 0;
-    else if (event.key === 'End') next = buttons.length - 1;
-    event.preventDefault();
-    buttons[next].focus();
-    props.onTab(sidePanelTabs[next].id);
-  };
 
   return <aside className="reason-sidepanel" aria-label="Session details">
     <div className="reason-sidepanel-header">
-      <div className="reason-sidepanel-tabs" role="tablist" aria-label="Session panel" onKeyDown={onTabKeyDown}>
-        {sidePanelTabs.map(tab => <button key={tab.id} role="tab" id={`side-tab-${tab.id}`} aria-selected={props.tab === tab.id} tabIndex={props.tab === tab.id ? 0 : -1} className={props.tab === tab.id ? 'is-active' : ''} onClick={() => props.onTab(tab.id)}>{tab.label}{tab.id === 'approvals' && pendingApprovals.length > 0 && <span className="reason-tab-count">{pendingApprovals.length}</span>}</button>)}
-      </div>
+      <Tabs
+        className="reason-sidepanel-tabs"
+        items={sidePanelTabs.map(tab => ({ ...tab, count: tab.id === 'approvals' ? pendingApprovals.length : undefined }))}
+        value={props.tab}
+        onChange={id => props.onTab(id as SidePanelTab)}
+        ariaLabel="Session panel"
+        idPrefix="side"
+        panelId={`side-panel-${props.tab}`}
+        variant="pill"
+      />
       <IconButton label="Close side panel" onClick={props.onClose}><PanelRightClose size={18} /></IconButton>
     </div>
-    <div className="reason-sidepanel-body" role="tabpanel" aria-labelledby={`side-tab-${props.tab}`}>
+    <div className="reason-sidepanel-body" id={`side-panel-${props.tab}`} role="tabpanel" aria-labelledby={`side-tab-${props.tab}`} tabIndex={0}>
       {props.tab === 'session' && <>
         {props.agent ? <>
           <div className="reason-session-card">
@@ -92,7 +89,7 @@ export function SidePanel(props: SidePanelProps) {
             <div className="reason-session-row"><span>Effort</span><span>{effortLabel[props.agent.reasoningEffort] || props.agent.reasoningEffort || 'Balanced'}</span></div>
             <div className="reason-session-row"><span>Workspace</span><span title={workspace}>{workspace || 'Host default'}</span></div>
             <div className="reason-session-row"><span>Conversation</span><span title={props.conversation?.title}>{props.conversation?.title || 'New conversation'}</span></div>
-            <div className="reason-session-row"><span>Status</span><span>{status}</span></div>
+            <div className="reason-session-row"><span>Status</span><StatusIndicator label={status} tone={statusTone} pulse={!!props.currentRun} /></div>
           </div>
           {props.conversation && <button className="reason-session-item" onClick={() => props.onOpenConversationDetails(props.conversation!)}>
             <MessageSquare size={15} />
@@ -103,21 +100,12 @@ export function SidePanel(props: SidePanelProps) {
 
       {props.tab === 'sessions' && <>
         <div className="reason-session-list">
-          <button className="reason-session-item" onClick={props.onNewChat}>
-            <Plus size={15} />
-            <span><strong>New conversation</strong><small>Start with {props.agent?.name || 'your agent'}</small></span>
-          </button>
-          <button className="reason-session-item" onClick={props.onCreateGroup}>
-            <FolderPlus size={15} />
-            <span><strong>New group</strong><small>Organize related conversations</small></span>
-          </button>
+          <ListRow className="reason-session-item" leading={<Plus size={15} />} primary="New conversation" secondary={`Start with ${props.agent?.name || 'your agent'}`} onClick={props.onNewChat} />
+          <ListRow className="reason-session-item" leading={<FolderPlus size={15} />} primary="New group" secondary="Organize related conversations" onClick={props.onCreateGroup} />
           {props.conversations.map(conversation => {
             const owner = props.agent?.id === conversation.agentId ? props.agent : undefined;
             const group = props.groups.find(item => item.id === conversation.groupId);
-            return <button key={conversation.id} className={`reason-session-item ${props.conversation?.id === conversation.id ? 'is-active' : ''}`} aria-current={props.conversation?.id === conversation.id ? 'page' : undefined} onClick={() => props.onSelectConversation(conversation)}>
-              {owner ? <AgentGlyph agent={owner} size={18} /> : <MessageSquare size={15} />}
-              <span><strong>{conversation.title || 'New conversation'}</strong><small>{group ? `${group.name} · ` : ''}{formatDate(conversation.updatedAt)}</small></span>
-            </button>;
+            return <ListRow key={conversation.id} className="reason-session-item" selected={props.conversation?.id === conversation.id} leading={owner ? <AgentGlyph agent={owner} size={18} /> : <MessageSquare size={15} />} primary={conversation.title || 'New conversation'} secondary={`${group ? `${group.name} · ` : ''}${formatDate(conversation.updatedAt)}`} onClick={() => props.onSelectConversation(conversation)} />;
           })}
           {!props.conversations.length && <div className="reason-sidepanel-empty">No conversations yet.</div>}
         </div>
@@ -132,15 +120,7 @@ export function SidePanel(props: SidePanelProps) {
       </>}
 
       {props.tab === 'approvals' && <>
-        {pendingApprovals.length ? <div className="reason-sidepanel-approvals">{pendingApprovals.map(approval => <div className="reason-approval" key={approval.id}>
-          <div className="reason-approval-head"><AlertCircle size={15} /><h3>{approval.title}</h3></div>
-          <p>{approval.description}</p>
-          {approval.command && <pre>{approval.command}</pre>}
-          <div className="reason-approval-actions">
-            <button className="button quiet small" onClick={() => props.onApproval(approval.id, false)}>Decline</button>
-            <button className="button primary small" onClick={() => props.onApproval(approval.id, true)}>Allow this action</button>
-          </div>
-        </div>)}</div> : <div className="reason-sidepanel-empty">No approvals are waiting.</div>}
+        {pendingApprovals.length ? <div className="reason-sidepanel-approvals">{pendingApprovals.map(approval => <ApprovalCard key={approval.id} approval={approval} onApproval={props.onApproval} />)}</div> : <div className="reason-sidepanel-empty">No approvals are waiting.</div>}
       </>}
     </div>
   </aside>;

@@ -10,7 +10,8 @@ import { ProviderManager } from '../../server/providers.js';
 import { RunManager } from '../../server/runs.js';
 import { CodexBridge, type ProviderRequest } from '../../server/codex.js';
 import { locateCodex } from '../../server/codex-discovery.js';
-import type { ServerEvent } from '../../shared/types.js';
+import type { Run, ServerEvent } from '../../shared/types.js';
+import { agentAvatarTypes, avatarActivityForRuns, legacyAvatarTypeByIcon, resolveAgentAvatarType } from '../../shared/agentAvatars.js';
 
 const fixture = join(dirname(fileURLToPath(import.meta.url)), 'fake-codex.mjs');
 const opencodeFixture = join(dirname(fileURLToPath(import.meta.url)), 'fake-opencode.mjs');
@@ -43,6 +44,76 @@ test('workspace validation rejects bad references and imports without credential
     assert.equal(imported.conversations[0].providerThreadId, undefined);
     assert.throws(() => validateImport({ ...store.state, conversations: [{ ...conversation, agentId: 'missing' }] }), /unknown agent/);
     assert.throws(() => validateImport({ ...store.state, agents: [{ ...store.state.agents[0], color: 'javascript:bad' }] }), /hex/);
+  } finally { await rm(directory, { recursive: true, force: true }); }
+});
+
+test('avatar shapes migrate, validate, persist, and round-trip', async () => {
+  for (const [icon, shape] of Object.entries(legacyAvatarTypeByIcon)) {
+    assert.equal(resolveAgentAvatarType(icon, undefined), shape);
+  }
+  assert.equal(resolveAgentAvatarType('spark', 'cat'), 'cat');
+  assert.equal(resolveAgentAvatarType('unknown', 'not-a-shape'), 'droid');
+  assert.equal(resolveAgentAvatarType('code', 'not-a-shape'), 'mech');
+  assert.equal(agentAvatarTypes.length, 18);
+
+  const run = (agentId: string, status: Run['status'], startedAt: string): Run => ({ id: `${agentId}-${status}-${startedAt}`, conversationId: 'chat', agentId, messageId: 'message', status, providerId: 'codex', modelId: '', startedAt, activities: [], approvals: [] });
+  assert.equal(avatarActivityForRuns([run('a', 'running', '2026-01-01T00:00:00.000Z')]).get('a'), 'working');
+  assert.equal(avatarActivityForRuns([run('a', 'waiting', '2026-01-01T00:00:00.000Z')]).get('a'), 'default');
+  for (const status of ['completed', 'failed', 'interrupted'] as const) assert.equal(avatarActivityForRuns([run('a', status, '2026-01-01T00:00:00.000Z')]).get('a'), undefined);
+  assert.equal(avatarActivityForRuns([run('a', 'running', '2026-01-01T00:00:00.000Z'), run('a', 'completed', '2026-01-01T01:00:00.000Z')]).get('a'), undefined);
+  assert.equal(avatarActivityForRuns([run('a', 'completed', '2026-01-01T00:00:00.000Z'), run('a', 'running', '2026-01-01T01:00:00.000Z')]).get('a'), 'working');
+
+  const directory = await mkdtemp(join(scratch, 'agent-avatar-test-'));
+  const staticDir = join(directory, 'static'); await mkdir(staticDir); await writeFile(join(staticDir, 'index.html'), '<!doctype html><html><head></head><body>A Gent</body></html>');
+  const previousProbe = process.env.AGENT_SKIP_PROVIDER_PROBE;
+  process.env.AGENT_SKIP_PROVIDER_PROBE = '1';
+  let handle = await startServer({ port: 0, dataDir: directory, staticDir, dev: false });
+  const call = async (path: string, body?: unknown, method = body === undefined ? 'GET' : 'POST') => {
+    const response = await fetch(`${handle.url}/api${path}`, { method, headers: { Authorization: `Bearer ${handle.token}`, 'Content-Type': 'application/json' }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
+    return { status: response.status, body: await response.json() as any };
+  };
+  try {
+    const created = await call('/agents', { name: 'Shape Agent', avatarType: 'cat' }, 'POST');
+    assert.equal(created.status, 201);
+    assert.equal(created.body.avatarType, 'cat');
+    assert.equal((await call(`/agents/${created.body.id}`, { name: 'Renamed Shape Agent' }, 'PATCH')).body.avatarType, 'cat');
+    assert.equal((await call(`/agents/${created.body.id}`, { avatarType: 'hexapod' }, 'PATCH')).status, 400);
+    assert.equal((await call(`/agents/${created.body.id}`, { avatarType: 'puddle' }, 'PATCH')).body.avatarType, 'puddle');
+
+    const exported = await call('/export');
+    assert.equal(exported.body.agents.find((agent: any) => agent.id === created.body.id).avatarType, 'puddle');
+    const imported = validateImport(exported.body);
+    assert.equal(imported.agents.find(agent => agent.id === created.body.id)?.avatarType, 'puddle');
+
+    const invalidImport = validateImport({ ...exported.body, agents: exported.body.agents.map((agent: any) => agent.id === created.body.id ? { ...agent, avatarType: 'hexapod' } : agent) });
+    assert.equal(invalidImport.agents.find(agent => agent.id === created.body.id)?.avatarType, undefined);
+
+    const legacyAgents = validateImport({ ...exported.body, agents: [
+      { ...exported.body.agents.find((agent: any) => agent.id === 'primary'), avatarType: undefined, icon: 'spark' },
+      { ...exported.body.agents.find((agent: any) => agent.id === 'engineer'), avatarType: undefined, icon: 'code' },
+    ] });
+    assert.equal(legacyAgents.agents[0].avatarType, undefined);
+    assert.equal(legacyAgents.agents[1].avatarType, undefined);
+
+    await handle.close();
+    handle = await startServer({ port: 0, dataDir: directory, staticDir, dev: false });
+    const restarted = await call('/bootstrap');
+    assert.equal(restarted.body.state.agents.find((agent: any) => agent.id === created.body.id).avatarType, 'puddle');
+  } finally {
+    await handle.close(); await rm(directory, { recursive: true, force: true });
+    if (previousProbe === undefined) delete process.env.AGENT_SKIP_PROVIDER_PROBE; else process.env.AGENT_SKIP_PROVIDER_PROBE = previousProbe;
+  }
+});
+
+test('stored unsupported avatar shapes fall back without blocking startup', async () => {
+  const directory = await mkdtemp(join(scratch, 'agent-avatar-store-test-'));
+  try {
+    const store = new StateStore(directory); await store.load();
+    store.state.agents[0].avatarType = 'hexapod' as never;
+    await store.save();
+    const reloaded = new StateStore(directory); await reloaded.load();
+    assert.equal(reloaded.state.agents[0].avatarType, undefined);
+    await reloaded.close();
   } finally { await rm(directory, { recursive: true, force: true }); }
 });
 

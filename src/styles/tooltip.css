@@ -1,0 +1,48 @@
+/* Small supplementary labels for compact icon actions. */
+.ui-tooltip-anchor {
+  display: inline-flex;
+  min-width: 0;
+}
+
+.ui-tooltip {
+  position: fixed;
+  z-index: 200;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 280px;
+  padding: 6px 9px;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-xs);
+  background: var(--ui-raised);
+  color: var(--ui-ink);
+  box-shadow: var(--ui-shadow-menu);
+  font-family: var(--ui-font-text);
+  font-size: 11px;
+  font-weight: 450;
+  line-height: 16px;
+  text-align: left;
+  pointer-events: none;
+  transform: translate(-50%, -100%);
+  animation: tooltip-in var(--ui-dur-fast) var(--ui-ease-out);
+}
+
+.ui-tooltip[data-side='bottom'] { transform: translate(-50%, 0); }
+.ui-tooltip kbd {
+  padding: 1px 4px;
+  border: 1px solid var(--ui-border);
+  border-radius: 4px;
+  color: var(--ui-text-3);
+  font-family: var(--ui-font-text);
+  font-size: 10px;
+  line-height: 14px;
+}
+
+@keyframes tooltip-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-tooltip { animation: none; }
+}

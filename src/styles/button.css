@@ -1,0 +1,197 @@
+/* Shared action buttons. Navigation rows and segmented controls have their own geometry. */
+:root {
+  --ui-button-danger-ink: #b0163e;
+}
+
+.button {
+  --button-height: 32px;
+  --button-padding: 14px;
+  --button-font: 13px;
+  --button-icon: 14px;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  min-width: 32px;
+  min-height: var(--button-height);
+  gap: 6px;
+  padding: 5px var(--button-padding);
+  border: 1px solid transparent;
+  border-radius: var(--ui-radius-pill);
+  background: transparent;
+  color: var(--ui-ink);
+  font-family: var(--ui-font-text);
+  font-size: var(--button-font);
+  font-weight: 500;
+  line-height: 20px;
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+  vertical-align: middle;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.button-content,
+.button-slot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.button:not(.icon-button) svg,
+.button > .button-spinner {
+  width: var(--button-icon);
+  height: var(--button-icon);
+  flex-shrink: 0;
+}
+
+.button.primary {
+  background: var(--ui-ink);
+  color: var(--ui-page);
+}
+
+.button.secondary {
+  background: color-mix(in srgb, var(--ui-ink) 7%, transparent);
+  border-color: color-mix(in srgb, var(--ui-ink) 6%, transparent);
+  color: var(--ui-ink);
+}
+
+.button.quiet,
+.button.text {
+  color: var(--ui-text-2);
+}
+
+.button.danger {
+  background: color-mix(in srgb, var(--ui-danger) 8%, transparent);
+  border-color: color-mix(in srgb, var(--ui-danger) 16%, transparent);
+  color: var(--ui-button-danger-ink, var(--ui-danger));
+}
+
+:root[data-theme='dark'] {
+  --ui-button-danger-ink: #ff86a2;
+}
+
+.button.small {
+  --button-height: 28px;
+  --button-padding: 11px;
+  --button-font: 12px;
+  padding-top: 3px;
+  padding-bottom: 3px;
+}
+
+.button.large {
+  --button-height: 36px;
+  --button-padding: 16px;
+  --button-font: 14px;
+  --button-icon: 16px;
+  padding-top: 7px;
+  padding-bottom: 7px;
+}
+
+.button.text {
+  --button-padding: 0px;
+  min-height: 24px;
+  border-radius: 5px;
+  background: transparent;
+  padding-top: 1px;
+  padding-bottom: 1px;
+}
+
+.icon-button {
+  width: var(--button-height);
+  height: var(--button-height);
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  border-radius: 8px;
+  color: var(--ui-text-2);
+}
+
+.button:focus-visible {
+  outline: 2px solid var(--ui-accent);
+  outline-offset: 3px;
+}
+
+.button:disabled {
+  opacity: .4;
+  cursor: not-allowed;
+}
+
+/* Keep the original content in flow so asynchronous actions never resize the button. */
+.button[data-loading='true'] {
+  opacity: 1;
+  cursor: progress;
+}
+
+.button[data-loading='true'] > .button-content {
+  opacity: 0;
+}
+
+.button > .button-spinner {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  animation: button-spin 1s linear infinite;
+}
+
+@keyframes button-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .button.primary:hover:enabled {
+    background: color-mix(in srgb, var(--ui-ink) 88%, var(--ui-page));
+  }
+
+  .button.secondary:hover:enabled {
+    background: color-mix(in srgb, var(--ui-ink) 11%, transparent);
+    border-color: color-mix(in srgb, var(--ui-ink) 10%, transparent);
+  }
+
+  .button.quiet:hover:enabled {
+    background: color-mix(in srgb, var(--ui-ink) 7%, transparent);
+    color: var(--ui-ink);
+  }
+
+  .button.text:hover:enabled {
+    color: var(--ui-ink);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .button.danger:hover:enabled {
+    background: color-mix(in srgb, var(--ui-danger) 13%, transparent);
+    border-color: color-mix(in srgb, var(--ui-danger) 24%, transparent);
+  }
+}
+
+.button.primary:active:enabled {
+  background: color-mix(in srgb, var(--ui-ink) 80%, var(--ui-page));
+}
+
+.button.secondary:active:enabled,
+.button.quiet:active:enabled {
+  background: color-mix(in srgb, var(--ui-ink) 16%, transparent);
+  color: var(--ui-ink);
+}
+
+.button.danger:active:enabled {
+  background: color-mix(in srgb, var(--ui-danger) 20%, transparent);
+}
+
+@media (pointer: coarse) {
+  .button { min-height: max(var(--button-height), 40px); }
+  .button.small { min-height: 36px; }
+  .button.large { min-height: 44px; }
+  .icon-button { min-height: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .button > .button-spinner { animation: none; }
+}

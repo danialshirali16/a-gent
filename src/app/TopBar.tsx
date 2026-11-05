@@ -1,6 +1,7 @@
 import { ChevronDown, MoreHorizontal, PanelLeftOpen, PanelRightClose, PanelRightOpen, WifiOff } from 'lucide-react';
 import type { Agent, Conversation } from '../../shared/types';
 import { AgentGlyph, IconButton } from '../components';
+import { Badge } from '../ui/Badge';
 
 export interface TopBarProps {
   label: string;
@@ -22,11 +23,11 @@ export function TopBar(props: TopBarProps) {
     </div>
     <button className="reason-top-pill" onClick={props.onToggleSidePanel} aria-label={`Open ${props.label} details`}>
       {props.agent ? <AgentGlyph agent={props.agent} size={24} /> : null}
-      <span>{props.label}</span>
+      <span className="reason-top-pill-label">{props.label}</span>
       <ChevronDown size={13} />
     </button>
     <div className="reason-topbar-right">
-      {!props.online && props.hasData && <span className="offline-indicator" title="Reconnecting to your host"><WifiOff size={14} /><span>Reconnecting</span></span>}
+      {!props.online && props.hasData && <Badge tone="warning" icon={<WifiOff size={11} />} className="offline-indicator">Reconnecting</Badge>}
       {props.conversation && <IconButton label="Conversation details" onClick={props.onOpenConversationDetails}><MoreHorizontal size={19} /></IconButton>}
       <IconButton label={props.sidePanelOpen ? 'Close side panel' : 'Open side panel'} onClick={props.onToggleSidePanel}>{props.sidePanelOpen ? <PanelRightClose size={19} /> : <PanelRightOpen size={19} />}</IconButton>
     </div>

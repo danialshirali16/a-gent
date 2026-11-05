@@ -1,0 +1,12 @@
+.dialog-preview-bar { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; padding: 18px; }
+.dialog-preview-note { margin-top: 10px; color: var(--ui-text-3); font-size: 12px; }
+.dialog-preview-anatomy { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 28px; padding: 20px 22px; }
+.dialog-preview-anatomy div { display: flex; flex-direction: column; gap: 4px; }
+.dialog-preview-anatomy strong { font-size: 12px; font-weight: 550; }
+.dialog-preview-anatomy span { color: var(--ui-text-3); font-size: 12px; line-height: 18px; }
+.dialog-preview-body p { color: var(--ui-text-2); font-size: 13px; line-height: 21px; }
+.dialog-preview-form { gap: 18px; }
+
+@media (max-width: 720px) {
+  .dialog-preview-anatomy { grid-template-columns: 1fr; }
+}
